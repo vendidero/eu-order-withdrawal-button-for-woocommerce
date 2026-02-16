@@ -1,0 +1,43 @@
+{
+  "name": "vendidero/eu-order-withdrawal-button-for-woocommerce",
+  "description": "EU Order Withdrawal Button for WooCommerce",
+  "homepage": "https://vendidero.de",
+  "license": "GPL-3.0-or-later",
+  "type": "wordpress-plugin",
+  "prefer-stable": true,
+  "version": "dev-main",
+  "minimum-stability": "dev",
+  "require": {
+    "automattic/jetpack-autoloader": "2.11.18"
+  },
+  "require-dev": {
+    "phpunit/phpunit": "^9.0.0",
+    "yoast/phpunit-polyfills": "^3.0",
+    "woocommerce/woocommerce-sniffs": "^1.0.0"
+  },
+  "config": {
+    "optimize-autoloader": true,
+    "allow-plugins": true,
+    "platform": {
+      "php": "7.4"
+    },
+    "preferred-install": "dist",
+    "sort-packages": true
+  },
+  "scripts": {
+    "phpcs": [
+      "phpcs -s -p"
+    ],
+    "phpcs-pre-commit": [
+      "phpcs -s -p -n"
+    ],
+    "phpcbf": [
+      "phpcbf -p"
+    ]
+  },
+  "autoload": {
+    "psr-4": {
+      "Vendidero\\OrderWithdrawalButton\\": "src"
+    }
+  }
+}

@@ -1,0 +1,559 @@
+<?php
+
+namespace Vendidero\OrderWithdrawalButton;
+
+use Automattic\WooCommerce\Utilities\I18nUtil;
+use Exception;
+
+defined( 'ABSPATH' ) || exit;
+
+/**
+ * Main package class.
+ */
+class Package {
+	/**
+	 * Version.
+	 *
+	 * @var string
+	 */
+	const VERSION = '1.0.0';
+
+	/**
+	 * Init the package
+	 */
+	public static function init() {
+		if ( ! self::has_dependencies() ) {
+			return;
+		}
+
+		self::init_hooks();
+		self::includes();
+	}
+
+	protected static function init_hooks() {
+		add_action( 'before_woocommerce_init', array( __CLASS__, 'declare_feature_compatibility' ) );
+
+		add_action( 'init', array( __CLASS__, 'register_shortcodes' ) );
+		add_action( 'init', array( __CLASS__, 'check_version' ), 10 );
+		add_action( 'init', array( __CLASS__, 'load_plugin_textdomain' ) );
+		add_filter( 'woocommerce_locate_template', array( __CLASS__, 'filter_templates' ), 50, 3 );
+		add_filter( 'wc_order_statuses', array( __CLASS__, 'register_order_statuses' ) );
+		add_action( 'init', array( __CLASS__, 'register_post_statuses' ) );
+
+		add_action( 'admin_enqueue_scripts', array( __CLASS__, 'admin_scripts' ) );
+		add_action( 'woocommerce_admin_order_data_after_shipping_address', array( __CLASS__, 'admin_order_buttons' ), 100, 1 );
+		add_filter( 'woocommerce_admin_order_actions', array( __CLASS__, 'admin_order_actions' ), 1500, 2 );
+
+		add_action(
+			'admin_init',
+			function () {
+				add_filter( 'handle_bulk_actions-' . ( 'shop_order' === self::get_order_screen_id() ? 'edit-shop_order' : self::get_order_screen_id() ), array( __CLASS__, 'handle_order_bulk_actions' ), 10, 3 );
+				add_filter( 'bulk_actions-' . ( 'shop_order' === self::get_order_screen_id() ? 'edit-shop_order' : self::get_order_screen_id() ), array( __CLASS__, 'register_order_bulk_actions' ), 10, 1 );
+			}
+		);
+
+		add_filter( 'woocommerce_hidden_order_itemmeta', function( $hidden_meta ) {
+			return array_merge( $hidden_meta, array(
+				'_withdrawn_quantity',
+				'_has_withdrawal'
+			) );
+		}, 10, 2 );
+
+		add_action( 'woocommerce_after_order_itemmeta', function( $item_id, $item, $product ) {
+			$show_withdrawn_quantity = false;
+
+			if ( $order = $item->get_order() ) {
+				if ( eu_owb_order_is_withdrawn( $order ) || eu_owb_order_has_pending_withdrawal_request( $order ) ) {
+					$show_withdrawn_quantity = true;
+				}
+			}
+
+			if ( $show_withdrawn_quantity && 'yes' === $item->get_meta( '_has_withdrawal' ) ) {
+				$quantity = (float) wc_format_decimal( $item->get_meta( '_withdrawn_quantity', true ) );
+				?>
+				<span class="eu-owb-order-item-has-withdrawal"><?php echo wp_kses_post( sprintf( _x( 'Withdrawn %1$sx', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ), $quantity ) ); ?></span>
+				<?php
+			}
+		}, 10, 3 );
+
+		add_filter( 'wc_order_is_editable', function( $is_editable, $order ) {
+			if ( eu_owb_order_has_pending_withdrawal_request( $order ) ) {
+				$is_editable = true;
+			}
+
+			return $is_editable;
+		}, 10, 2 );
+
+		add_action( 'woocommerce_process_shop_order_meta', function( $order_id ) {
+			if ( $order = wc_get_order( $order_id ) ) {
+				if ( isset( $_POST['reject_withdrawal_request'] ) ) {
+					eu_owb_order_reject_withdrawal_request( $order );
+				}
+			}
+		}, 45 );
+	}
+
+	public static function handle_order_bulk_actions( $redirect_to, $action, $ids ) {
+		$ids           = apply_filters( 'woocommerce_bulk_action_ids', array_reverse( array_map( 'absint', $ids ) ), $action, 'order' );
+		$changed       = 0;
+		$report_action = '';
+
+		if ( 'confirm_withdrawal_requests' === $action ) {
+			foreach ( $ids as $id ) {
+				$order         = wc_get_order( $id );
+				$report_action = 'confirm_withdrawal_requests';
+
+				if ( $order && eu_owb_order_has_pending_withdrawal_request( $order ) ) {
+					$result = eu_owb_order_confirm_withdrawal_request( $order );
+
+					if ( $result ) {
+						++$changed;
+					}
+				}
+			}
+		}
+
+		if ( $changed ) {
+			$redirect_query_args = array(
+				'post_type'   => 'shop_order',
+				'bulk_action' => $report_action,
+				'changed'     => $changed,
+				'ids'         => join( ',', $ids ),
+				'status'      => 'wc-withdrawn',
+			);
+
+			if ( Package::is_hpos_enabled() ) {
+				unset( $redirect_query_args['post_type'] );
+				$redirect_query_args['page'] = 'wc-orders';
+			}
+
+			$redirect_to = add_query_arg(
+				$redirect_query_args,
+				$redirect_to
+			);
+
+			return esc_url_raw( $redirect_to );
+		} else {
+			return $redirect_to;
+		}
+	}
+
+	public static function register_order_bulk_actions( $actions ) {
+		$actions['confirm_withdrawal_requests'] = _x( 'Confirm withdrawal requests', 'owb', 'eu-order-withdrawal-button-for-woocommerce' );
+
+		return $actions;
+	}
+
+	public static function get_order_screen_id() {
+		return function_exists( 'wc_get_page_screen_id' ) ? wc_get_page_screen_id( 'shop-order' ) : 'shop_order';
+	}
+
+	protected static function get_order_screen_ids() {
+		$screen_ids = array();
+
+		foreach ( wc_get_order_types() as $type ) {
+			$screen_ids[] = $type;
+			$screen_ids[] = 'edit-' . $type;
+		}
+
+		$screen_ids[] = self::get_order_screen_id();
+
+		return array_filter( $screen_ids );
+	}
+
+	public static function get_screen_ids() {
+		$other_screen_ids = array();
+
+		return array_merge(self::get_order_screen_ids(), $other_screen_ids );
+	}
+
+	public static function admin_scripts() {
+		$screen    = get_current_screen();
+		$screen_id = $screen ? $screen->id : '';
+
+		// Register admin styles.
+		wp_register_style( 'eu_owb_admin_styles', self::get_assets_url( 'static/admin-styles.css' ), array( 'woocommerce_admin_styles' ), self::get_version() );
+
+		// Admin styles for WC pages only.
+		if ( in_array( $screen_id, self::get_screen_ids(), true ) ) {
+			wp_enqueue_style( 'eu_owb_admin_styles' );
+		}
+	}
+
+	/**
+	 * @param array $actions
+	 * @param \WC_Order $order
+	 *
+	 * @return array
+	 */
+	public static function admin_order_actions( $actions, $order ) {
+		if ( eu_owb_order_has_pending_withdrawal_request( $order ) ) {
+			$actions             = array();
+			$actions['confirm_withdrawal_request'] = array(
+				'url'    => self::get_edit_withdrawal_url( $order->get_id() ),
+				'name'   => _x( 'Confirm withdrawal request', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ),
+				'action' => 'complete',
+			);
+		}
+
+		return $actions;
+	}
+
+	public static function admin_order_buttons( $order ) {
+		if ( ! eu_owb_order_has_pending_withdrawal_request( $order ) ) {
+			return;
+		}
+		?>
+		<div class="eu-owb-order-buttons">
+			<a href="<?php echo esc_url( self::get_edit_withdrawal_url( $order->get_id() ) ); ?>" class="eu-owb-confirm-withdrawal-request button button-primary"><?php echo esc_html_x( 'Confirm withdrawal request', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ); ?></a>
+			<a href="#" class="eu-owb-reject-withdrawal-request"><?php echo esc_html_x( 'Reject withdrawal request', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ); ?></a>
+
+			<form class="eu-owb-reject-withdrawal-request-form">
+				<p class="form-field form-field-wide">
+					<label for="eu_owb_reject_reason"><?php echo esc_html_x( 'Reason', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ); ?>:</label>
+					<textarea rows="5" cols="40" name="eu_owb_reject_reason" tabindex="6" id="eu_owb_reject_reason" placeholder="<?php echo esc_attr_x( 'Describe why you\'ve rejected the withdrawal request.', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ); ?>"></textarea>
+				</p>
+
+				<input type="hidden" name="eu_owb_reject_order_id" value="<?php echo esc_attr( $order->get_id() ); ?>" />
+				<?php wp_nonce_field( 'eu_owb_reject_withdrawal_request', 'eu_owb_reject_withdrawal_request_nonce' ); ?>
+
+				<p>
+					<button type="submit" class="button button-primary" name="reject_withdrawal_request" value="<?php echo esc_attr_x( 'Reject withdrawal request', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ); ?>"><?php echo esc_html_x( 'Reject withdrawal request', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ); ?></button>
+				</p>
+			</form>
+		</div>
+		<?php
+	}
+
+	public static function get_edit_withdrawal_url( $order_id, $type = 'confirm', $args = array() ) {
+		return esc_url_raw( wp_nonce_url( add_query_arg( $args, admin_url( "admin-ajax.php?action=eu_owb_woocommerce_{$type}_withdrawal_request&order_id={$order_id}" ) ), "eu_owb_woocommerce_{$type}_withdrawal_request" ) );
+	}
+
+	public static function register_post_statuses() {
+		register_post_status(
+			'wc-pending-wdraw',
+			array(
+				'label'		=> _x( 'Pending withdrawal', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ),
+				'public'	=> true,
+				'show_in_admin_status_list' => true,
+				'label_count'	=> _nx_noop( 'Pending withdrawal (%s)', 'Pending withdrawals (%s)', 'owb', 'eu-order-withdrawal-button-for-woocommerce' )
+			)
+		);
+
+		register_post_status(
+			'wc-withdrawn',
+			array(
+				'label'		=> _x( 'Withdrawn', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ),
+				'public'	=> true,
+				'show_in_admin_status_list' => true,
+				'label_count'	=> _nx_noop( 'Withdrawn (%s)', 'Withdrawn (%s)', 'owb', 'eu-order-withdrawal-button-for-woocommerce' )
+			)
+		);
+	}
+
+	public static function register_order_statuses( $statuses ) {
+		/**
+		 * Need to shorten wc-pending-withdrawal as it is too long for the custom order table limitation.
+		 */
+		$statuses['wc-pending-wdraw'] = _x( 'Pending withdrawal', 'owb', 'eu-order-withdrawal-button-for-woocommerce' );
+		$statuses['wc-withdrawn']     = _x( 'Withdrawn', 'owb', 'eu-order-withdrawal-button-for-woocommerce' );
+
+		return $statuses;
+	}
+
+	public static function load_plugin_textdomain() {
+		if ( ! self::is_standalone() ) {
+			return;
+		}
+
+		if ( function_exists( 'determine_locale' ) ) {
+			$locale = determine_locale();
+		} else {
+			// @todo Remove when start supporting WP 5.0 or later.
+			$locale = is_admin() ? get_user_locale() : get_locale();
+		}
+
+		$locale = apply_filters( 'plugin_locale', $locale, 'eu-order-withdrawal-button-for-woocommerce' );
+
+		$custom_translation_path = WP_LANG_DIR . '/eu-order-withdrawal-button-for-woocommerce/eu-order-withdrawal-button-for-woocommerce-' . $locale . '.mo';
+		$plugin_translation_path = WP_LANG_DIR . '/plugins/eu-order-withdrawal-button-for-woocommerce-' . $locale . '.mo';
+
+		// If a custom translation exists (by default it will not, as it is not a standard WordPress convention)
+		// we unload the existing translation, then essentially layer the custom translation on top of the canonical
+		// translation. Otherwise, we simply step back and let WP manage things.
+		if ( is_readable( $custom_translation_path ) ) {
+			unload_textdomain( 'eu-order-withdrawal-button-for-woocommerce' );
+			load_textdomain( 'eu-order-withdrawal-button-for-woocommerce', $custom_translation_path );
+			load_textdomain( 'eu-order-withdrawal-button-for-woocommerce', $plugin_translation_path );
+		}
+	}
+
+	public static function register_shortcodes() {
+		add_shortcode( 'order_withdrawal_request_form', array( __CLASS__, 'order_withdrawal_request_form' ) );
+
+		/**
+		 * Mark the return page as a Woo page to make sure default form styles work.
+		 */
+		add_filter(
+			'is_woocommerce',
+			function ( $is_woocommerce ) {
+				if ( wc_post_content_has_shortcode( 'order_withdrawal_request_form' ) ) {
+					$is_woocommerce = true;
+				}
+
+				return $is_woocommerce;
+			}
+		);
+	}
+
+	public static function order_withdrawal_request_form( $args = array() ) {
+		$order_key = isset( $_GET['key'] ) ? wc_clean( wp_unslash( $_GET['key'] ) ) : '';
+		$order_id  = isset( $_GET['order_id'] ) ? absint( wp_unslash( $_GET['order_id'] ) ) : '';
+		$order     = null;
+
+		if ( ! empty( $order_id ) && ( $the_order = wc_get_order( $order_id ) ) ) {
+			if ( $order_id === $the_order->get_id() && hash_equals( $the_order->get_order_key(), $order_key ) ) {
+				$order = $the_order;
+			}
+		}
+
+		$defaults = array(
+			'order'     => $order,
+			'order_key' => $order_key,
+		);
+
+		$args    = wp_parse_args( $args, $defaults );
+		$notices = function_exists( 'wc_print_notices' ) ? wc_print_notices( true ) : '';
+		$html    = '';
+
+		// Output notices in case notices have not been outputted yet.
+		if ( ! empty( $notices ) ) {
+			$html .= '<div class="woocommerce">' . $notices . '</div>';
+		}
+
+		$html .= wc_get_template_html( 'forms/order-withdrawal-request.php', $args );
+
+		return $html;
+	}
+
+	public static function is_integration() {
+		return apply_filters( 'eu_owb_woocommerce_is_integration', false );
+	}
+
+	public static function is_hpos_enabled() {
+		if ( ! is_callable( array( '\Automattic\WooCommerce\Utilities\OrderUtil', 'custom_orders_table_usage_is_enabled' ) ) ) {
+			return false;
+		}
+
+		return \Automattic\WooCommerce\Utilities\OrderUtil::custom_orders_table_usage_is_enabled();
+	}
+
+	public static function deactivate() {
+		Install::deactivate();
+	}
+
+	public static function install() {
+		self::init();
+
+		if ( ! self::has_dependencies() ) {
+			return;
+		}
+
+		Install::install();
+	}
+
+	public static function install_integration() {
+		self::install();
+	}
+
+	public static function is_standalone() {
+		return defined( 'EU_OWB_WC_IS_STANDALONE_PLUGIN' ) && EU_OWB_WC_IS_STANDALONE_PLUGIN;
+	}
+
+	public static function check_version() {
+		if ( self::is_standalone() && self::has_dependencies() && ! defined( 'IFRAME_REQUEST' ) && ( get_option( 'eu_owb_woocommerce_version' ) !== self::get_version() ) ) {
+			Install::install();
+
+			do_action( 'eu_owb_woocommerce_updated' );
+		}
+	}
+
+	public static function log( $message, $type = 'info', $source = '' ) {
+		/**
+		 * Filter that allows adjusting whether to enable or disable
+		 * logging for the shipments package
+		 *
+		 * @param boolean $enable_logging True if logging should be enabled. False otherwise.
+		 */
+		if ( ! apply_filters( 'eu_owb_woocommerce_enable_logging', false ) ) {
+			return;
+		}
+
+		$logger = wc_get_logger();
+
+		if ( ! $logger ) {
+			return;
+		}
+
+		if ( ! is_callable( array( $logger, $type ) ) ) {
+			$type = 'info';
+		}
+
+		$logger->{$type}( $message, array( 'source' => 'wc-shiptastic' . ( ! empty( $source ) ? '-' . $source : '' ) ) );
+	}
+
+	public static function has_dependencies() {
+		return class_exists( 'WooCommerce' );
+	}
+
+	private static function includes() {
+		Ajax::init();
+
+		include_once self::get_path() . '/includes/eu-owb-core-functions.php';
+	}
+
+	private static function is_frontend_request() {
+		return ( ! is_admin() || defined( 'DOING_AJAX' ) ) && ! defined( 'DOING_CRON' );
+	}
+
+	/**
+	 * Function used to Init WooCommerce Template Functions - This makes them pluggable by plugins and themes.
+	 */
+	public static function include_template_functions() {
+		include_once self::get_path() . '/includes/wc-stc-template-functions.php';
+	}
+
+	/**
+	 * Return the path to the package.
+	 *
+	 * @return string
+	 */
+	public static function get_template_path() {
+		return apply_filters( 'eu_owb_woocommerce_template_path', 'woocommerce/' );
+	}
+
+	/**
+	 * Filter WooCommerce Templates to look into /templates before looking within theme folder
+	 *
+	 * @param string $template
+	 * @param string $template_name
+	 * @param string $template_path
+	 *
+	 * @return string
+	 */
+	public static function filter_templates( $template, $template_name, $template_path ) {
+		$default_template_path = apply_filters( 'eu_owb_woocommerce_default_template_path', self::get_path() . '/templates/' . $template_name, $template_name );
+
+		if ( file_exists( $default_template_path ) ) {
+			$template_path = self::get_template_path();
+
+			// Check for Theme overrides
+			$theme_template = locate_template(
+				apply_filters(
+					'eu_owb_woocommerce_locate_theme_template_locations',
+					array(
+						trailingslashit( $template_path ) . $template_name,
+					),
+					$template_name
+				)
+			);
+
+			if ( 'forms/order-withdrawal-request.php' === $template_name ) {
+				self::register_script( 'eu-owb-woocommerce', 'static/order-withdrawal.js', array( 'jquery', 'woocommerce' ) );
+
+				wp_localize_script(
+					'eu-owb-woocommerce',
+					'eu_owb_woocommerce_order_withdrawal_params',
+					array(
+						'wc_ajax_url' => \WC_AJAX::get_endpoint( '%%endpoint%%' ),
+					)
+				);
+
+				wp_enqueue_script( 'eu-owb-woocommerce' );
+			}
+
+			if ( ! $theme_template ) {
+				$template = $default_template_path;
+			} else {
+				$template = $theme_template;
+			}
+		}
+
+		return $template;
+	}
+
+	public static function declare_feature_compatibility() {
+		if ( ! self::is_standalone() ) {
+			return;
+		}
+
+		if ( class_exists( '\Automattic\WooCommerce\Utilities\FeaturesUtil' ) ) {
+			\Automattic\WooCommerce\Utilities\FeaturesUtil::declare_compatibility( 'custom_order_tables', trailingslashit( self::get_path() ) . 'eu-order-withdrawal-button-for-woocommerce.php', true );
+			\Automattic\WooCommerce\Utilities\FeaturesUtil::declare_compatibility( 'cart_checkout_blocks', trailingslashit( self::get_path() ) . 'eu-order-withdrawal-button-for-woocommerce.php', true );
+		}
+	}
+
+	/**
+	 * Return the version of the package.
+	 *
+	 * @return string
+	 */
+	public static function get_version() {
+		return self::VERSION;
+	}
+
+	/**
+	 * Return the path to the package.
+	 *
+	 * @return string
+	 */
+	public static function get_path( $rel_path = '' ) {
+		return trailingslashit( dirname( __DIR__ ) ) . $rel_path;
+	}
+
+	/**
+	 * Return the path to the package.
+	 *
+	 * @return string
+	 */
+	public static function get_url( $rel_path = '' ) {
+		return trailingslashit( plugins_url( '', __DIR__ ) ) . $rel_path;
+	}
+
+	public static function register_script( $handle, $path, $dep = array(), $ver = '', $in_footer = array( 'strategy' => 'defer' ) ) {
+		global $wp_version;
+
+		if ( version_compare( $wp_version, '6.3', '<' ) ) {
+			$in_footer = true;
+		}
+
+		$ver = empty( $ver ) ? self::get_version() : $ver;
+
+		wp_register_script(
+			$handle,
+			self::get_assets_url( $path ),
+			$dep,
+			$ver,
+			$in_footer
+		);
+	}
+
+	public static function get_assets_url( $script_or_style ) {
+		$assets_url = self::get_url( 'build' );
+		$is_debug   = defined( 'SCRIPT_DEBUG' ) && SCRIPT_DEBUG;
+		$is_style   = '.css' === substr( $script_or_style, -4 );
+		$is_static  = strstr( $script_or_style, 'static/' );
+
+		if ( $is_debug && $is_static && ! $is_style ) {
+			$assets_url = self::get_url( 'assets/js' );
+		}
+
+		return trailingslashit( $assets_url ) . $script_or_style;
+	}
+
+	public static function get_setting( $name, $default_value = false ) {
+		$option_name = "eu_owb_woocommerce_{$name}";
+
+		return get_option( $option_name, $default_value );
+	}
+}

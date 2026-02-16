@@ -1,0 +1,18 @@
+.eu-owb-order-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+
+  .eu-owb-reject-withdrawal-request {
+    color: #a00;
+  }
+}
+
+.eu-owb-order-item-has-withdrawal {
+  border: 1px solid #a00;
+  padding: 2px;
+  color: #a00;
+  border-radius: 4px;
+  font-size: .92em !important;
+  font-weight: 600;
+}

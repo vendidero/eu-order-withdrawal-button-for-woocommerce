@@ -1,0 +1,47 @@
+{
+  "name": "eu-order-withdrawal-button-for-woocommerce",
+  "title": "EU Order Withdrawal Button for WooCommerce",
+  "version": "1.0.0",
+  "homepage": "https://vendidero.de",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/vendidero/eu-order-withdrawal-button-for-woocommerce.git"
+  },
+  "license": "GPL-3.0+",
+  "main": "build/index.js",
+  "scripts": {
+    "build": "wp-scripts build",
+    "format": "wp-scripts format",
+    "lint:css": "wp-scripts lint-style",
+    "lint:js": "wp-scripts lint-js",
+    "packages-update": "wp-scripts packages-update",
+    "plugin-zip": "wp-scripts plugin-zip",
+    "start": "wp-scripts start",
+    "deploy": "composer install --no-dev && sh ./bin/github-deploy.sh",
+    "package-plugin": "./bin/build-plugin-zip.sh",
+    "docker-clean": "docker-compose rm && docker-compose pull && docker-compose build --no-cache wordpress-unit-tests && docker-compose up -d --force-recreate --build db && docker-compose up -d --force-recreate --build wordpress-unit-tests && docker exec wordpress_test /usr/local/bin/dockerInit wordpress wordpress wordpress db latest latest true",
+    "phpunit": "docker-compose up -d db && docker-compose up -d --build wordpress-unit-tests && docker exec -it --workdir /var/www/html/wp-content/plugins/shiptastic-for-woocommerce shiptastic_wordpress_test php ./vendor/bin/phpunit"
+  },
+  "devDependencies": {
+    "@woocommerce/dependency-extraction-webpack-plugin": "^2.2.0",
+    "@woocommerce/eslint-plugin": "^2.2.0",
+    "@wordpress/prettier-config": "^2.24.0",
+    "@wordpress/scripts": "24.6.0",
+    "copy-webpack-plugin": "6.4.1",
+    "css-loader": "^6.8.1",
+    "css-minimizer-webpack-plugin": "^5.0.1",
+    "mini-css-extract-plugin": "2.7.6",
+    "sass-loader": "^13.3.2",
+    "spectre.css": "*",
+    "terser-webpack-plugin": "^2.3.8",
+    "webpack": "5.88.2",
+    "webpack-bundle-analyzer": "4.7.0",
+    "webpack-cli": "5.1.4",
+    "change-case": "^4.1.2"
+  },
+  "dependencies": {},
+  "engines": {
+    "node": "^16.13.0",
+    "npm": "^8.0.0"
+  }
+}
