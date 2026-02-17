@@ -27,7 +27,7 @@ window.eu_owb.admin_order = window.eu_owb.admin_order || {};
 
         onRejectRequest: function() {
             var self = eu_owb.admin_order,
-                $wrapper = $( this ).parents( '.eu-owb-order-buttons' );
+                $wrapper = $( this ).parents( '.eu-owb-order-withdrawal-request' );
 
             $wrapper.find( '.eu-owb-reject-withdrawal-request-form' ).toggleClass( 'hidden' );
             $wrapper.find( '#eu_owb_reject_reason' ).focus();

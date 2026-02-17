@@ -5,7 +5,7 @@ if ( ! defined( 'WP_UNINSTALL_PLUGIN' ) ) {
 
 global $wpdb, $wp_version;
 
-if ( defined( 'WC_SHIPTASTIC_REMOVE_ALL_DATA' ) && true === WC_SHIPTASTIC_REMOVE_ALL_DATA ) {
+if ( defined( 'EU_OWB_REMOVE_ALL_DATA' ) && true === EU_OWB_REMOVE_ALL_DATA ) {
 	// Delete options.
 	$wpdb->query( "DELETE FROM $wpdb->options WHERE option_name LIKE 'eu_owb_woocommerce\_%';" );
 

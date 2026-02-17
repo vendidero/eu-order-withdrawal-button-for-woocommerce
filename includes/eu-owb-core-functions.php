@@ -35,7 +35,8 @@ function eu_owb_get_withdrawable_order_statuses( $prefixed = true ) {
 			'wc-pending-cancellation' => '',
 		)
 	);
-	$order_statuses = array_keys( $order_statuses );
+
+	$order_statuses = apply_filters( 'eu_owb_woocommerce_withdrawable_order_statuses', array_keys( $order_statuses ) );
 
 	if ( ! $prefixed ) {
 		$order_statuses = array_map(
@@ -67,16 +68,16 @@ function eu_owb_order_is_withdrawable( $order ) {
 		return false;
 	}
 
-	$is_cancelable = true;
+	$is_withdrawable = true;
 
 	if ( ! $order->has_status( eu_owb_get_withdrawable_order_statuses( false ) ) ) {
-		$is_cancelable = false;
+		$is_withdrawable = false;
 	}
 
 	$items = eu_owb_get_withdrawable_order_items( $order );
 
 	if ( empty( $items ) ) {
-		$is_cancelable = false;
+		$is_withdrawable = false;
 	}
 
 	if ( $date_delivered = eu_owb_order_get_date_delivered( $order ) ) {
@@ -93,16 +94,16 @@ function eu_owb_order_is_withdrawable( $order ) {
 
 		$diff = $date_delivered->diff( $datetime );
 
-		if ( $diff->days > eu_owb_get_number_of_days_to_cancel() ) {
-			$is_cancelable = false;
+		if ( $diff->days > eu_owb_get_number_of_days_to_withdraw() ) {
+			$is_withdrawable = false;
 		}
 	}
 
-	return apply_filters( 'eu_owb_woocommerce_order_is_cancelable', $is_cancelable, $order );
+	return apply_filters( 'eu_owb_woocommerce_order_is_withdrawable', $is_withdrawable, $order );
 }
 
-function eu_owb_get_number_of_days_to_cancel() {
-	return 14;
+function eu_owb_get_number_of_days_to_withdraw() {
+	return absint( \Vendidero\OrderWithdrawalButton\Package::get_setting( 'number_of_days_to_withdraw', 14 ) );
 }
 
 /**
@@ -130,7 +131,7 @@ function eu_owb_order_get_date_delivered( $order ) {
 		$date_delivered->modify( '+1 day' );
 	}
 
-	return $date_delivered;
+	return apply_filters( 'eu_owb_woocommerce_get_order_date_delivered', $date_delivered, $order );
 }
 
 /**
@@ -193,22 +194,22 @@ function eu_owb_get_withdrawable_order_items( $order ) {
 		return null;
 	}
 
-	$items_to_cancel = array();
+	$items_to_withdraw = array();
 
 	foreach ( $order->get_items() as $item ) {
-		$total_qty_left = eu_owb_get_order_item_quantity_left_for_withdrawal( $item, $order );
+		$total_qty_left = eu_owb_get_order_item_quantity_left_to_withdraw( $item, $order );
 
 		if ( $total_qty_left <= 0 ) {
 			continue;
 		}
 
-		$items_to_cancel[ $item->get_id() ] = array(
+		$items_to_withdraw[ $item->get_id() ] = array(
 			'item'     => $item,
 			'quantity' => $total_qty_left,
 		);
 	}
 
-	return $items_to_cancel;
+	return apply_filters( 'eu_owb_woocommerce_withdrawable_order_items', $items_to_withdraw, $order );
 }
 
 /**
@@ -216,7 +217,7 @@ function eu_owb_get_withdrawable_order_items( $order ) {
  *
  * @return mixed
  */
-function eu_owb_get_order_item_quantity_left_for_withdrawal( $item, $order = null ) {
+function eu_owb_get_order_item_quantity_left_to_withdraw( $item, $order = null ) {
 	$order        = ! $order ? $item->get_order_id() : $order;
 	$refunded_qty = $order->get_qty_refunded_for_item( $item->get_id() );
 	$total_qty    = $item->get_quantity();
@@ -235,7 +236,7 @@ function eu_owb_get_order_item_quantity_left_for_withdrawal( $item, $order = nul
 		$total_qty_left = 0;
 	}
 
-	return $total_qty_left;
+	return apply_filters( 'eu_owb_woocommerce_order_item_quantity_left_to_withdraw', $total_qty_left, $item, $order );
 }
 
 /**
@@ -572,7 +573,9 @@ function eu_owb_order_reject_withdrawal_request( $order, $reason = '' ) {
  * @return boolean
  */
 function eu_owb_order_item_is_withdrawable( $order_item, $order = null ) {
-	return true;
+	$is_withdrawable = true;
+
+	return apply_filters( 'eu_owb_woocommerce_order_item_is_withdrawable', $is_withdrawable, $order_item, $order );
 }
 
 function eu_owb_get_withdrawable_orders_for_user( $user_id = 0 ) {

@@ -33,7 +33,7 @@ class Settings {
 			),
 
 			array(
-				'title'    => _x( 'Withdrawal page', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ),
+				'title'    => _x( 'Withdrawal form', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ),
 				'id'       => 'woocommerce_withdrawal_form_page_id',
 				'type'     => 'single_select_page_with_search',
 				'class'    => 'wc-page-search',
@@ -51,6 +51,15 @@ class Settings {
 				'id'      => 'eu_owb_woocommerce_enable_partial_withdrawals',
 				'type'    => Package::is_integration() ? 'gzd_toggle' : 'checkbox',
 				'default' => 'yes',
+			),
+
+			array(
+				'title'   => _x( 'Days', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ),
+				'desc'    => _x( 'Choose the number of days, starting with the orders\' delivery date, to accept withdrawals for orders.', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ),
+				'css'     => 'max-width: 60px;',
+				'type'    => 'number',
+				'id'      => 'eu_owb_woocommerce_number_of_days_to_withdraw',
+				'default' => '14',
 			),
 
 			array(

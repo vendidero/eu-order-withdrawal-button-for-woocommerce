@@ -2,7 +2,7 @@
 /**
  * Plugin Name: EU Order Withdrawal Button for WooCommerce
  * Plugin URI: https://vendidero.com/
- * Description: EU-compliant order withdrawal button and form for WooCommerce.
+ * Description: EU-compliant order withdrawal button for WooCommerce.
  * Author: vendidero
  * Author URI: https://vendidero.com
  * Text Domain: eu-order-withdrawal-button-for-woocommerce
