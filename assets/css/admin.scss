@@ -2,9 +2,26 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
+  gap: 12px;
 
-  .eu-owb-reject-withdrawal-request {
+  .eu-owb-reject-withdrawal-request-start {
     color: #a00;
+    cursor: pointer;
+    text-decoration: underline;
+  }
+
+  .eu-owb-reject-withdrawal-request-form {
+    p.form-field:first-child {
+      margin-top: 0 !important;
+    }
+
+    #eu-owb-reject-withdrawal-request-submit {
+      margin-top: 12px;
+    }
+
+    &.hidden {
+      display: none !important;
+    }
   }
 }
 
@@ -14,5 +31,15 @@
   color: #a00;
   border-radius: 4px;
   font-size: .92em !important;
-  font-weight: 600;
+}
+
+.order-status {
+  &.status-withdrawn, &.status-full-withdrawal {
+    background: #eba3a3;
+    color: #570000;
+  }
+  &.status-pending-withd, &.status-partial-withdrawal {
+    background: #f8dda7;
+    color: #573b00;
+  }
 }

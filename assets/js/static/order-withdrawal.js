@@ -111,7 +111,7 @@ window.eu_owb.order_withdrawal = window.eu_owb.order_withdrawal || {};
                 $form.find( '.eu-owb-form-fields' ).hide();
                 $mainButton.hide();
 
-                $noticeWrapper.append( '<p class="woocommerce-success notice">' + response.data + '</p>' );
+                $noticeWrapper.append( '<p class="woocommerce-message">' + response.data + '</p>' );
 
                 $noticeWrapper[0].scrollIntoView({
                     behavior: "smooth",

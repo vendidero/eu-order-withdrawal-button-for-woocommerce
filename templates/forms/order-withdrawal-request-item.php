@@ -4,7 +4,7 @@
  *
  * This template can be overridden by copying it to yourtheme/woocommerce/forms/order-withdrawal-request-item.php.
  *
- * HOWEVER, on occasion EU COB will need to update template files and you
+ * HOWEVER, on occasion EU OWB will need to update template files and you
  * (the theme developer) will need to copy the new files to your theme to
  * maintain compatibility. We try to do this as little as possible, but it does
  * happen. When this occurs the version of the template file will be bumped and
