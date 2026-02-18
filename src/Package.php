@@ -32,7 +32,6 @@ class Package {
 
 		add_action( 'init', array( __CLASS__, 'register_shortcodes' ) );
 		add_action( 'init', array( __CLASS__, 'check_version' ), 10 );
-		add_action( 'init', array( __CLASS__, 'load_plugin_textdomain' ) );
 		add_filter( 'woocommerce_locate_template', array( __CLASS__, 'filter_templates' ), 50, 3 );
 		add_filter( 'wc_order_statuses', array( __CLASS__, 'register_order_statuses' ) );
 		add_action( 'init', array( __CLASS__, 'register_post_statuses' ) );
@@ -403,33 +402,6 @@ class Package {
 		$statuses['wc-withdrawn']     = _x( 'Withdrawn', 'owb', 'eu-order-withdrawal-button-for-woocommerce' );
 
 		return $statuses;
-	}
-
-	public static function load_plugin_textdomain() {
-		if ( ! self::is_standalone() ) {
-			return;
-		}
-
-		if ( function_exists( 'determine_locale' ) ) {
-			$locale = determine_locale();
-		} else {
-			// @todo Remove when start supporting WP 5.0 or later.
-			$locale = is_admin() ? get_user_locale() : get_locale();
-		}
-
-		$locale = apply_filters( 'plugin_locale', $locale, 'eu-order-withdrawal-button-for-woocommerce' );
-
-		$custom_translation_path = WP_LANG_DIR . '/eu-order-withdrawal-button-for-woocommerce/eu-order-withdrawal-button-for-woocommerce-' . $locale . '.mo';
-		$plugin_translation_path = WP_LANG_DIR . '/plugins/eu-order-withdrawal-button-for-woocommerce-' . $locale . '.mo';
-
-		// If a custom translation exists (by default it will not, as it is not a standard WordPress convention)
-		// we unload the existing translation, then essentially layer the custom translation on top of the canonical
-		// translation. Otherwise, we simply step back and let WP manage things.
-		if ( is_readable( $custom_translation_path ) ) {
-			unload_textdomain( 'eu-order-withdrawal-button-for-woocommerce' );
-			load_textdomain( 'eu-order-withdrawal-button-for-woocommerce', $custom_translation_path );
-			load_textdomain( 'eu-order-withdrawal-button-for-woocommerce', $plugin_translation_path );
-		}
 	}
 
 	public static function register_shortcodes() {

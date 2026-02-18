@@ -6,11 +6,11 @@ Tested up to: 6.9
 WC requires at least: 3.9
 WC tested up to: 10.5
 Stable tag: 1.0.0
-Requires PHP: 7.0
+Requires PHP: 7.4
 License: GPLv3
 License URI: http://www.gnu.org/licenses/gpl-3.0.html
 
-The EU Order Withdrawal Button for WooCommerce plugin allows you to comply with the latest EU directive 2023/2673 by embedding a order withdrawal button within your WooCommerce store.
+This plugin helps to comply with the latest EU directive 2023/2673 by embedding a withdrawal button within your WooCommerce store.
 
 == Description ==
 
