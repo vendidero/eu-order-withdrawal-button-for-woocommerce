@@ -1,4 +1,12 @@
 .eu-owb-order-withdrawal-request {
+  display: block;
+  clear: both;
+  margin-top: 1.33em;
+
+  h3 {
+    margin-top: 0;
+  }
+
   .eu-owb-order-withdrawal-request-buttons {
     display: flex;
     flex-wrap: wrap;

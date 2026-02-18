@@ -152,7 +152,12 @@ class Ajax {
 			$order_number = ! empty( $_POST['order_number'] ) ? wc_clean( wp_unslash( $_POST['order_number'] ) ) : '';
 
 			if ( empty( $order_number ) || empty( $email ) ) {
-				$error->add( 'missing_fields', _x( 'Please fill out all required fields.', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ) );
+				if ( ! empty( $_POST['email'] ) ) {
+					$error->add( 'missing_fields', _x( 'Please check your email address.', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ) );
+				} else {
+					$error->add( 'missing_fields', _x( 'Please fill out all required fields.', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ) );
+				}
+
 				wp_send_json_error( $error, 500 );
 			}
 
@@ -160,14 +165,14 @@ class Ajax {
 			$order_id = eu_owb_find_order( $order_number, $email );
 
 			if ( empty( $order_id ) ) {
-				$error->add( 'not_found', _x( 'Sorry, we were unable to find an order based on the information you provided. Please try again - if the issue persists, please contact our support team.', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ) );
+				$error->add( 'not_found', sprintf( _x( 'Sorry, we were unable to find an order based on the information you provided. Please try again - if the issue persists, please <a href="%s">contact our support</a> to help.', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ), esc_url( eu_owb_get_contact_support_url() ) ) );
 				wp_send_json_error( $error, 500 );
 			}
 
 			$order = wc_get_order( $order_id );
 
 			if ( ! $order ) {
-				$error->add( 'not_found', _x( 'Sorry, we were unable to find an order based on the information you provided. Please try again - if the issue persists, please contact our support team.', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ) );
+				$error->add( 'not_found', sprintf( _x( 'Sorry, we were unable to find an order based on the information you provided. Please try again - if the issue persists, please <a href="%s">contact our support</a> to help.', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ), esc_url( eu_owb_get_contact_support_url() ) ) );
 				wp_send_json_error( $error, 500 );
 			}
 
@@ -175,12 +180,12 @@ class Ajax {
 		}
 
 		if ( ! $is_valid_request ) {
-			$error->add( 'not_found', _x( 'Sorry, we were unable to find an order based on the information you provided. Please try again - if the issue persists, please contact our support team.', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ) );
+			$error->add( 'not_found', sprintf( _x( 'Sorry, we were unable to find an order based on the information you provided. Please try again - if the issue persists, please <a href="%s">contact our support</a> to help.', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ), esc_url( eu_owb_get_contact_support_url() ) ) );
 			wp_send_json_error( $error, 500 );
 		}
 
 		if ( ! eu_owb_order_is_withdrawable( $order ) ) {
-			$error->add( 'not_withdrawable', _x( 'Sorry, but this order cannot be withdrawn. Contact our support team for help.', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ) );
+			$error->add( 'not_withdrawable', sprintf( _x( 'Sorry, but this order cannot be withdrawn. <a href="%s">Contact our support</a> to help.', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ), esc_url( eu_owb_get_contact_support_url() ) ) );
 			wp_send_json_error( $error, 500 );
 		}
 
