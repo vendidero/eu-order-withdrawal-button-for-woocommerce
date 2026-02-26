@@ -32,6 +32,7 @@ class Package {
 
 		add_action( 'init', array( __CLASS__, 'register_shortcodes' ) );
 		add_action( 'init', array( __CLASS__, 'check_version' ), 10 );
+        add_action( 'init', array( __CLASS__, 'register_plugin_links' ) );
 		add_filter( 'woocommerce_locate_template', array( __CLASS__, 'filter_templates' ), 50, 3 );
 		add_filter( 'wc_order_statuses', array( __CLASS__, 'register_order_statuses' ) );
 		add_action( 'init', array( __CLASS__, 'register_post_statuses' ) );
@@ -51,6 +52,18 @@ class Package {
 		add_action( 'woocommerce_process_shop_order_meta', array( __CLASS__, 'process_withdrawal_rejection' ), 45 );
 		add_filter( 'woocommerce_menu_order_count', array( __CLASS__, 'menu_order_count' ) );
 	}
+
+    public static function register_plugin_links() {
+        if ( self::is_standalone() && ! self::is_integration() ) {
+            add_filter( 'plugin_action_links_' . plugin_basename( trailingslashit( self::get_path() ) . 'eu-order-withdrawal-button-for-woocommerce.php' ), array( __CLASS__, 'plugin_action_links' ) );
+        }
+    }
+
+    public static function plugin_action_links( $links ) {
+        return array_merge( array(
+            '<a href="' . esc_url( admin_url( 'admin.php?page=wc-settings&tab=advanced&section=owb' ) ) . '">' . _x( 'Settings', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ) . '</a>',
+        ), $links );
+    }
 
 	public static function menu_order_count( $count ) {
 		$count += wc_orders_count( 'pending-wdraw' );
@@ -405,7 +418,7 @@ class Package {
 	}
 
 	public static function register_shortcodes() {
-		add_shortcode( 'order_withdrawal_request_form', array( __CLASS__, 'order_withdrawal_request_form' ) );
+		add_shortcode( 'eu_owb_order_withdrawal_request_form', array( __CLASS__, 'order_withdrawal_request_form' ) );
 
 		/**
 		 * Mark the return page as a Woo page to make sure default form styles work.
@@ -413,7 +426,7 @@ class Package {
 		add_filter(
 			'is_woocommerce',
 			function ( $is_woocommerce ) {
-				if ( wc_post_content_has_shortcode( 'order_withdrawal_request_form' ) ) {
+				if ( wc_post_content_has_shortcode( 'eu_owb_order_withdrawal_request_form' ) ) {
 					$is_woocommerce = true;
 				}
 

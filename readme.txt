@@ -38,7 +38,7 @@ After the installation, go to WooCommerce > Settings > Advanced > Withdrawals to
 == Frequently Asked Questions ==
 
 = How to render the withdrawal form? =
-Place the shortcode [order_withdrawal_request_form] anywhere on a page to render the form.
+Place the shortcode [eu_owb_order_withdrawal_request_form] anywhere on a page to render the form.
 
 = Need help? =
 

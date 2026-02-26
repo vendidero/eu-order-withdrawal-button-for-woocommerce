@@ -31,7 +31,7 @@ class Install {
 			'key'     => 'withdraw_from_contract',
 			'name'    => _x( 'withdraw-from-contract', 'owb-page-slug', 'eu-order-withdrawal-button-for-woocommerce' ),
 			'title'   => _x( 'Withdraw from contract', 'owb-page-title', 'eu-order-withdrawal-button-for-woocommerce' ),
-			'content' => '[order_withdrawal_request_form]',
+			'content' => '[eu_owb_order_withdrawal_request_form]',
 			'status'  => 'draft',
 		);
 
