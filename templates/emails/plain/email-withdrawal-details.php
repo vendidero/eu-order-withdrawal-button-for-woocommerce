@@ -27,7 +27,7 @@ do_action( 'eu_owb_woocommerce_withdrawal_before_order_table', $order, $sent_to_
 ?>
 
 <?php echo wp_kses_post( _x( 'Order', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ) ); ?>: <?php echo wp_kses_post( $order->get_order_number() ) . "\n"; ?>
-<?php echo wp_kses_post( _x( 'Received on', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ) ); ?>: <?php echo wp_kses_post( wc_format_datetime( eu_owb_get_order_withdrawal_date( $order ) ) ) . "\n"; ?>
+<?php echo wp_kses_post( _x( 'Received on', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ) ); ?>: <?php echo esc_html( sprintf( _x( '%1$s at %2$s', 'owb-datetime', 'eu-order-withdrawal-button-for-woocommerce' ), wc_format_datetime( eu_owb_get_order_withdrawal_date( $order ) ), wc_format_datetime( eu_owb_get_order_withdrawal_date( $order ), wc_time_format() ) ) ) . "\n"; ?>
 <?php echo wp_kses_post( _x( 'E-Mail', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ) ); ?>: <?php echo wp_kses_post( eu_owb_get_order_withdrawal_email( $order ) ) . "\n"; ?>
 
 <?php
