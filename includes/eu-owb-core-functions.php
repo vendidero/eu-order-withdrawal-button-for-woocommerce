@@ -779,5 +779,7 @@ function eu_owb_get_email_withdrawal_items( $order, $args = array() ) {
 		)
 	);
 
-	return apply_filters( 'eu_owb_woocommerce_email_withdrawal_items_table', ob_get_clean(), $order );
+	$html = ob_get_clean();
+
+	return apply_filters( 'eu_owb_woocommerce_email_withdrawal_items_table', $html, $order );
 }

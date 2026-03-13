@@ -28,11 +28,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 		$is_visible = $product && $product->is_visible();
 		$item_sku   = $product ? $product->get_sku() : '';
 
-		/** This filter is documented in templates/myaccount/shipment/shipment-details-item.php */
-		$product_permalink = apply_filters( 'woocommerce_shiptastic_shipment_item_permalink', $is_visible ? $product->get_permalink() : '', $item, $order );
+		$product_permalink = apply_filters( 'eu_owb_woocommerce_order_item_product_permalink', $is_visible ? $product->get_permalink() : '', $item, $order );
 
-		/** This filter is documented in templates/emails/email-shipment-items.php */
-		echo apply_filters( 'woocommerce_shiptastic_shipment_item_name', ( $product_permalink ? sprintf( '<a href="%s">%s</a>', esc_url( $product_permalink ), $item->get_name() ) : $item->get_name() ) . ( ! empty( $item_sku ) ? ' <small>(' . esc_html( $item_sku ) . ')</small>' : '' ), $item, $is_visible ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+		echo wp_kses_post( apply_filters( 'eu_owb_woocommerce_order_item_name', ( $product_permalink ? sprintf( '<a href="%s">%s</a>', esc_url( $product_permalink ), $item->get_name() ) : $item->get_name() ) . ( ! empty( $item_sku ) ? ' <small>(' . esc_html( $item_sku ) . ')</small>' : '' ), $item, $is_visible ) );
 		?>
 	</td>
 

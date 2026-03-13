@@ -32,7 +32,7 @@ class Package {
 
 		add_action( 'init', array( __CLASS__, 'register_shortcodes' ) );
 		add_action( 'init', array( __CLASS__, 'check_version' ), 10 );
-        add_action( 'init', array( __CLASS__, 'register_plugin_links' ) );
+		add_action( 'init', array( __CLASS__, 'register_plugin_links' ) );
 		add_filter( 'woocommerce_locate_template', array( __CLASS__, 'filter_templates' ), 50, 3 );
 		add_filter( 'wc_order_statuses', array( __CLASS__, 'register_order_statuses' ) );
 		add_action( 'init', array( __CLASS__, 'register_post_statuses' ) );
@@ -53,17 +53,20 @@ class Package {
 		add_filter( 'woocommerce_menu_order_count', array( __CLASS__, 'menu_order_count' ) );
 	}
 
-    public static function register_plugin_links() {
-        if ( self::is_standalone() && ! self::is_integration() ) {
-            add_filter( 'plugin_action_links_' . plugin_basename( trailingslashit( self::get_path() ) . 'eu-order-withdrawal-button-for-woocommerce.php' ), array( __CLASS__, 'plugin_action_links' ) );
-        }
-    }
+	public static function register_plugin_links() {
+		if ( self::is_standalone() && ! self::is_integration() ) {
+			add_filter( 'plugin_action_links_' . plugin_basename( trailingslashit( self::get_path() ) . 'eu-order-withdrawal-button-for-woocommerce.php' ), array( __CLASS__, 'plugin_action_links' ) );
+		}
+	}
 
-    public static function plugin_action_links( $links ) {
-        return array_merge( array(
-            '<a href="' . esc_url( admin_url( 'admin.php?page=wc-settings&tab=advanced&section=owb' ) ) . '">' . _x( 'Settings', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ) . '</a>',
-        ), $links );
-    }
+	public static function plugin_action_links( $links ) {
+		return array_merge(
+			array(
+				'<a href="' . esc_url( admin_url( 'admin.php?page=wc-settings&tab=advanced&section=owb' ) ) . '">' . _x( 'Settings', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ) . '</a>',
+			),
+			$links
+		);
+	}
 
 	public static function menu_order_count( $count ) {
 		$count += wc_orders_count( 'pending-wdraw' );
@@ -532,7 +535,7 @@ class Package {
 			$type = 'info';
 		}
 
-		$logger->{$type}( $message, array( 'source' => 'wc-shiptastic' . ( ! empty( $source ) ? '-' . $source : '' ) ) );
+		$logger->{$type}( $message, array( 'source' => 'eu-owb-woocommerce' . ( ! empty( $source ) ? '-' . $source : '' ) ) );
 	}
 
 	public static function has_dependencies() {

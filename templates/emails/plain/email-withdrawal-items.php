@@ -55,7 +55,6 @@ foreach ( $items as $item_id => $item_data ) :
 			echo esc_html( '(#' . $sku . ")\n" );
 		}
 	} else {
-        // phpcs:disable WordPress.Security.EscapeOutput.OutputNotEscaped
 		/**
 		 * Email Order Item Name hook.
 		 *
@@ -67,7 +66,7 @@ foreach ( $items as $item_id => $item_data ) :
 		 */
 		echo wp_kses_post( apply_filters( 'woocommerce_order_item_name', $item->get_name(), $item, false ) );
 		if ( $show_sku && $sku ) {
-			echo ' (#' . $sku . ')';
+			echo esc_html( ' (#' . $sku . ')' );
 		}
 		/**
 		 * Email Order Item Quantity hook.
@@ -76,22 +75,22 @@ foreach ( $items as $item_id => $item_data ) :
 		 * @param int           $quantity Item quantity.
 		 * @param WC_Order_Item $item     Item object.
 		 */
-		echo ' X ' . apply_filters( 'eu_owb_woocommerce_withdrawal_item_quantity', $quantity, $item );
-        // phpcs:enable WordPress.Security.EscapeOutput.OutputNotEscaped
+		echo ' X ' . wp_kses_post( apply_filters( 'eu_owb_woocommerce_withdrawal_item_quantity', $quantity, $item ) );
 	}
 
 	// allow other plugins to add additional product information here.
 	do_action( 'woocommerce_order_item_meta_start', $item_id, $item, $order, $plain_text );
-    // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
-	echo wp_strip_all_tags(
-		wc_display_item_meta(
-			$item,
-			array(
-				'before'    => "\n- ",
-				'separator' => "\n- ",
-				'after'     => '',
-				'echo'      => false,
-				'autop'     => false,
+	echo wp_kses_post(
+		wp_strip_all_tags(
+			wc_display_item_meta(
+				$item,
+				array(
+					'before'    => "\n- ",
+					'separator' => "\n- ",
+					'after'     => '',
+					'echo'      => false,
+					'autop'     => false,
+				)
 			)
 		)
 	);

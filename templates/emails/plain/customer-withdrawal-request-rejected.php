@@ -34,7 +34,7 @@ echo sprintf( esc_html_x( 'We’ve wanted to let you know that your withdrawal r
 
 if ( ! empty( $reason ) ) {
 	echo "----------\n\n";
-	echo wp_strip_all_tags( wptexturize( $reason ) ) . "\n\n"; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+	echo wp_kses_post( wp_strip_all_tags( wptexturize( $reason ) ) ) . "\n\n";
 	echo "----------\n\n";
 }
 

@@ -116,7 +116,6 @@ foreach ( $items as $item_id => $item_data ) :
 							 * @since 2.3.0
 							 */
 							do_action( 'woocommerce_order_item_meta_end', $item_id, $item, $order, $plain_text );
-
 							?>
 						</td>
 					</tr>

@@ -2,6 +2,8 @@
 
 namespace Vendidero\OrderWithdrawalButton;
 
+defined( 'ABSPATH' ) || exit;
+
 /**
  * WC_Ajax class.
  */
@@ -30,7 +32,6 @@ class Ajax {
 		);
 
 		foreach ( $ajax_events as $ajax_event ) {
-			add_action( 'wp_ajax_eu_owb_woocommerce_' . $ajax_event, array( __CLASS__, 'suppress_errors' ), 5 );
 			add_action( 'wp_ajax_eu_owb_woocommerce_' . $ajax_event, array( __CLASS__, $ajax_event ) );
 
 			if ( in_array( $ajax_event, $ajax_nopriv_events, true ) ) {
@@ -38,17 +39,6 @@ class Ajax {
 				add_action( 'wc_ajax_eu_owb_woocommerce_' . $ajax_event, array( __CLASS__, $ajax_event ) );
 			}
 		}
-	}
-
-	public static function suppress_errors() {
-		/**
-		 * Turn off display_errors during AJAX events to prevent malformed JSON.
-		 */
-		if ( ! WP_DEBUG || ( WP_DEBUG && ! WP_DEBUG_DISPLAY ) ) {
-			@ini_set( 'display_errors', 0 ); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged, WordPress.PHP.IniSet.display_errors_Disallowed, Squiz.PHP.DiscouragedFunctions.Discouraged
-		}
-
-		$GLOBALS['wpdb']->hide_errors();
 	}
 
 	public static function confirm_withdrawal_request() {
