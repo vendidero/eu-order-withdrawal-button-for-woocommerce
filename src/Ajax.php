@@ -92,6 +92,7 @@ class Ajax {
 		$is_valid_request = false;
 		$email            = '';
 		$was_guest        = true;
+		$meta             = array();
 
 		if ( is_user_logged_in() || ! empty( $order_key ) ) {
 			$order_key    = ! empty( $_POST['order_key'] ) ? wp_unslash( $_POST['order_key'] ) : ''; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
@@ -135,6 +136,12 @@ class Ajax {
 							);
 						}
 					}
+
+					do_action( 'eu_owb_woocommerce_process_order_withdrawal_customer_request', $order, $items, $error );
+
+					if ( eu_owb_wp_error_has_errors( $error ) ) {
+						wp_send_json_error( $error, 500 );
+					}
 				}
 			}
 		} else {
@@ -167,6 +174,12 @@ class Ajax {
 			}
 
 			$is_valid_request = true;
+
+			do_action( 'eu_owb_woocommerce_process_order_withdrawal_guest_request', $order, $error );
+
+			if ( eu_owb_wp_error_has_errors( $error ) ) {
+				wp_send_json_error( $error, 500 );
+			}
 		}
 
 		if ( ! $is_valid_request ) {
@@ -179,7 +192,8 @@ class Ajax {
 			wp_send_json_error( $error, 500 );
 		}
 
-		$result = eu_owb_create_order_withdrawal_request( $order, $email, $items, $was_guest );
+		$meta   = apply_filters( 'eu_owb_woocommerce_order_withdrawal_request_additional_meta', $meta, $order, $email, $items, $was_guest );
+		$result = eu_owb_create_order_withdrawal_request( $order, $email, $items, $was_guest, $meta );
 
 		if ( is_wp_error( $result ) ) {
 			wp_send_json_error( $error, 500 );

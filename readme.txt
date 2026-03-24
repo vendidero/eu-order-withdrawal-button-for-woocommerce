@@ -2,9 +2,9 @@
 Contributors: vendidero, vdwoocommercesupport
 Tags: woocommerce, withdrawal, cancellation, EU, compliance
 Requires at least: 5.4
-Tested up to: 6.9
+Tested up to: 7.0
 WC requires at least: 3.9
-WC tested up to: 10.5
+WC tested up to: 10.6
 Stable tag: 1.0.0
 Requires PHP: 7.4
 License: GPLv3
@@ -33,12 +33,19 @@ With the help of this little plugin you may easily allow your customers to submi
 = Automatic Installation =
 
 We recommend installing EU Order Withdrawal Button for WooCommerce through the WordPress backend. Please install WooCommerce before installing the plugin.
-After the installation, go to WooCommerce > Settings > Advanced > Withdrawals to manage your settings.
+After the installation, go to WooCommerce > Settings > Advanced > Withdrawals to manage your settings. During installation, the plugin creates a withdrawal page
+containing the shortcode as a draft. After testing the withdrawal process, make sure to publish that page so that your customers can access it too.
 
 == Frequently Asked Questions ==
 
 = How to render the withdrawal form? =
 Place the shortcode [eu_owb_order_withdrawal_request_form] anywhere on a page to render the form.
+
+= How to embed the button within my shop? =
+You may either use the option to embed the button directly within your footer or you may use your theme's options, e.g. a footer menu, to link the withdrawal page.
+
+= The embedded button does not show =
+Make sure that you've published your withdrawal page (which by default is created as a draft during installation). The embedded button does only show on shop-related pages.
 
 = Need help? =
 

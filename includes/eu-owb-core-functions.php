@@ -176,8 +176,56 @@ function eu_owb_get_withdrawal_page_permalink() {
 	return apply_filters( 'eu_owb_woocommerce_withdrawal_page_permalink', $link );
 }
 
+function eu_owb_get_withdrawal_button_text() {
+	$text = _x( 'Withdraw from contract', 'owb', 'eu-order-withdrawal-button-for-woocommerce' );
+
+	return apply_filters( 'eu_owb_woocommerce_withdrawal_button_text', $text );
+}
+
 function eu_owb_get_withdrawal_page_id() {
 	return apply_filters( 'eu_owb_woocommerce_withdrawal_page_id', wc_get_page_id( 'withdraw_from_contract' ) );
+}
+
+function eu_owb_get_element_class_name( $element ) {
+	if ( function_exists( 'wc_wp_theme_get_element_class_name' ) ) {
+		return wc_wp_theme_get_element_class_name( $element );
+	} elseif ( function_exists( 'wp_theme_get_element_class_name' ) ) {
+		return wp_theme_get_element_class_name( $element );
+	}
+
+	return '';
+}
+
+/**
+ * @param WP_Error $error
+ *
+ * @return bool
+ */
+function eu_owb_wp_error_has_errors( $error ) {
+	if ( is_callable( array( $error, 'has_errors' ) ) ) {
+		return $error->has_errors();
+	} else {
+		$errors = $error->errors;
+
+		return ( ! empty( $errors ) ? true : false );
+	}
+}
+
+function eu_owb_has_public_withdrawal_page() {
+	$is_public = eu_owb_get_withdrawal_page_is_published() || ( eu_owb_get_withdrawal_page_id() <= 0 && eu_owb_get_withdrawal_page_permalink() );
+
+	return apply_filters( 'eu_owb_woocommerce_withdrawal_page_is_public', $is_public );
+}
+
+function eu_owb_get_withdrawal_page_is_published() {
+	$page_id      = eu_owb_get_withdrawal_page_id();
+	$is_published = false;
+
+	if ( $page_id > 0 ) {
+		$is_published = 'publish' === get_post_status( $page_id );
+	}
+
+	return $is_published;
 }
 
 function eu_owb_get_contact_support_url() {
@@ -395,7 +443,7 @@ function eu_owb_get_withdrawal_order_items( $order ) {
  *
  * @return WP_Error|true
  */
-function eu_owb_create_order_withdrawal_request( $order, $email, $items = array(), $as_guest = true ) {
+function eu_owb_create_order_withdrawal_request( $order, $email, $items = array(), $as_guest = true, $meta = array() ) {
 	$error = new \WP_Error();
 
 	if ( ! is_a( $order, 'WC_Order' ) ) {
@@ -489,9 +537,13 @@ function eu_owb_create_order_withdrawal_request( $order, $email, $items = array(
 		$order_note .= '.';
 	}
 
+	foreach ( $meta as $meta_key => $meta_value ) {
+		$order->update_meta_data( "_withdrawal_{$meta_key}", $meta_value );
+	}
+
 	$order->update_status( 'wc-pending-wdraw', $order_note );
 
-	do_action( 'eu_owb_woocommerce_withdrawal_request_created', $order, $items, $is_full_withdrawal, $is_update );
+	do_action( 'eu_owb_woocommerce_withdrawal_request_created', $order, $items, $is_full_withdrawal, $is_update, $meta );
 
 	WC()->mailer()->emails['EU_OWB_Email_Customer_Withdrawal_Request_Received']->trigger( $order->get_id(), $order );
 	WC()->mailer()->emails['EU_OWB_Email_New_Withdrawal_Request']->trigger( $order->get_id(), $order );
@@ -608,6 +660,12 @@ function eu_owb_product_matches_type( $product, $types ) {
 
 					if ( $reflection->isPublic() ) {
 						$matches_type = $product->{$getter}() === true;
+					}
+				} else {
+					$meta_key = "_{$type}";
+
+					if ( $product->meta_exists( $meta_key ) ) {
+						$matches_type = wc_string_to_bool( $product->get_meta( $meta_key ) );
 					}
 				}
 			} catch ( Exception $e ) { // phpcs:ignore Generic.CodeAnalysis.EmptyStatement.DetectedCatch

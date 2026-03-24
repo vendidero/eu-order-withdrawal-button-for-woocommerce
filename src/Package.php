@@ -25,6 +25,8 @@ class Package {
 
 		self::init_hooks();
 		self::includes();
+
+		do_action( 'eu_owb_woocommerce_init' );
 	}
 
 	protected static function init_hooks() {
@@ -51,6 +53,26 @@ class Package {
 		add_action( 'woocommerce_after_order_itemmeta', array( __CLASS__, 'display_custom_itemmeta' ), 10, 3 );
 		add_action( 'woocommerce_process_shop_order_meta', array( __CLASS__, 'process_withdrawal_rejection' ), 45 );
 		add_filter( 'woocommerce_menu_order_count', array( __CLASS__, 'menu_order_count' ) );
+
+		add_action( 'init', array( __CLASS__, 'maybe_embed' ) );
+	}
+
+	public static function maybe_embed() {
+		if ( 'yes' === self::get_setting( 'enable_embed', 'yes' ) && eu_owb_has_public_withdrawal_page() ) {
+			$footer_hook = self::get_theme_footer_hook();
+
+			add_action( $footer_hook['hook'], array( __CLASS__, 'print_button' ), (int) $footer_hook['priority'] );
+		}
+	}
+
+	public static function is_shop_request() {
+		return apply_filters( 'eu_owb_woocommerce_is_shop_request', ( function_exists( 'is_woocommerce' ) && ( is_woocommerce() || is_cart() || is_checkout() || is_account_page() ) ) );
+	}
+
+	public static function print_button() {
+		if ( self::is_shop_request() ) {
+			wc_get_template( 'global/order-withdrawal-button.php' );
+		}
 	}
 
 	public static function register_plugin_links() {
@@ -82,6 +104,37 @@ class Package {
 				eu_owb_order_reject_withdrawal_request( $order, $reason );
 			}
 		}
+	}
+
+	protected static function get_theme_footer_hook() {
+		$custom_hooks = array(
+			'astra'      => array(
+				'hook'     => 'astra_footer',
+				'priority' => 50,
+			),
+			'storefront' => array(
+				'hook'     => 'storefront_footer',
+				'priority' => 20,
+			),
+		);
+
+		$theme = function_exists( 'wp_get_theme' ) ? wp_get_theme() : '';
+		$hook  = array(
+			'hook'     => 'wp_footer',
+			'priority' => 5,
+		);
+
+		if ( array_key_exists( $theme->get_template(), $custom_hooks ) ) {
+			$hook = wp_parse_args(
+				$custom_hooks[ $theme->get_template() ],
+				array(
+					'hook'     => '',
+					'priority' => 10,
+				)
+			);
+		}
+
+		return $hook;
 	}
 
 	public static function display_custom_itemmeta( $item_id, $item, $product ) {
@@ -546,17 +599,6 @@ class Package {
 		Ajax::init();
 
 		include_once self::get_path() . '/includes/eu-owb-core-functions.php';
-	}
-
-	private static function is_frontend_request() {
-		return ( ! is_admin() || defined( 'DOING_AJAX' ) ) && ! defined( 'DOING_CRON' );
-	}
-
-	/**
-	 * Function used to Init WooCommerce Template Functions - This makes them pluggable by plugins and themes.
-	 */
-	public static function include_template_functions() {
-		include_once self::get_path() . '/includes/wc-stc-template-functions.php';
 	}
 
 	/**

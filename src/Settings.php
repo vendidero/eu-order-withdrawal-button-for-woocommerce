@@ -16,11 +16,11 @@ class Settings {
 	}
 
 	public static function get_description() {
-		return sprintf( _x( 'Configure your EU-compliant order withdrawal button.', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ) );
+		return sprintf( _x( 'Configure your EU-compliant order withdrawal button. <a href="https://vendidero.com/implementing-legally-compliant-eu-order-withdrawal-button-in-woocommerce" target="_blank">Need help?</a>', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ) );
 	}
 
 	public static function get_help_url() {
-		return '';
+		return 'https://vendidero.com/implementing-legally-compliant-eu-order-withdrawal-button-in-woocommerce';
 	}
 
 	public static function get_settings( $current_section = '' ) {
@@ -44,6 +44,15 @@ class Settings {
 				'default'  => '',
 				'css'      => 'min-width:300px;',
 				'autoload' => false,
+			),
+
+			array(
+				'title'    => _x( 'Embed in footer', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ),
+				'desc'     => _x( 'Embed the withdrawal button directly in the footer. Disable this option if you plan to embed the page manually.', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ),
+				'id'       => 'eu_owb_woocommerce_enable_embed',
+				'type'     => Package::is_integration() ? 'gzd_toggle' : 'checkbox',
+				'default'  => 'yes',
+				'autoload' => true,
 			),
 
 			array(

@@ -36,7 +36,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 			<div class="clear"></div>
 
-			<?php do_action( 'eu_owb_woocommerce_return_request_form' ); ?>
+			<?php do_action( 'eu_owb_woocommerce_return_request_guest_form' ); ?>
 		<?php else : ?>
 			<?php if ( ! $order ) : ?>
 				<div class="form-row form-row-full">
@@ -66,8 +66,12 @@ if ( ! defined( 'ABSPATH' ) ) {
 				endif;
 				?>
 			</div>
+
+			<?php do_action( 'eu_owb_woocommerce_return_request_customer_form', $order ); ?>
 		<?php endif; ?>
 	</div>
+
+	<?php do_action( 'eu_owb_woocommerce_return_request_form_before_submit', $order ); ?>
 
 	<div class="form-row">
 		<?php wp_nonce_field( 'eu_owb_woocommerce_order_withdrawal_request' ); ?>
@@ -75,5 +79,5 @@ if ( ! defined( 'ABSPATH' ) ) {
 	</div>
 
 	<div class="clear"></div>
-	<?php do_action( 'eu_owb_woocommerce_return_request_form_en' ); ?>
+	<?php do_action( 'eu_owb_woocommerce_return_request_form_end', $order ); ?>
 </form>
