@@ -520,15 +520,6 @@ class Package {
 
 		// Admin styles for WC pages only.
 		if ( in_array( $screen_id, self::get_screen_ids(), true ) ) {
-			wp_localize_script(
-				'eu-owb-woocommerce-admin-order',
-				'eu_owb_woocommerce_admin_order_params',
-				array(
-					'i18n_reject_withdrawal'  => _x( 'Do you really want to reject the withdrawal?', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ),
-					'i18n_confirm_withdrawal' => _x( 'Are you sure to confirm the withdrawal?', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ),
-				)
-			);
-
 			wp_enqueue_style( 'eu-owb-woocommerce-admin-styles' );
 			wp_enqueue_script( 'eu-owb-woocommerce-admin-order' );
 		}
@@ -568,7 +559,7 @@ class Package {
 			<p><?php echo wp_kses_post( sprintf( _x( 'Received on %1$s @ %2$s by <a href="mailto:%3$s">%3$s</a>', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ), wc_format_datetime( eu_owb_get_order_withdrawal_date_received( $order, $request ) ), wc_format_datetime( eu_owb_get_order_withdrawal_date_received( $order, $request ), get_option( 'time_format' ) ), eu_owb_get_order_withdrawal_email( $order, $request ) ) ); ?></p>
 
 			<div class="eu-owb-order-withdrawal-request-buttons">
-				<a href="<?php echo esc_url( self::get_edit_withdrawal_url( $order->get_id() ) ); ?>" class="eu-owb-confirm-withdrawal-request button button-primary tips <?php echo esc_attr( $confirmation_needs_confirm ); ?>" data-confirm="<?php echo esc_attr_x( 'Are you sure to confirm the withdrawal request?', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ); ?>" data-tip="<?php echo esc_attr_x( 'Confirm the withdrawal request to the customer.', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ); ?>"><?php echo esc_html_x( 'Confirm withdrawal request', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ); ?></a>
+				<a href="<?php echo esc_url( self::get_edit_withdrawal_url( $order->get_id() ) ); ?>" class="eu-owb-confirm-withdrawal-request button button-primary tips <?php echo esc_attr( $confirmation_needs_confirm ); ?>" data-confirm="<?php echo esc_attr_x( 'Are you sure to confirm the withdrawal request?', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ); ?>" data-tip="<?php echo esc_attr_x( 'Confirms the withdrawal request to the customer.', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ); ?>"><?php echo esc_html_x( 'Confirm withdrawal request', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ); ?></a>
 				<a href="#" class="eu-owb-reject-withdrawal-request-start tips" data-tip="<?php echo esc_attr_x( 'Reject the withdrawal request by providing a reason for the rejection.', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ); ?>"><?php echo esc_html_x( 'Reject request', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ); ?></a>
 			</div>
 			<div class="eu-owb-reject-withdrawal-request-form hidden">

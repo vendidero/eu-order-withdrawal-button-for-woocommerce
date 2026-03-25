@@ -6,11 +6,8 @@ window.eu_owb.admin_order = window.eu_owb.admin_order || {};
      * Core
      */
     eu_owb.admin_order = {
-        params: {},
-
         init: function () {
             var self  = eu_owb.admin_order;
-            self.params        = eu_owb_woocommerce_admin_order_params;
 
             $( document ).on( 'click', '.eu-owb-reject-withdrawal-request-start', self.onRejectRequest );
             $( document ).on( 'click', '.eu-owb-woocommerce-needs-confirmation', self.onConfirm );
