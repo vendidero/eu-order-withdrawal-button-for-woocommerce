@@ -18,7 +18,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 $email_improvements_enabled = \Vendidero\OrderWithdrawalButton\Package::has_email_improvements_enabled();
-$withdrawal_date            = eu_owb_get_order_withdrawal_date( $order );
+$withdrawal_date            = eu_owb_get_order_withdrawal_date_received( $order );
 
 /*
  * @hooked WC_Emails::email_header() Output the email header

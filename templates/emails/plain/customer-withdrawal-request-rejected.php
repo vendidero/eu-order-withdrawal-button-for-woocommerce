@@ -30,7 +30,7 @@ if ( ! empty( $order->get_billing_first_name() ) ) {
 	echo sprintf( esc_html_x( 'Hi,', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ) ) . "\n\n";
 }
 
-echo sprintf( esc_html_x( 'We’ve wanted to let you know that your withdrawal request has been rejected.', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ), esc_html( $order->get_order_number() ) ) . "\n\n";
+echo sprintf( esc_html_x( 'We regret to inform you that your withdrawal request has been rejected.', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ), esc_html( $order->get_order_number() ) ) . "\n\n";
 
 if ( ! empty( $reason ) ) {
 	echo "----------\n\n";

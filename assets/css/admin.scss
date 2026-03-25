@@ -35,12 +35,18 @@
   }
 }
 
-.eu-owb-order-item-has-withdrawal {
-  border: 1px solid #a00;
-  padding: 2px;
+.withdrawal-quantity {
+  background: #eba3a3;
+  border: none;
+  padding: 4px;
   color: #a00;
   border-radius: 4px;
   font-size: .92em !important;
+
+  &.withdrawal-requested {
+    background: #f8dda7;
+    color: #573b00;
+  }
 }
 
 .order-status {
@@ -51,5 +57,78 @@
   &.status-pending-wdraw, &.status-partial-withdrawal {
     background: #f8dda7;
     color: #573b00;
+  }
+}
+
+#eu-owb-order-withdrawals {
+  display: none;
+}
+
+#eu-owb-order-withdrawals:has(.withdrawals) {
+  display: block;
+}
+
+#eu-owb-order-withdrawals {
+  .inside {
+    margin: 0;
+    padding: 0;
+  }
+
+  ul.withdrawals {
+    li {
+      padding: 0 10px;
+
+      p.meta {
+        padding: 10px;
+        color: #999;
+        margin: 0;
+        font-size: 11px;
+
+        a.delete_withdrawal {
+          color: #a00;
+        }
+      }
+
+      .withdrawal-content {
+        padding: 10px;
+        position: relative;
+        background: #d7cad2;
+
+        p {
+          margin-top: 0;
+          padding: 0;
+          word-wrap: break-word;
+
+          &:last-child {
+            margin-bottom: 0;
+          }
+
+          &.withdrawal-items {
+            font-size: 12px;
+          }
+        }
+
+        &::after {
+          border-color: #d7cad2 transparent;
+          content: "";
+          display: block;
+          position: absolute;
+          bottom: -10px;
+          left: 20px;
+          width: 0;
+          height: 0;
+          border-width: 10px 10px 0 0;
+          border-style: solid;
+        }
+      }
+
+      &.withdrawal-confirmed .withdrawal-content {
+        background: #cdd7ca;
+
+        &::after {
+          border-color: #cdd7ca transparent;
+        }
+      }
+    }
   }
 }

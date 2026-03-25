@@ -45,7 +45,7 @@ class Package {
 
 		add_action( 'admin_enqueue_scripts', array( __CLASS__, 'admin_scripts' ) );
 		add_action( 'admin_init', array( __CLASS__, 'admin_init' ) );
-		add_action( 'woocommerce_admin_order_data_after_shipping_address', array( __CLASS__, 'order_withdrawal_details' ), 100, 1 );
+		add_action( 'woocommerce_admin_order_data_after_shipping_address', array( __CLASS__, 'order_withdrawal_request_details' ), 100, 1 );
 		add_filter( 'woocommerce_admin_order_actions', array( __CLASS__, 'admin_order_actions' ), 1500, 2 );
 		add_filter( 'woocommerce_get_sections_advanced', array( __CLASS__, 'register_sections' ) );
 		add_filter( 'woocommerce_get_settings_advanced', array( __CLASS__, 'register_settings' ), 10, 2 );
@@ -53,8 +53,158 @@ class Package {
 		add_action( 'woocommerce_after_order_itemmeta', array( __CLASS__, 'display_custom_itemmeta' ), 10, 3 );
 		add_action( 'woocommerce_process_shop_order_meta', array( __CLASS__, 'process_withdrawal_rejection' ), 45 );
 		add_filter( 'woocommerce_menu_order_count', array( __CLASS__, 'menu_order_count' ) );
+		add_action( 'woocommerce_order_refunded', array( __CLASS__, 'maybe_link_refund' ), 10, 2 );
+		add_action( 'woocommerce_refund_deleted', array( __CLASS__, 'maybe_remove_refund' ), 10, 2 );
+		add_action( 'add_meta_boxes', array( __CLASS__, 'add_order_meta_box' ), 35 );
 
 		add_action( 'init', array( __CLASS__, 'maybe_embed' ) );
+	}
+
+	public static function add_order_meta_box() {
+		$order_type_screen_ids = array_merge( wc_get_order_types( 'order-meta-boxes' ), array( self::get_order_screen_id() ) );
+
+		// Orders.
+		foreach ( $order_type_screen_ids as $type ) {
+			add_meta_box(
+				'eu-owb-order-withdrawals',
+				_x( 'Withdrawals', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ),
+				function ( $post ) {
+					global $theorder;
+
+					if ( is_callable( array( '\Automattic\WooCommerce\Utilities\OrderUtil', 'init_theorder_object' ) ) ) {
+						\Automattic\WooCommerce\Utilities\OrderUtil::init_theorder_object( $post );
+					} else {
+						global $post, $thepostid;
+
+						if ( ! is_object( $theorder ) ) {
+							if ( ! is_int( $thepostid ) ) {
+								$thepostid = $post->ID;
+							}
+
+							$theorder = wc_get_order( $thepostid );
+						}
+					}
+
+					if ( $theorder ) {
+						$order       = $theorder;
+						$withdrawals = eu_owb_get_order_withdrawals( $order );
+
+						if ( ! empty( $withdrawals ) ) : ?>
+							<ul class="withdrawals">
+							<?php
+							foreach ( $withdrawals as $withdrawal ) :
+								$delete_url = add_query_arg(
+									array(
+										'withdrawal_id' => $withdrawal['id'],
+										'order_id'      => $order->get_id(),
+									),
+									wp_nonce_url( admin_url( 'admin-post.php?action=eu_owb_woocommerce_delete_withdrawal' ), 'eu_owb_woocommerce_delete_withdrawal' )
+								);
+
+								$item_list = array();
+								foreach ( eu_owb_get_withdrawal_order_items( $order, $withdrawal ) as $item_data ) {
+									$item_list[] = sprintf( _x( '%1$s x %2$s', 'item-quantity', 'eu-order-withdrawal-button-for-woocommerce' ), wp_kses_post( $item_data['item']->get_name() ), esc_html( eu_owb_get_stock_amount( $item_data['quantity'] ) ) );
+								}
+								?>
+								<li class="withdrawal withdrawal-<?php echo esc_attr( $withdrawal['status'] ); ?>">
+									<div class="withdrawal-content">
+										<p><?php echo wp_kses_post( sprintf( _x( '%1$s received on %2$s @ %3$s by <a href="mailto:%3$s">%4$s</a>', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ), ( 'yes' === $withdrawal['is_partial'] ) ? esc_html_x( 'Partial withdrawal', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ) : esc_html_x( 'Full withdrawal', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ), wc_format_datetime( eu_owb_get_order_withdrawal_date_received( $order, $withdrawal ) ), wc_format_datetime( eu_owb_get_order_withdrawal_date_received( $order, $withdrawal ), get_option( 'time_format' ) ), eu_owb_get_order_withdrawal_email( $order, $withdrawal ) ) ); ?></p>
+										<p class="withdrawal-items"><?php echo implode( ', ', $item_list ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></p>
+
+										<?php if ( 'rejected' === $withdrawal['status'] && ! empty( $withdrawal['rejection_reason'] ) ) : ?>
+											<?php echo wp_kses_post( wpautop( make_clickable( $withdrawal['rejection_reason'] ) ) ); ?>
+										<?php endif; ?>
+									</div>
+
+									<p class="meta">
+										<?php if ( 'confirmed' === $withdrawal['status'] && ! empty( $withdrawal['date_confirmed'] ) ) : ?>
+											<abbr class="confirmed-date" title=""><?php echo esc_html( sprintf( _x( 'Confirmed %1$s at %2$s', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ), wc_format_datetime( eu_owb_get_order_withdrawal_date_confirmed( $order, $withdrawal ) ), wc_format_datetime( eu_owb_get_order_withdrawal_date_confirmed( $order, $withdrawal ), get_option( 'time_format' ) ) ) ); ?></abbr>
+										<?php elseif ( 'rejected' === $withdrawal['status'] ) : ?>
+											<abbr class="rejected-date" title=""><?php echo esc_html( sprintf( _x( 'Rejected %1$s at %2$s', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ), wc_format_datetime( eu_owb_get_order_withdrawal_date_rejected( $order, $withdrawal ) ), wc_format_datetime( eu_owb_get_order_withdrawal_date_rejected( $order, $withdrawal ), get_option( 'time_format' ) ) ) ); ?></abbr>
+										<?php endif; ?>
+
+										<a href="<?php echo esc_url( $delete_url ); ?>" class="delete_withdrawal eu-owb-woocommerce-needs-confirmation" data-confirm="<?php echo esc_attr_x( 'Do you really want to delete the withdrawal? This action cannot be undone.', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ); ?>" role="button"><?php echo esc_html_x( 'Delete withdrawal', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ); ?></a>
+									</p>
+								</li>
+							<?php endforeach; ?>
+							</ul>
+							<?php
+						endif;
+					}
+				},
+				$type,
+				'side',
+				'default'
+			);
+		}
+	}
+
+	public static function maybe_remove_refund( $refund_id, $order_id ) {
+		if ( $order = wc_get_order( $order_id ) ) {
+			if ( eu_owb_order_has_confirmed_withdrawals( $order ) ) {
+				foreach ( $order->get_items() as $item ) {
+					if ( $item->meta_exists( '_withdrawn_quantity_refunds' ) ) {
+						$refund_ids = array_filter( (array) $item->get_meta( '_withdrawn_quantity_refunds', true ) );
+
+						if ( array_key_exists( $refund_id, $refund_ids ) ) {
+							$refunded_qty  = eu_owb_get_stock_amount( $refund_ids[ $refund_id ] );
+							$withdrawn_qty = eu_owb_get_stock_amount( $item->meta_exists( '_withdrawn_quantity', true ) ? $item->get_meta( '_withdrawn_quantity', true ) : 0 );
+							$new_qty       = $withdrawn_qty + $refunded_qty;
+
+							unset( $refund_ids[ $refund_id ] );
+
+							if ( empty( $refund_ids ) ) {
+								$item->delete_meta_data( '_withdrawn_quantity_refunds' );
+							} else {
+								$item->update_meta_data( '_withdrawn_quantity_refunds', $refund_ids );
+							}
+
+							if ( $new_qty <= 0 ) {
+								$item->delete_meta_data( '_withdrawn_quantity' );
+							} else {
+								$item->update_meta_data( '_withdrawn_quantity', eu_owb_get_stock_amount( $new_qty ) );
+							}
+
+							$item->save();
+						}
+					}
+				}
+			}
+		}
+	}
+
+	public static function maybe_link_refund( $order_id, $refund_id ) {
+		if ( $order = wc_get_order( $order_id ) ) {
+			if ( eu_owb_order_has_confirmed_withdrawals( $order ) ) {
+				if ( $refund = wc_get_order( $refund_id ) ) {
+					foreach ( $refund->get_items() as $item ) {
+						$original_item_id = absint( $item->get_meta( '_refunded_item_id' ) );
+						$refunded_qty     = $item->get_quantity() * - 1;
+
+						if ( $original_item = $order->get_item( $original_item_id ) ) {
+							$withdrawn_qty = eu_owb_get_stock_amount( $original_item->meta_exists( '_withdrawn_quantity' ) ? $original_item->get_meta( '_withdrawn_quantity' ) : 0 );
+
+							if ( $withdrawn_qty > 0 ) {
+								$refunded_qty             = min( $refunded_qty, $withdrawn_qty );
+								$withdrawn_qty            = $withdrawn_qty - $refunded_qty;
+								$withdrawn_qty            = max( $withdrawn_qty, 0 );
+								$refund_ids               = array_filter( (array) $original_item->get_meta( '_withdrawn_quantity_refunds' ) );
+								$refund_ids[ $refund_id ] = $refunded_qty;
+
+								if ( $withdrawn_qty <= 0 ) {
+									$original_item->delete_meta_data( '_withdrawn_quantity' );
+								} else {
+									$original_item->update_meta_data( '_withdrawn_quantity', eu_owb_get_stock_amount( $withdrawn_qty ) );
+								}
+
+								$original_item->update_meta_data( '_withdrawn_quantity_refunds', $refund_ids );
+								$original_item->save();
+							}
+						}
+					}
+				}
+			}
+		}
 	}
 
 	public static function maybe_embed() {
@@ -138,18 +288,17 @@ class Package {
 	}
 
 	public static function display_custom_itemmeta( $item_id, $item, $product ) {
-		$show_withdrawn_quantity = false;
-
-		if ( $order = $item->get_order() ) {
-			if ( eu_owb_order_has_withdrawal_status( $order ) ) {
-				$show_withdrawn_quantity = true;
-			}
+		if ( $item->meta_exists( '_withdrawn_quantity' ) ) {
+			$quantity_withdrawn = eu_owb_get_stock_amount( $item->get_meta( '_withdrawn_quantity', true ) );
+			?>
+			<mark class="withdrawal-quantity"><?php echo wp_kses_post( sprintf( _x( 'Withdrawn %1$sx', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ), $quantity_withdrawn ) ); ?></mark>
+			<?php
 		}
 
-		if ( $show_withdrawn_quantity && 'yes' === $item->get_meta( '_has_withdrawal' ) ) {
-			$quantity = (float) wc_format_decimal( $item->get_meta( '_withdrawn_quantity', true ) );
+		if ( $item->meta_exists( '_withdrawal_request_quantity' ) ) {
+			$quantity_withdrawn = eu_owb_get_stock_amount( $item->get_meta( '_withdrawal_request_quantity', true ) );
 			?>
-			<span class="eu-owb-order-item-has-withdrawal"><?php echo wp_kses_post( sprintf( _x( 'Withdrawn %1$sx', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ), $quantity ) ); ?></span>
+			<mark class="withdrawal-quantity withdrawal-requested"><?php echo wp_kses_post( sprintf( _x( 'Requested %1$sx', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ), $quantity_withdrawn ) ); ?></mark>
 			<?php
 		}
 	}
@@ -159,7 +308,10 @@ class Package {
 			$hidden_meta,
 			array(
 				'_withdrawn_quantity',
-				'_has_withdrawal',
+				'_withdrawn_quantity_refunded',
+				'_withdrawn_quantity_refund_ids',
+				'_withdrawn_quantities',
+				'_withdrawal_request_quantity',
 			)
 		);
 	}
@@ -231,7 +383,7 @@ class Package {
 			$is_same_recipient    = $order->get_billing_email() === eu_owb_get_order_withdrawal_email( $order );
 			$edit_withdrawal_link = eu_owb_get_edit_withdrawal_url( $order );
 
-			if ( ! eu_owb_order_is_partial_withdrawal( $order ) && ! empty( $edit_withdrawal_link ) && eu_owb_order_is_guest_withdrawal( $order ) && $is_same_recipient && eu_owb_order_supports_partial_withdrawal( $order ) ) {
+			if ( eu_owb_order_supports_partial_withdrawal( $order ) && ! eu_owb_order_has_partial_withdrawal_request( $order ) && ! empty( $edit_withdrawal_link ) && eu_owb_order_is_guest_withdrawal_request( $order ) && $is_same_recipient ) {
 				if ( $plain_text ) {
 					wc_get_template(
 						'emails/plain/email-withdrawal-edit-link.php',
@@ -293,7 +445,7 @@ class Package {
 				$order         = wc_get_order( $id );
 				$report_action = 'confirm_withdrawal_requests';
 
-				if ( $order && eu_owb_order_has_pending_withdrawal_request( $order ) ) {
+				if ( $order && eu_owb_order_has_withdrawal_request( $order ) ) {
 					$result = eu_owb_order_confirm_withdrawal_request( $order );
 
 					if ( $result ) {
@@ -389,7 +541,7 @@ class Package {
 	 * @return array
 	 */
 	public static function admin_order_actions( $actions, $order ) {
-		if ( eu_owb_order_has_pending_withdrawal_request( $order ) ) {
+		if ( eu_owb_order_has_withdrawal_request( $order ) ) {
 			$actions                               = array();
 			$actions['confirm_withdrawal_request'] = array(
 				'url'    => self::get_edit_withdrawal_url( $order->get_id() ),
@@ -401,38 +553,37 @@ class Package {
 		return $actions;
 	}
 
-	public static function order_withdrawal_details( $order ) {
-		if ( ! eu_owb_order_has_withdrawal_status( $order ) ) {
+	public static function order_withdrawal_request_details( $order ) {
+		if ( ! eu_owb_order_has_withdrawal_request( $order ) ) {
 			return;
 		}
 
+		$request                    = eu_owb_get_withdrawal_request( $order );
 		$confirmation_needs_confirm = apply_filters( 'eu_owb_woocommerce_withdrawal_confirmation_needs_confirm', true ) ? 'eu-owb-woocommerce-needs-confirmation' : '';
 		$rejection_needs_confirm    = apply_filters( 'eu_owb_woocommerce_withdrawal_rejection_needs_confirm', true ) ? 'eu-owb-woocommerce-needs-confirmation' : '';
 		?>
 		<div class="eu-owb-order-withdrawal-request">
-			<h3><?php echo ( eu_owb_order_is_partial_withdrawal( $order ) ) ? esc_html_x( 'Partial Withdrawal Request', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ) : esc_html_x( 'Full Withdrawal Request', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ); ?></h3>
+			<h3><?php echo ( 'yes' === $request['is_partial'] ) ? esc_html_x( 'Partial withdrawal request', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ) : esc_html_x( 'Full withdrawal request', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ); ?></h3>
 
-			<p><?php echo wp_kses_post( sprintf( _x( 'Received on %1$s @ %2$s by <a href="mailto:%3$s">%3$s</a>', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ), wc_format_datetime( eu_owb_get_order_withdrawal_date( $order ) ), wc_format_datetime( eu_owb_get_order_withdrawal_date( $order ), get_option( 'time_format' ) ), eu_owb_get_order_withdrawal_email( $order ) ) ); ?></p>
+			<p><?php echo wp_kses_post( sprintf( _x( 'Received on %1$s @ %2$s by <a href="mailto:%3$s">%3$s</a>', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ), wc_format_datetime( eu_owb_get_order_withdrawal_date_received( $order, $request ) ), wc_format_datetime( eu_owb_get_order_withdrawal_date_received( $order, $request ), get_option( 'time_format' ) ), eu_owb_get_order_withdrawal_email( $order, $request ) ) ); ?></p>
 
-			<?php if ( eu_owb_order_has_pending_withdrawal_request( $order ) ) : ?>
-				<div class="eu-owb-order-withdrawal-request-buttons">
-					<a href="<?php echo esc_url( self::get_edit_withdrawal_url( $order->get_id() ) ); ?>" class="eu-owb-confirm-withdrawal-request button button-primary tips <?php echo esc_attr( $confirmation_needs_confirm ); ?>" data-confirm="<?php echo esc_attr_x( 'Are you sure to confirm the withdrawal request?', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ); ?>" data-tip="<?php echo esc_attr_x( 'Confirm the withdrawal request to the customer.', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ); ?>"><?php echo esc_html_x( 'Confirm withdrawal request', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ); ?></a>
-					<a href="#" class="eu-owb-reject-withdrawal-request-start tips" data-tip="<?php echo esc_attr_x( 'Reject the withdrawal request by providing a reason for the rejection.', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ); ?>"><?php echo esc_html_x( 'Reject request', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ); ?></a>
-				</div>
-				<div class="eu-owb-reject-withdrawal-request-form hidden">
-					<p class="form-field form-field-wide">
-						<label for="eu_owb_reject_reason"><?php echo esc_html_x( 'Reason', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ); ?>:</label>
-						<textarea rows="5" cols="40" name="eu_owb_reject_reason" tabindex="6" id="eu_owb_reject_reason" placeholder="<?php echo esc_attr_x( 'Describe why you\'ve rejected the withdrawal request.', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ); ?>"></textarea>
-					</p>
+			<div class="eu-owb-order-withdrawal-request-buttons">
+				<a href="<?php echo esc_url( self::get_edit_withdrawal_url( $order->get_id() ) ); ?>" class="eu-owb-confirm-withdrawal-request button button-primary tips <?php echo esc_attr( $confirmation_needs_confirm ); ?>" data-confirm="<?php echo esc_attr_x( 'Are you sure to confirm the withdrawal request?', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ); ?>" data-tip="<?php echo esc_attr_x( 'Confirm the withdrawal request to the customer.', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ); ?>"><?php echo esc_html_x( 'Confirm withdrawal request', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ); ?></a>
+				<a href="#" class="eu-owb-reject-withdrawal-request-start tips" data-tip="<?php echo esc_attr_x( 'Reject the withdrawal request by providing a reason for the rejection.', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ); ?>"><?php echo esc_html_x( 'Reject request', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ); ?></a>
+			</div>
+			<div class="eu-owb-reject-withdrawal-request-form hidden">
+				<p class="form-field form-field-wide">
+					<label for="eu_owb_reject_reason"><?php echo esc_html_x( 'Reason', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ); ?>:</label>
+					<textarea rows="5" cols="40" name="eu_owb_reject_reason" tabindex="6" id="eu_owb_reject_reason" placeholder="<?php echo esc_attr_x( 'Describe why you\'ve rejected the withdrawal request.', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ); ?>"></textarea>
+				</p>
 
-					<input type="hidden" name="eu_owb_reject_order_id" value="<?php echo esc_attr( $order->get_id() ); ?>" />
-					<?php wp_nonce_field( 'eu_owb_reject_withdrawal_request', 'eu_owb_reject_withdrawal_request_nonce' ); ?>
+				<input type="hidden" name="eu_owb_reject_order_id" value="<?php echo esc_attr( $order->get_id() ); ?>" />
+				<?php wp_nonce_field( 'eu_owb_reject_withdrawal_request', 'eu_owb_reject_withdrawal_request_nonce' ); ?>
 
-					<p>
-						<button type="submit" class="button button-primary <?php echo esc_attr( $rejection_needs_confirm ); ?>" data-confirm="<?php echo esc_attr_x( 'Are you sure to reject the withdrawal request?', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ); ?>" id="eu-owb-reject-withdrawal-request-submit" name="reject_withdrawal_request" value="<?php echo esc_attr_x( 'Reject withdrawal request', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ); ?>"><?php echo esc_html_x( 'Reject withdrawal request', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ); ?></button>
-					</p>
-				</div>
-			<?php endif; ?>
+				<p>
+					<button type="submit" class="button button-primary <?php echo esc_attr( $rejection_needs_confirm ); ?>" data-confirm="<?php echo esc_attr_x( 'Are you sure to reject the withdrawal request?', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ); ?>" id="eu-owb-reject-withdrawal-request-submit" name="reject_withdrawal_request" value="<?php echo esc_attr_x( 'Reject withdrawal request', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ); ?>"><?php echo esc_html_x( 'Reject withdrawal request', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ); ?></button>
+				</p>
+			</div>
 		</div>
 		<?php
 	}

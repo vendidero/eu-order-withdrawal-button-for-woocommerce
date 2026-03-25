@@ -38,7 +38,7 @@ do_action( 'eu_owb_woocommerce_withdrawal_before_order_table', $order, $sent_to_
 
 <ul style="margin-bottom: <?php echo $email_improvements_enabled ? '24px' : '40px'; ?>;">
 	<li><strong><?php echo wp_kses_post( _x( 'Order', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ) ); ?>:</strong> <span class="text"><?php echo wp_kses_post( $formatted_order_number ); ?></span></li>
-	<li><strong><?php echo wp_kses_post( _x( 'Received on', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ) ); ?>:</strong> <span class="text"><?php echo esc_html( sprintf( _x( '%1$s at %2$s', 'owb-datetime', 'eu-order-withdrawal-button-for-woocommerce' ), wc_format_datetime( eu_owb_get_order_withdrawal_date( $order ) ), wc_format_datetime( eu_owb_get_order_withdrawal_date( $order ), wc_time_format() ) ) ); ?></span></li>
+	<li><strong><?php echo wp_kses_post( _x( 'Received on', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ) ); ?>:</strong> <span class="text"><?php echo esc_html( sprintf( _x( '%1$s at %2$s', 'owb-datetime', 'eu-order-withdrawal-button-for-woocommerce' ), wc_format_datetime( eu_owb_get_order_withdrawal_date_received( $order ) ), wc_format_datetime( eu_owb_get_order_withdrawal_date_received( $order ), wc_time_format() ) ) ); ?></span></li>
 	<li><strong><?php echo wp_kses_post( _x( 'E-Mail', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ) ); ?>:</strong> <span class="text"><?php echo wp_kses_post( eu_owb_get_order_withdrawal_email( $order ) ); ?></span></li>
 </ul>
 

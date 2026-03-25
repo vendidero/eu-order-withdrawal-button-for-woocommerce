@@ -146,12 +146,12 @@ if ( ! class_exists( 'EU_OWB_Email_Customer_Withdrawal_Request_Received', false 
 			if ( $order ) {
 				$this->object             = $order;
 				$this->recipient          = eu_owb_get_order_withdrawal_email( $this->object );
-				$this->partial_withdrawal = is_bool( $is_partial_withdrawal ) ? $is_partial_withdrawal : eu_owb_order_is_partial_withdrawal( $this->object );
-				$this->is_update          = is_bool( $is_update ) ? $is_update : eu_owb_order_is_withdrawal_update( $this->object );
+				$this->partial_withdrawal = is_bool( $is_partial_withdrawal ) ? $is_partial_withdrawal : eu_owb_order_has_partial_withdrawal_request( $this->object );
+				$this->is_update          = is_bool( $is_update ) ? $is_update : eu_owb_order_is_withdrawal_request_update( $this->object );
 
 				$this->placeholders['{order_number}']    = $this->object->get_order_number();
 				$this->placeholders['{order_date}']      = wc_format_datetime( $this->object->get_date_created() );
-				$this->placeholders['{withdrawal_date}'] = eu_owb_get_order_withdrawal_date( $this->object ) ? wc_format_datetime( eu_owb_get_order_withdrawal_date( $this->object ) ) : '';
+				$this->placeholders['{withdrawal_date}'] = eu_owb_get_order_withdrawal_date_received( $this->object ) ? wc_format_datetime( eu_owb_get_order_withdrawal_date_received( $this->object ) ) : '';
 			}
 
 			$this->id = $this->partial_withdrawal ? 'customer_partial_withdrawal_request_received' : 'customer_withdrawal_request_received';

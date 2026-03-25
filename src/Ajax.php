@@ -39,6 +39,60 @@ class Ajax {
 				add_action( 'wc_ajax_eu_owb_woocommerce_' . $ajax_event, array( __CLASS__, $ajax_event ) );
 			}
 		}
+
+		add_action( 'admin_post_eu_owb_woocommerce_delete_withdrawal', array( __CLASS__, 'delete_withdrawal' ) );
+	}
+
+	public static function delete_withdrawal() {
+		check_ajax_referer( 'eu_owb_woocommerce_delete_withdrawal' );
+
+		if ( ! current_user_can( 'edit_shop_orders' ) ) {
+			wp_die();
+		}
+
+		$order_id      = isset( $_GET['order_id'] ) ? absint( wp_unslash( $_GET['order_id'] ) ) : 0;
+		$withdrawal_id = isset( $_GET['withdrawal_id'] ) ? wc_clean( wp_unslash( $_GET['withdrawal_id'] ) ) : '';
+
+		if ( $order = wc_get_order( $order_id ) ) {
+			if ( $withdrawal = eu_owb_get_order_withdrawal( $order_id, $withdrawal_id ) ) {
+				$withdrawals = eu_owb_get_order_withdrawals( $order_id );
+				$has_deleted = false;
+
+				foreach ( $withdrawals as $k => $org_withdrawal ) {
+					if ( $withdrawal_id === $org_withdrawal['id'] ) {
+						unset( $withdrawals[ $k ] );
+						$has_deleted = true;
+						break;
+					}
+				}
+
+				if ( $has_deleted ) {
+					foreach ( $withdrawal['items'] as $item_id => $quantity ) {
+						if ( $item = $order->get_item( $item_id ) ) {
+							$quantities = array_filter( (array) $item->get_meta( '_withdrawn_quantities', true ) );
+
+							if ( array_key_exists( $withdrawal_id, $quantities ) ) {
+								unset( $quantities[ $withdrawal_id ] );
+								$total_quantity = array_sum( $quantities );
+
+								$item->update_meta_data( '_withdrawn_quantities', $quantities );
+								$item->update_meta_data( '_withdrawn_quantity', $total_quantity );
+								$item->save();
+							}
+						}
+					}
+
+					$order->update_meta_data( '_is_full_withdrawal', 'no' );
+					$order->update_meta_data( '_withdrawals', $withdrawals );
+					$order->save();
+
+					do_action( 'eu_owb_woocommerce_deleted_withdrawal', $withdrawal, $order );
+				}
+			}
+
+			wp_safe_redirect( esc_url_raw( $order->get_edit_order_url() ) );
+			exit;
+		}
 	}
 
 	public static function confirm_withdrawal_request() {
@@ -162,14 +216,14 @@ class Ajax {
 			$order_id = eu_owb_find_order( $order_number, $email );
 
 			if ( empty( $order_id ) ) {
-				$error->add( 'not_found', sprintf( _x( 'Sorry, we were unable to find an order based on the information you provided. Please try again - if the issue persists, please <a href="%s">contact our support</a> to help.', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ), esc_url( eu_owb_get_contact_support_url() ) ) );
+				$error->add( 'not_found', sprintf( _x( 'Sorry, we were unable to find an order based on the information you provided. Please try again - if the issue persists, please <a href="%s">contact support</a> for help.', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ), esc_url( eu_owb_get_contact_support_url() ) ) );
 				wp_send_json_error( $error, 500 );
 			}
 
 			$order = wc_get_order( $order_id );
 
 			if ( ! $order ) {
-				$error->add( 'not_found', sprintf( _x( 'Sorry, we were unable to find an order based on the information you provided. Please try again - if the issue persists, please <a href="%s">contact our support</a> to help.', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ), esc_url( eu_owb_get_contact_support_url() ) ) );
+				$error->add( 'not_found', sprintf( _x( 'Sorry, we were unable to find an order based on the information you provided. Please try again - if the issue persists, please <a href="%s">contact support</a> for help.', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ), esc_url( eu_owb_get_contact_support_url() ) ) );
 				wp_send_json_error( $error, 500 );
 			}
 
@@ -183,12 +237,12 @@ class Ajax {
 		}
 
 		if ( ! $is_valid_request ) {
-			$error->add( 'not_found', sprintf( _x( 'Sorry, we were unable to find an order based on the information you provided. Please try again - if the issue persists, please <a href="%s">contact our support</a> to help.', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ), esc_url( eu_owb_get_contact_support_url() ) ) );
+			$error->add( 'not_found', sprintf( _x( 'Sorry, we were unable to find an order based on the information you provided. Please try again - if the issue persists, please <a href="%s">contact support</a> for help.', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ), esc_url( eu_owb_get_contact_support_url() ) ) );
 			wp_send_json_error( $error, 500 );
 		}
 
 		if ( ! eu_owb_order_is_withdrawable( $order ) ) {
-			$error->add( 'not_withdrawable', sprintf( _x( 'Sorry, but this order cannot be withdrawn. <a href="%s">Contact our support</a> to help.', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ), esc_url( eu_owb_get_contact_support_url() ) ) );
+			$error->add( 'not_withdrawable', sprintf( _x( 'Sorry, but this order cannot be withdrawn. <a href="%s">Contact support</a> for help.', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ), esc_url( eu_owb_get_contact_support_url() ) ) );
 			wp_send_json_error( $error, 500 );
 		}
 

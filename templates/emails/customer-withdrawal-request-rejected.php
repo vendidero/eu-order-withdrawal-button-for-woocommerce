@@ -36,7 +36,7 @@ if ( ! empty( $order->get_billing_first_name() ) ) {
 ?>
 </p>
 
-<p><?php printf( esc_html_x( 'We’ve wanted to let you know that your withdrawal request has been rejected.', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ), esc_html( $order->get_order_number() ) ); ?></p>
+<p><?php printf( esc_html_x( 'We regret to inform you that your withdrawal request has been rejected.', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ), esc_html( $order->get_order_number() ) ); ?></p>
 
 <?php if ( ! empty( $reason ) ) : ?>
 	<?php echo wp_kses_post( wpautop( make_clickable( $reason ) ) ); ?>
