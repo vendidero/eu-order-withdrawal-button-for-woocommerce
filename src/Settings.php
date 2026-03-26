@@ -77,8 +77,9 @@ class Settings {
 			),
 
 			array(
-				'title'    => _x( 'Days', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ),
-				'desc'     => _x( 'Choose the number of days, starting with the orders\' completed date, to accept withdrawals for orders.', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ),
+				'title'    => _x( 'Withdrawal period', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ),
+				'desc_tip' => _x( 'Choose the number of days, starting with the orders\' completed date, to accept withdrawals for orders.', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ),
+				'desc'     => _x( 'Days', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ),
 				'css'      => 'max-width: 60px;',
 				'type'     => 'number',
 				'id'       => 'eu_owb_woocommerce_number_of_days_to_withdraw',
