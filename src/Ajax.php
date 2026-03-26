@@ -75,8 +75,14 @@ class Ajax {
 								unset( $quantities[ $withdrawal_id ] );
 								$total_quantity = array_sum( $quantities );
 
-								$item->update_meta_data( '_withdrawn_quantities', $quantities );
-								$item->update_meta_data( '_withdrawn_quantity', $total_quantity );
+								if ( empty( $total_quantity ) ) {
+									$item->delete_meta_data( '_withdrawn_quantities' );
+									$item->delete_meta_data( '_withdrawn_quantity' );
+								} else {
+									$item->update_meta_data( '_withdrawn_quantities', $quantities );
+									$item->update_meta_data( '_withdrawn_quantity', $total_quantity );
+								}
+
 								$item->save();
 							}
 						}
