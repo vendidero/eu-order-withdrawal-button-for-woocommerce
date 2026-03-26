@@ -639,8 +639,8 @@ function eu_owb_get_order_withdrawal_default_args() {
 		'meta'             => array(),
 		'rejection_reason' => '',
 		'is_partial'       => 'no',
-		'as_guest'         => 'no',
 		'is_update'        => 'no',
+		'is_guest'         => 'yes',
 		'has_refund'       => 'no',
 		'refund_id'        => 0,
 	);
@@ -718,7 +718,7 @@ function eu_owb_create_order_withdrawal_request( $order, $email, $items = array(
 			'request_email'   => $email,
 			'meta'            => $meta,
 			'original_status' => $order->get_status(),
-			'as_guest'        => wc_bool_to_string( $as_guest ),
+			'is_guest'        => wc_bool_to_string( $as_guest ),
 			'is_partial'      => wc_bool_to_string( ! $is_full_withdrawal ),
 		),
 		eu_owb_get_order_withdrawal_default_args()
@@ -729,6 +729,12 @@ function eu_owb_create_order_withdrawal_request( $order, $email, $items = array(
 		$new_withdrawal['id']              = $last['id'];
 		$new_withdrawal['is_update']       = 'yes';
 		$new_withdrawal['original_status'] = $last['original_status'];
+
+		foreach ( $last['items'] as $item_id => $item ) {
+			if ( $item = $order->get_item( $item_id, false ) ) {
+				$item->delete_meta_data( '_withdrawal_request_quantity' );
+			}
+		}
 	}
 
 	foreach ( $items as $item_id => $item_data ) {
@@ -1048,6 +1054,29 @@ function eu_owb_find_order( $order_id, $email ) {
 		);
 
 		remove_filter( 'woocommerce_order_data_store_cpt_get_orders_query', $custom_query_filter, 10 );
+	}
+
+	/**
+	 * As a fallback query orders where billing email differs from customer email
+	 */
+	if ( empty( $orders ) ) {
+		if ( $user = get_user_by( 'email', $email ) ) {
+			$customer_id = $user->ID;
+
+			if ( ! empty( $customer_id ) ) {
+				$orders = wc_get_orders(
+					apply_filters(
+						'eu_owb_woocommerce_find_order_customer_query_args',
+						array(
+							'customer_id' => $customer_id,
+							'post__in'    => array( $order_id_parsed ),
+							'limit'       => 1,
+							'return'      => 'ids',
+						)
+					)
+				);
+			}
+		}
 	}
 
 	if ( ! empty( $orders ) ) {

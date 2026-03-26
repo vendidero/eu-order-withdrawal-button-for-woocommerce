@@ -153,9 +153,9 @@ class Ajax {
 		$email            = '';
 		$was_guest        = true;
 		$meta             = array();
+		$order_key        = ! empty( $_POST['order_key'] ) ? wp_unslash( $_POST['order_key'] ) : ''; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
 
 		if ( is_user_logged_in() || ! empty( $order_key ) ) {
-			$order_key    = ! empty( $_POST['order_key'] ) ? wp_unslash( $_POST['order_key'] ) : ''; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
 			$order_id     = ! empty( $_POST['order_id'] ) ? absint( wp_unslash( $_POST['order_id'] ) ) : false;
 			$select_items = isset( $_POST['manually_select_items'] ) ? true : false;
 			$item_ids     = $select_items && ! empty( $_POST['items'] ) ? array_map( 'absint', (array) wp_unslash( $_POST['items'] ) ) : array();

@@ -11,7 +11,7 @@
  * the readme will list any important changes.
  *
  * @package Vendidero/OrderWithdrawalButton/Templates
- * @version 1.0.0
+ * @version 1.0.1
  */
 if ( ! defined( 'ABSPATH' ) ) {
 	exit; // Exit if accessed directly.
@@ -25,13 +25,13 @@ if ( ! defined( 'ABSPATH' ) ) {
 	<div class="eu-owb-form-fields">
 		<?php if ( ! is_user_logged_in() && ! $order ) : ?>
 			<div class="form-row form-row-first">
-				<label for="order-withdrawal-request-email"><?php echo esc_html_x( 'Email', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ); ?>&nbsp;<span class="required">*</span></label>
-				<input type="text" class="input-text" name="email" id="order-withdrawal-request-email" autocomplete="email" />
+				<label for="order-withdrawal-request-order-number"><?php echo esc_html_x( 'Order number', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ); ?>&nbsp;<span class="required">*</span></label>
+				<input type="text" class="input-text" name="order_number" id="order-withdrawal-request-order-number" autocomplete="off" />
 			</div>
 
 			<div class="form-row form-row-last">
-				<label for="order-withdrawal-request-order-number"><?php echo esc_html_x( 'Order number', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ); ?>&nbsp;<span class="required">*</span></label>
-				<input type="text" class="input-text" name="order_number" id="order-withdrawal-request-order-number" autocomplete="off" />
+				<label for="order-withdrawal-request-email"><?php echo esc_html_x( 'Email', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ); ?>&nbsp;<span class="required">*</span></label>
+				<input type="text" class="input-text" name="email" id="order-withdrawal-request-email" autocomplete="email" />
 			</div>
 
 			<div class="clear"></div>

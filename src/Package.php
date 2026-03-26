@@ -13,7 +13,7 @@ class Package {
 	 *
 	 * @var string
 	 */
-	const VERSION = '1.0.0';
+	const VERSION = '1.0.1';
 
 	/**
 	 * Init the package
@@ -383,7 +383,11 @@ class Package {
 			$is_same_recipient    = $order->get_billing_email() === eu_owb_get_order_withdrawal_email( $order );
 			$edit_withdrawal_link = eu_owb_get_edit_withdrawal_url( $order );
 
-			if ( eu_owb_order_supports_partial_withdrawal( $order ) && ! eu_owb_order_has_partial_withdrawal_request( $order ) && ! empty( $edit_withdrawal_link ) && eu_owb_order_is_guest_withdrawal_request( $order ) && $is_same_recipient ) {
+			if ( ! $request = eu_owb_get_withdrawal_request( $order ) ) {
+				return;
+			}
+
+			if ( 'no' === $request['is_partial'] && ! empty( $edit_withdrawal_link ) && eu_owb_order_is_guest_withdrawal_request( $order ) && $is_same_recipient ) {
 				if ( $plain_text ) {
 					wc_get_template(
 						'emails/plain/email-withdrawal-edit-link.php',
