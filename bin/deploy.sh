@@ -5,7 +5,7 @@
 # Variables
 RELEASER_VERSION="1.4.3"
 RELEASER_PATH=$(pwd)
-BUILD_PATH="${RELEASER_PATH}/build"
+BUILD_PATH="${RELEASER_PATH}/release"
 PLUGIN_SLUG="eu-order-withdrawal-button-for-woocommerce"
 GITHUB_ORG="vendidero"
 IS_PRE_RELEASE=false
