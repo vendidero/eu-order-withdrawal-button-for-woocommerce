@@ -63,6 +63,7 @@ Bug reports may be filed via our [GitHub repository](https://github.com/vendider
 == Changelog ==
 
 = 1.0.2 =
+* Improvement: Inform guest customers about partial withdrawals within original form
 * Fix: HPOS order number search
 
 = 1.0.1 =
