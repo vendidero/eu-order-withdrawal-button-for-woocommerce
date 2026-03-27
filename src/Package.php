@@ -380,14 +380,15 @@ class Package {
 
 	public static function withdrawal_email_edit_link( $order, $sent_to_admin, $plain_text, $email ) {
 		if ( is_a( $email, 'EU_OWB_Email_Customer_Withdrawal_Request_Received' ) ) {
-			$is_same_recipient    = $order->get_billing_email() === eu_owb_get_order_withdrawal_email( $order );
 			$edit_withdrawal_link = eu_owb_get_edit_withdrawal_url( $order );
 
 			if ( ! $request = eu_owb_get_withdrawal_request( $order ) ) {
 				return;
 			}
 
-			if ( 'no' === $request['is_partial'] && ! empty( $edit_withdrawal_link ) && eu_owb_order_is_guest_withdrawal_request( $order ) && $is_same_recipient ) {
+			$embed_edit_withdrawal_link = apply_filters( 'eu_owb_woocommerce_email_embed_partial_withdrawal_link', ( 'no' === $request['is_partial'] && ! empty( $edit_withdrawal_link ) && eu_owb_order_supports_partial_withdrawal( $order ) && eu_owb_order_is_guest_withdrawal_request( $order ) ), $request, $order );
+
+			if ( $embed_edit_withdrawal_link ) {
 				if ( $plain_text ) {
 					wc_get_template(
 						'emails/plain/email-withdrawal-edit-link.php',
@@ -395,6 +396,7 @@ class Package {
 							'order'                => $order,
 							'sent_to_admin'        => $sent_to_admin,
 							'plain_text'           => $plain_text,
+							'withdrawal_request'   => $request,
 							'email'                => $email,
 							'edit_withdrawal_link' => $edit_withdrawal_link,
 						)
@@ -406,6 +408,7 @@ class Package {
 							'order'                => $order,
 							'sent_to_admin'        => $sent_to_admin,
 							'plain_text'           => $plain_text,
+							'withdrawal_request'   => $request,
 							'email'                => $email,
 							'edit_withdrawal_link' => $edit_withdrawal_link,
 						)

@@ -16,6 +16,52 @@ window.eu_owb.order_withdrawal = window.eu_owb.order_withdrawal || {};
             $( document ).on( 'change', '.order-withdrawal-request #order-withdrawal-request-order', self.onChangeOrder );
             $( document ).on( 'change', '.order-withdrawal-request #manually-select-items', self.onSelectItems );
             $( document ).on( 'change', '.order-withdrawal-request #select-all-items', self.selectAllItems );
+            $( document ).on( 'change', '.order-withdrawal-request #order-withdrawal-request-order-number, .order-withdrawal-request #order-withdrawal-request-email', self.onChangeInputs );
+        },
+
+        onChangeInputs: function() {
+            var self = eu_owb.order_withdrawal,
+                $form = $( this ).parents( 'form' ),
+                order = $form.find( '#order-withdrawal-request-order-number' ).val(),
+                email = $form.find( '#order-withdrawal-request-email' ).val(),
+                $partial = $form.find( '.order-supports-partial-withdrawal' ),
+                $mainButton = $form.find( '.button[type=submit]' ),
+                data = $form.serialize();
+
+            if ( $partial.length <= 0 ) {
+                return;
+            }
+
+            if ( order && email ) {
+                $form.addClass( 'loading' );
+                $form.find( ':input:not(.disabled):not([type=hidden])' ).prop( 'disabled', true );
+                $mainButton.prop( 'disabled', true ).addClass( 'loading' );
+
+                $.ajax( {
+                    type: 'POST',
+                    url: self.params.wc_ajax_url.toString().replace('%%endpoint%%', 'eu_owb_woocommerce_order_withdrawal_request_supports_partial'),
+                    data: data,
+                    dataType: 'json',
+                }).done( function ( response ) {
+                    $form.removeClass( 'loading' );
+                    $form.find( ':input:not(.disabled):not([type=hidden])' ).prop( 'disabled', false );
+                    $mainButton.prop( 'disabled', false ).removeClass( 'loading' );
+
+                    if ( true === response.data['supports_partial_withdrawal'] ) {
+                        $partial.removeClass( 'hidden' );
+                    } else {
+                        $partial.addClass( 'hidden' );
+                    }
+                }).fail( function ( xhr ) {
+                    $form.removeClass( 'loading' );
+                    $form.find( ':input:not(.disabled):not([type=hidden])' ).prop( 'disabled', false );
+                    $mainButton.prop( 'disabled', false ).removeClass( 'loading' );
+
+                    $partial.addClass( 'hidden' );
+                });
+            } else {
+                $partial.addClass( 'hidden' );
+            }
         },
 
         selectAllItems: function() {

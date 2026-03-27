@@ -23,12 +23,14 @@ class Ajax {
 		$ajax_events = array(
 			'order_withdrawal_request',
 			'order_withdrawal_request_select_order',
+			'order_withdrawal_request_supports_partial',
 			'confirm_withdrawal_request',
 		);
 
 		$ajax_nopriv_events = array(
 			'order_withdrawal_request',
 			'order_withdrawal_request_select_order',
+			'order_withdrawal_request_supports_partial',
 		);
 
 		foreach ( $ajax_events as $ajax_event ) {
@@ -143,6 +145,29 @@ class Ajax {
 		);
 	}
 
+	public static function order_withdrawal_request_supports_partial() {
+		check_ajax_referer( 'eu_owb_woocommerce_order_withdrawal_request' );
+
+		$email        = ! empty( $_POST['email'] ) ? sanitize_email( wp_unslash( $_POST['email'] ) ) : '';
+		$order_number = ! empty( $_POST['order_number'] ) ? wc_clean( wp_unslash( $_POST['order_number'] ) ) : '';
+
+		if ( ! empty( $order_number ) && ! empty( $email ) ) {
+			$order_id = eu_owb_find_order( $order_number, $email );
+
+			if ( ! empty( $order_id ) ) {
+				if ( eu_owb_order_supports_partial_withdrawal( $order_id ) ) {
+					wp_send_json_success(
+						array(
+							'supports_partial_withdrawal' => true,
+						)
+					);
+				}
+			}
+		}
+
+		wp_send_json_error( '', 500 );
+	}
+
 	public static function order_withdrawal_request() {
 		check_ajax_referer( 'eu_owb_woocommerce_order_withdrawal_request' );
 
@@ -207,6 +232,7 @@ class Ajax {
 		} else {
 			$email        = ! empty( $_POST['email'] ) ? sanitize_email( wp_unslash( $_POST['email'] ) ) : '';
 			$order_number = ! empty( $_POST['order_number'] ) ? wc_clean( wp_unslash( $_POST['order_number'] ) ) : '';
+			$select_items = isset( $_POST['manually_select_items'] ) ? true : false;
 
 			if ( empty( $order_number ) || empty( $email ) ) {
 				if ( ! empty( $_POST['email'] ) && ! empty( $order_number ) ) {
@@ -235,7 +261,9 @@ class Ajax {
 
 			$is_valid_request = true;
 
-			do_action( 'eu_owb_woocommerce_process_order_withdrawal_guest_request', $order, $error );
+			$meta['requested_partial'] = true === $select_items;
+
+			do_action( 'eu_owb_woocommerce_process_order_withdrawal_guest_request', $order, $error, $select_items );
 
 			if ( eu_owb_wp_error_has_errors( $error ) ) {
 				wp_send_json_error( $error, 500 );

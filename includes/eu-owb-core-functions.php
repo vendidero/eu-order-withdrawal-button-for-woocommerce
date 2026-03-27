@@ -764,7 +764,12 @@ function eu_owb_create_order_withdrawal_request( $order, $email, $items = array(
 		$order_note .= '.';
 	}
 
-	$order->update_status( 'wc-pending-wdraw', $order_note );
+	if ( $order->has_status( 'pending-wdraw' ) ) {
+		$order->add_order_note( $order_note );
+		$order->save();
+	} else {
+		$order->update_status( 'pending-wdraw', $order_note );
+	}
 
 	do_action( 'eu_owb_woocommerce_withdrawal_request_created', $order, $new_withdrawal );
 
