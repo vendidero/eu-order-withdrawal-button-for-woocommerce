@@ -209,7 +209,7 @@ class Ajax {
 			$order_number = ! empty( $_POST['order_number'] ) ? wc_clean( wp_unslash( $_POST['order_number'] ) ) : '';
 
 			if ( empty( $order_number ) || empty( $email ) ) {
-				if ( ! empty( $_POST['email'] ) ) {
+				if ( ! empty( $_POST['email'] ) && ! empty( $order_number ) ) {
 					$error->add( 'missing_fields', _x( 'Please check your email address.', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ) );
 				} else {
 					$error->add( 'missing_fields', _x( 'Please fill out all required fields.', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ) );
