@@ -117,6 +117,8 @@ window.eu_owb.order_withdrawal = window.eu_owb.order_withdrawal || {};
                 $form.removeClass( 'loading' );
                 $form.find( ':input:not(.disabled):not([type=hidden])' ).prop( 'disabled', false );
                 $mainButton.prop( 'disabled', false ).removeClass( 'loading' );
+                $form.find( '.eu-owb-order-item-select-wrapper' ).removeClass( 'loading' );
+                $form.find( '.eu-owb-order-item-select-wrapper' ).html( '' ).hide();
 
                 try {
                     var response = JSON.parse( xhr.responseText );
@@ -124,14 +126,16 @@ window.eu_owb.order_withdrawal = window.eu_owb.order_withdrawal || {};
                     response = {};
                 }
 
-                $.each( response.data, function( i, error ) {
-                    $noticeWrapper.append( '<p class="woocommerce-error notice">' + error.message + '</p>' );
-                });
+                if ( currentOrder ) {
+                    $.each( response.data, function( i, error ) {
+                        $noticeWrapper.append( '<p class="woocommerce-error notice">' + error.message + '</p>' );
+                    });
 
-                $noticeWrapper[0].scrollIntoView({
-                    behavior: "smooth",
-                    block: "start"
-                });
+                    $noticeWrapper[0].scrollIntoView({
+                        behavior: "smooth",
+                        block: "start"
+                    });
+                }
             });
 
             return false;
