@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Class EU_OWB_Email_New_Withdrawal_Request file.
  *
@@ -9,7 +10,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit; // Exit if accessed directly.
 }
 
-if ( ! class_exists( 'EU_OWB_Email_New_Withdrawal_Request', false ) ) :
+if ( ! class_exists( 'EU_OWB_Email_Deleted_Withdrawal_Request', false ) ) :
 
 	/**
 	 * Admin withdrawal request notification.
@@ -18,7 +19,7 @@ if ( ! class_exists( 'EU_OWB_Email_New_Withdrawal_Request', false ) ) :
 	 * @version  1.0.0
 	 * @extends  WC_Email
 	 */
-	class EU_OWB_Email_New_Withdrawal_Request extends WC_Email {
+	class EU_OWB_Email_Deleted_Withdrawal_Request extends WC_Email {
 
 		public $withdrawal_email = '';
 
@@ -28,12 +29,12 @@ if ( ! class_exists( 'EU_OWB_Email_New_Withdrawal_Request', false ) ) :
 		 * Constructor.
 		 */
 		public function __construct() {
-			$this->id          = 'new_withdrawal_request';
-			$this->title       = _x( 'New withdrawal request', 'owb', 'eu-order-withdrawal-button-for-woocommerce' );
-			$this->description = _x( 'New withdrawal request emails are sent to chosen recipient(s) when a customer submits a withdrawal request.', 'owb', 'eu-order-withdrawal-button-for-woocommerce' );
+			$this->id          = 'deleted_withdrawal_request';
+			$this->title       = _x( 'Withdrawal request deleted', 'owb', 'eu-order-withdrawal-button-for-woocommerce' );
+			$this->description = _x( 'Withdrawal request deleted emails are sent to chosen recipient(s) when a customer deletes a withdrawal request.', 'owb', 'eu-order-withdrawal-button-for-woocommerce' );
 
-			$this->template_html  = 'emails/admin-new-withdrawal-request.php';
-			$this->template_plain = 'emails/plain/admin-new-withdrawal-request.php';
+			$this->template_html  = 'emails/admin-deleted-withdrawal-request.php';
+			$this->template_plain = 'emails/plain/admin-deleted-withdrawal-request.php';
 			$this->template_base  = \Vendidero\OrderWithdrawalButton\Package::get_path() . '/templates/';
 
 			$this->placeholders = array(
@@ -57,7 +58,7 @@ if ( ! class_exists( 'EU_OWB_Email_New_Withdrawal_Request', false ) ) :
 		 * @return string
 		 */
 		public function get_default_subject() {
-			return _x( '[{site_title}]: New withdrawal request for #{order_number}', 'owb', 'eu-order-withdrawal-button-for-woocommerce' );
+			return _x( '[{site_title}]: Withdrawal request for #{order_number} deleted', 'owb', 'eu-order-withdrawal-button-for-woocommerce' );
 		}
 
 		/**
@@ -66,15 +67,16 @@ if ( ! class_exists( 'EU_OWB_Email_New_Withdrawal_Request', false ) ) :
 		 * @return string
 		 */
 		public function get_default_heading() {
-			return _x( 'New withdrawal request: #{order_number}', 'owb', 'eu-order-withdrawal-button-for-woocommerce' );
+			return _x( 'Withdrawal request deleted: #{order_number}', 'owb', 'eu-order-withdrawal-button-for-woocommerce' );
 		}
 
 		/**
 		 * Trigger.
 		 *
 		 * @param int|WC_Order $order_id Order ID.
+		 * @param array $request
 		 */
-		public function trigger( $order_id, $order = false ) {
+		public function trigger( $order_id, $request, $order = false ) {
 			$this->setup_locale();
 
 			if ( $order_id && ! is_a( $order, 'WC_Order' ) ) {
@@ -83,8 +85,8 @@ if ( ! class_exists( 'EU_OWB_Email_New_Withdrawal_Request', false ) ) :
 
 			if ( $order ) {
 				$this->object           = $order;
-				$this->withdrawal_email = eu_owb_get_order_withdrawal_email( $this->object );
-				$this->withdrawal       = eu_owb_get_withdrawal_request( $this->object );
+				$this->withdrawal       = $request;
+				$this->withdrawal_email = eu_owb_get_order_withdrawal_email( $this->object, $this->withdrawal );
 
 				$this->placeholders['{order_number}']     = $this->object->get_order_number();
 				$this->placeholders['{order_date}']       = wc_format_datetime( $this->object->get_date_created() );
@@ -190,4 +192,4 @@ if ( ! class_exists( 'EU_OWB_Email_New_Withdrawal_Request', false ) ) :
 
 endif;
 
-return new EU_OWB_Email_New_Withdrawal_Request();
+return new EU_OWB_Email_Deleted_Withdrawal_Request();

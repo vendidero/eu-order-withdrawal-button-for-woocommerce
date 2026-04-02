@@ -1,8 +1,8 @@
 <?php
 /**
- * Admin new withdrawal request email
+ * Admin deleted withdrawal request email
  *
- * This template can be overridden by copying it to yourtheme/woocommerce/emails/admin-new-withdrawal-request.php.
+ * This template can be overridden by copying it to yourtheme/woocommerce/emails/admin-deleted-withdrawal-request.php.
  *
  * HOWEVER, on occasion EU OWB will need to update template files and you
  * (the theme developer) will need to copy the new files to your theme to
@@ -21,7 +21,7 @@ echo "=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=\n";
 echo esc_html( wp_strip_all_tags( $email_heading ) );
 echo "\n=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=\n\n";
 
-echo sprintf( esc_html_x( 'You’ve received a new withdrawal request for order #%s:', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ), esc_html( $order->get_order_number() ) ) . "\n\n";
+echo sprintf( esc_html_x( 'A withdrawal request to order #%s has been deleted:', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ), esc_html( $order->get_order_number() ) ) . "\n\n";
 
 do_action( 'eu_owb_woocommerce_withdrawal_request_details', $order, $sent_to_admin, $plain_text, $email, $withdrawal );
 

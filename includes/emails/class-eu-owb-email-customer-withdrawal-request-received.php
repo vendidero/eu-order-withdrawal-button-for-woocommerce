@@ -28,6 +28,8 @@ if ( ! class_exists( 'EU_OWB_Email_Customer_Withdrawal_Request_Received', false 
 		 */
 		public $partial_withdrawal;
 
+		public $withdrawal;
+
 		/**
 		 * Is this an update to a withdrawal request?
 		 *
@@ -146,6 +148,7 @@ if ( ! class_exists( 'EU_OWB_Email_Customer_Withdrawal_Request_Received', false 
 			if ( $order ) {
 				$this->object             = $order;
 				$this->recipient          = eu_owb_get_order_withdrawal_email( $this->object );
+				$this->withdrawal         = eu_owb_get_withdrawal_request( $this->object );
 				$this->partial_withdrawal = is_bool( $is_partial_withdrawal ) ? $is_partial_withdrawal : eu_owb_order_has_partial_withdrawal_request( $this->object );
 				$this->is_update          = is_bool( $is_update ) ? $is_update : eu_owb_order_is_withdrawal_request_update( $this->object );
 
@@ -189,6 +192,7 @@ if ( ! class_exists( 'EU_OWB_Email_Customer_Withdrawal_Request_Received', false 
 				array(
 					'order'              => $this->object,
 					'partial_withdrawal' => $this->partial_withdrawal,
+					'withdrawal'         => $this->withdrawal,
 					'is_update'          => $this->is_update,
 					'email_heading'      => $this->get_heading(),
 					'additional_content' => $this->get_additional_content(),
@@ -210,6 +214,7 @@ if ( ! class_exists( 'EU_OWB_Email_Customer_Withdrawal_Request_Received', false 
 				array(
 					'order'              => $this->object,
 					'partial_withdrawal' => $this->partial_withdrawal,
+					'withdrawal'         => $this->withdrawal,
 					'is_update'          => $this->is_update,
 					'email_heading'      => $this->get_heading(),
 					'additional_content' => $this->get_additional_content(),

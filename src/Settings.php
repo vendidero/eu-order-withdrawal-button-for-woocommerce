@@ -88,6 +88,15 @@ class Settings {
 			),
 
 			array(
+				'title'    => _x( 'Unverified requests', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ),
+				'desc'     => _x( 'Separately list unverified withdrawal requests.', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ) . '<div class="eu-owb-settings-additional-desc">' . sprintf( _x( 'For some requests, the email address differs from the original stored within the order. Make sure these requests are listed under <a href="%1$s">unverified requests</a> and are not automatically set to the pending withdrawal request status.', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ), esc_url( get_admin_url( null, 'admin.php?page=wc-orders&unverified_withdrawals=yes' ) ) ) . '</div>',
+				'id'       => 'eu_owb_woocommerce_separately_store_unverified_withdrawal_requests',
+				'type'     => Package::is_integration() ? 'gzd_toggle' : 'checkbox',
+				'default'  => 'yes',
+				'autoload' => false,
+			),
+
+			array(
 				'type' => 'sectionend',
 				'id'   => 'owb_options',
 			),

@@ -11,7 +11,7 @@
  * the readme will list any important changes.
  *
  * @package Vendidero/OrderWithdrawalButton/Templates
- * @version 1.0.0
+ * @version 2.0.0
  */
 defined( 'ABSPATH' ) || exit;
 
@@ -28,9 +28,9 @@ do_action( 'woocommerce_email_header', $email_heading, $email ); ?>
 
 <?php
 
-do_action( 'eu_owb_woocommerce_withdrawal_request_details', $order, $sent_to_admin, $plain_text, $email );
+do_action( 'eu_owb_woocommerce_withdrawal_request_details', $order, $sent_to_admin, $plain_text, $email, $withdrawal );
 
-do_action( 'eu_owb_woocommerce_withdrawal_request_meta', $order, $sent_to_admin, $plain_text, $email );
+do_action( 'eu_owb_woocommerce_withdrawal_request_meta', $order, $sent_to_admin, $plain_text, $email, $withdrawal );
 
 /**
  * Show user-defined additional content - this is set in each email's settings.

@@ -11,7 +11,7 @@
  * the readme will list any important changes.
  *
  * @package Vendidero/OrderWithdrawalButton/Templates
- * @version 1.0.0
+ * @version 2.0.0
  */
 
 defined( 'ABSPATH' ) || exit;
@@ -23,6 +23,7 @@ $heading_class              = $email_improvements_enabled ? 'email-order-detail-
 $order_table_class          = $email_improvements_enabled ? 'email-order-details email-withdrawal-details' : '';
 $order_total_text_align     = $email_improvements_enabled ? 'right' : 'left';
 $order_quantity_text_align  = $email_improvements_enabled ? 'right' : 'left';
+$verified_notice            = eu_owb_order_withdrawal_email_is_verified( $order, $withdrawal ) ? esc_html_x( 'verified', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ) : esc_html_x( 'unknown', 'owb', 'eu-order-withdrawal-button-for-woocommerce' );
 
 if ( $sent_to_admin ) {
 	$formatted_order_number = '<a class="link" href="' . esc_url( $order->get_edit_order_url() ) . '">' . esc_html( $order->get_order_number() ) . '</a>';
@@ -30,7 +31,7 @@ if ( $sent_to_admin ) {
 	$formatted_order_number = esc_html( $order->get_order_number() );
 }
 
-do_action( 'eu_owb_woocommerce_withdrawal_before_order_table', $order, $sent_to_admin, $plain_text, $email ); ?>
+do_action( 'eu_owb_woocommerce_withdrawal_before_order_table', $order, $sent_to_admin, $plain_text, $email, $withdrawal ); ?>
 
 <h2 class="<?php echo esc_attr( $heading_class ); ?>">
 	<?php echo wp_kses_post( _x( 'Withdrawal summary', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ) ); ?>
@@ -38,9 +39,14 @@ do_action( 'eu_owb_woocommerce_withdrawal_before_order_table', $order, $sent_to_
 
 <ul style="margin-bottom: <?php echo $email_improvements_enabled ? '24px' : '40px'; ?>;">
 	<li><strong><?php echo wp_kses_post( _x( 'Order', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ) ); ?>:</strong> <span class="text"><?php echo wp_kses_post( $formatted_order_number ); ?></span></li>
-	<li><strong><?php echo wp_kses_post( _x( 'Received on', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ) ); ?>:</strong> <span class="text"><?php echo esc_html( sprintf( _x( '%1$s at %2$s', 'owb-datetime', 'eu-order-withdrawal-button-for-woocommerce' ), wc_format_datetime( eu_owb_get_order_withdrawal_date_received( $order ) ), wc_format_datetime( eu_owb_get_order_withdrawal_date_received( $order ), wc_time_format() ) ) ); ?></span></li>
-	<li><strong><?php echo wp_kses_post( _x( 'E-Mail', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ) ); ?>:</strong> <span class="text"><?php echo wp_kses_post( eu_owb_get_order_withdrawal_email( $order ) ); ?></span></li>
+	<li><strong><?php echo wp_kses_post( _x( 'Received on', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ) ); ?>:</strong> <span class="text"><?php echo esc_html( sprintf( _x( '%1$s at %2$s', 'owb-datetime', 'eu-order-withdrawal-button-for-woocommerce' ), wc_format_datetime( eu_owb_get_order_withdrawal_date_received( $order, $withdrawal ) ), wc_format_datetime( eu_owb_get_order_withdrawal_date_received( $order, $withdrawal ), wc_time_format() ) ) ); ?></span></li>
+	<li><strong><?php echo wp_kses_post( _x( 'E-Mail', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ) ); ?>:</strong> <span class="text"><?php echo wp_kses_post( eu_owb_get_order_withdrawal_email( $order, $withdrawal ) ) . ( $sent_to_admin ? ' (' . esc_html( $verified_notice ) . ')' : '' ); ?></span></li>
+	<li><strong><?php echo wp_kses_post( _x( 'Full name', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ) ); ?>:</strong> <span class="text"><?php echo wp_kses_post( eu_owb_get_order_withdrawal_full_name( $order, $withdrawal, true ) ); ?></span></li>
 </ul>
+
+<?php if ( $show_deleted_original && ( $original_order_id = eu_owb_order_withdrawal_request_get_original_order_id( $withdrawal ) ) ) : ?>
+	<p><?php echo wp_kses_post( sprintf( _x( 'As you requested, we have deleted your original withdrawal request for order %1$s.', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ), esc_html( $original_order_id ) ) ); ?></p>
+<?php endif; ?>
 
 <div style="margin-bottom: <?php echo $email_improvements_enabled ? '24px' : '40px'; ?>;">
 	<table class="td font-family <?php echo esc_attr( $order_table_class ); ?>" cellspacing="0" cellpadding="6" style="width: 100%;" border="1">
@@ -61,6 +67,7 @@ do_action( 'eu_owb_woocommerce_withdrawal_before_order_table', $order, $sent_to_
 					'image_size'    => array( $image_size, $image_size ),
 					'plain_text'    => $plain_text,
 					'sent_to_admin' => $sent_to_admin,
+					'withdrawal'    => $withdrawal,
 				)
 			);
 			?>
@@ -78,5 +85,5 @@ do_action( 'eu_owb_woocommerce_withdrawal_before_order_table', $order, $sent_to_
  * @param WC_Email $email Email object.
  * @since 2.5.0
  */
-do_action( 'eu_owb_woocommerce_withdrawal_after_order_table', $order, $sent_to_admin, $plain_text, $email );
+do_action( 'eu_owb_woocommerce_withdrawal_after_order_table', $order, $sent_to_admin, $plain_text, $email, $withdrawal );
 ?>

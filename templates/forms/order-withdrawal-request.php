@@ -11,12 +11,14 @@
  * the readme will list any important changes.
  *
  * @package Vendidero/OrderWithdrawalButton/Templates
- * @version 1.0.2
+ * @version 2.0.0
  */
 if ( ! defined( 'ABSPATH' ) ) {
 	exit; // Exit if accessed directly.
 }
-$manually_select_items = apply_filters( 'eu_owb_woocommerce_manually_select_items_default', $manually_select_items );
+$manually_select_items   = apply_filters( 'eu_owb_woocommerce_manually_select_items_default', $manually_select_items );
+$delete_original_request = apply_filters( 'eu_owb_woocommerce_delete_original_request_default', true );
+$show_submit             = true;
 ?>
 <form class="woocommerce-form woocommerce-form-order-withdrawal-request order-withdrawal-request" method="post">
 	<?php do_action( 'eu_owb_woocommerce_return_request_form_start' ); ?>
@@ -26,13 +28,23 @@ $manually_select_items = apply_filters( 'eu_owb_woocommerce_manually_select_item
 	<div class="eu-owb-form-fields">
 		<?php if ( ! is_user_logged_in() && ! $order ) : ?>
 			<div class="form-row form-row-first">
-				<label for="order-withdrawal-request-order-number"><?php echo esc_html_x( 'Order number', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ); ?>&nbsp;<span class="required">*</span></label>
+				<label for="order-withdrawal-request-order-number"><?php echo esc_html_x( 'Order number', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ); ?></label>
 				<input type="text" class="input-text" name="order_number" id="order-withdrawal-request-order-number" autocomplete="off" />
 			</div>
 
 			<div class="form-row form-row-last">
 				<label for="order-withdrawal-request-email"><?php echo esc_html_x( 'Email', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ); ?>&nbsp;<span class="required">*</span></label>
 				<input type="text" class="input-text" name="email" id="order-withdrawal-request-email" autocomplete="email" />
+			</div>
+
+			<div class="form-row form-row-first">
+				<label for="order-withdrawal-request-first-name"><?php echo esc_html_x( 'First name', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ); ?></label>
+				<input type="text" class="input-text" name="first_name" id="order-withdrawal-request-first-name" autocomplete="off" />
+			</div>
+
+			<div class="form-row form-row-last">
+				<label for="order-withdrawal-request-last-name"><?php echo esc_html_x( 'Last name', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ); ?></label>
+				<input type="text" class="input-text" name="last_name" id="order-withdrawal-request-last-name" autocomplete="off" />
 			</div>
 
 			<div class="clear"></div>
@@ -50,35 +62,80 @@ $manually_select_items = apply_filters( 'eu_owb_woocommerce_manually_select_item
 			<?php endif; ?>
 
 			<?php do_action( 'eu_owb_woocommerce_return_request_guest_form' ); ?>
-		<?php else : ?>
-			<?php if ( ! $order ) : ?>
+			<?php
+		else :
+			$default_email_address = $order ? $order->get_billing_email() : WC()->customer->get_billing_email();
+			$orders                = is_user_logged_in() ? eu_owb_get_withdrawable_orders_for_user() : array();
+			$default_order_id      = 0;
+
+			if ( $order ) {
+				$default_order_id = $order->get_id();
+				$orders           = eu_owb_get_withdrawable_orders(
+					eu_owb_find_orders(
+						array(
+							'email'       => $order->get_billing_email(),
+							'customer_id' => $order->get_customer_id(),
+						)
+					)
+				);
+
+				if ( $request = eu_owb_get_withdrawal_request( $order ) ) {
+					$default_email_address = eu_owb_get_order_withdrawal_email( $order, $request );
+				}
+			}
+			?>
+			<?php if ( ! empty( $orders ) ) : ?>
 				<div class="form-row form-row-full">
 					<label for="order-withdrawal-request-order"><?php echo esc_html_x( 'Order', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ); ?>&nbsp;<span class="required">*</span></label>
 					<select name="order_id" id="order-withdrawal-request-order">
 						<option value=""><?php echo esc_html_x( 'Please select an order', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ); ?></option>
-						<?php foreach ( eu_owb_get_withdrawable_orders_for_user() as $t_order ) : ?>
-							<option value="<?php echo esc_attr( $t_order->get_id() ); ?>"><?php echo esc_html( sprintf( _x( 'Order %1$s', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ), $t_order->get_order_number() ) ); ?></option>
+						<?php foreach ( $orders as $t_order ) : ?>
+							<option value="<?php echo esc_attr( $t_order->get_id() ); ?>" <?php selected( $default_order_id, $t_order->get_id() ); ?>><?php echo esc_html( sprintf( _x( 'Order %1$s', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ), $t_order->get_order_number() ) ); ?></option>
 						<?php endforeach; ?>
 					</select>
 				</div>
-			<?php else : ?>
-				<input type="hidden" name="order_id" value="<?php echo esc_attr( $order->get_id() ); ?>" />
-				<input type="hidden" name="order_key" value="<?php echo esc_attr( $order_key ); ?>" />
-			<?php endif; ?>
 
-			<div class="eu-owb-order-item-select-wrapper">
+				<div class="eu-owb-order-item-select-wrapper">
+					<?php
+					if ( $order ) :
+						wc_get_template(
+							'forms/order-withdrawal-request-item-select.php',
+							array(
+								'order'                 => $order,
+								'manually_select_items' => $manually_select_items,
+							)
+						);
+					endif;
+					?>
+				</div>
+
+				<div class="form-row form-row-full">
+					<label for="order-withdrawal-request-email"><?php echo esc_html_x( 'Email', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ); ?></label>
+					<input type="text" class="input-text" name="email" id="order-withdrawal-request-email" autocomplete="email" value="<?php echo esc_attr( $default_email_address ); ?>" />
+				</div>
+
+				<?php if ( $order ) : ?>
+					<?php if ( eu_owb_get_withdrawal_request( $order ) ) : ?>
+						<div class="form-row form-row-full hidden order-withdrawal-delete-original-request-checkbox">
+							<label class="woocommerce-form__label woocommerce-form__label-for-checkbox checkbox" for="delete-original-request">
+								<input type="checkbox" class="woocommerce-form__input woocommerce-form__input-checkbox input-checkbox" name="delete_original_request" <?php checked( $delete_original_request, true ); // WPCS: input var ok, csrf ok. ?> id="delete-original-request" />
+								<span class="eu-owb-woocommerce-select-certain-items-text"><?php printf( esc_html_x( 'Please delete my original withdrawal request to order %1$s.', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ), esc_html( $order->get_order_number() ) ); ?></span>
+							</label>
+						</div>
+					<?php endif; ?>
+
+					<input type="hidden" name="original_order_id" id="original-order-id" value="<?php echo esc_attr( $order->get_id() ); ?>" /
+
+					<?php if ( ! empty( $order_key ) ) : ?>
+						<input type="hidden" name="order_key" value="<?php echo esc_attr( $order_key ); ?>" />
+					<?php endif; ?>
+				<?php endif; ?>
 				<?php
-				if ( $order ) :
-					wc_get_template(
-						'forms/order-withdrawal-request-item-select.php',
-						array(
-							'order'                 => $order,
-							'manually_select_items' => $manually_select_items,
-						)
-					);
-				endif;
+			else :
+				$show_submit = false;
 				?>
-			</div>
+				<p class="woocommerce-info notice"><?php echo wp_kses_post( sprintf( _x( 'Sorry, there are currently no orders available to withdraw. If you have questions regarding one of your orders, please <a href="%s">contact support</a> for help.', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ), esc_url( eu_owb_get_contact_support_url() ) ) ); ?></p>
+			<?php endif; ?>
 
 			<?php do_action( 'eu_owb_woocommerce_return_request_customer_form', $order ); ?>
 		<?php endif; ?>
@@ -86,10 +143,12 @@ $manually_select_items = apply_filters( 'eu_owb_woocommerce_manually_select_item
 
 	<?php do_action( 'eu_owb_woocommerce_return_request_form_before_submit', $order ); ?>
 
-	<div class="form-row">
-		<?php wp_nonce_field( 'eu_owb_woocommerce_order_withdrawal_request' ); ?>
-		<button type="submit" class="woocommerce-button button woocommerce-form-return_request__submit<?php echo esc_attr( eu_owb_wp_theme_get_element_class_name( 'button' ) ? ' ' . eu_owb_wp_theme_get_element_class_name( 'button' ) : '' ); ?>" name="order_withdrawal_request" value="<?php echo esc_attr_x( 'Confirm withdrawal', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ); ?>"><?php echo esc_attr_x( 'Confirm withdrawal', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ); ?></button>
-	</div>
+	<?php if ( $show_submit ) : ?>
+		<div class="form-row form-row-submit">
+			<?php wp_nonce_field( 'eu_owb_woocommerce_order_withdrawal_request' ); ?>
+			<button type="submit" class="woocommerce-button button woocommerce-form-return_request__submit<?php echo esc_attr( eu_owb_wp_theme_get_element_class_name( 'button' ) ? ' ' . eu_owb_wp_theme_get_element_class_name( 'button' ) : '' ); ?>" name="order_withdrawal_request" value="<?php echo esc_attr_x( 'Confirm withdrawal', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ); ?>"><?php echo esc_attr_x( 'Confirm withdrawal', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ); ?></button>
+		</div>
+	<?php endif; ?>
 
 	<div class="clear"></div>
 	<?php do_action( 'eu_owb_woocommerce_return_request_form_end', $order ); ?>

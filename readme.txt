@@ -5,7 +5,7 @@ Requires at least: 5.4
 Tested up to: 7.0
 WC requires at least: 3.9
 WC tested up to: 10.6
-Stable tag: 1.0.2
+Stable tag: 2.0.0
 Requires PHP: 7.4
 License: GPLv3
 License URI: http://www.gnu.org/licenses/gpl-3.0.html
@@ -61,6 +61,12 @@ Bug reports may be filed via our [GitHub repository](https://github.com/vendider
 2. Admin UI
 
 == Changelog ==
+= 2.0.0 =
+* Improvement: Allow withdrawal requests without order number and differing email address
+* Improvement: Mark withdrawal requests as verified/unverified based on email address
+* Improvement: Separately list unverified withdrawal requests by default
+* Improvement: Allow verified guests to choose another order in case multiple orders are withdrawable
+* Improvement: Allow choosing first + last name
 
 = 1.0.2 =
 * Improvement: Inform guest customers about partial withdrawals within original form

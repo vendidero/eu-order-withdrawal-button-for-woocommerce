@@ -11,19 +11,28 @@
  * the readme will list any important changes.
  *
  * @package Vendidero/OrderWithdrawalButton/Templates
- * @version 1.0.0
+ * @version 2.0.0
  */
 defined( 'ABSPATH' ) || exit;
 
 $text_align                 = is_rtl() ? 'right' : 'left';
 $email_improvements_enabled = \Vendidero\OrderWithdrawalButton\Package::has_email_improvements_enabled();
 $heading_class              = $email_improvements_enabled ? 'email-order-detail-heading' : '';
+$has_multiple               = isset( $withdrawal['meta']['has_multiple_matching_orders'] ) ? wc_string_to_bool( $withdrawal['meta']['has_multiple_matching_orders'] ) : false;
 ?>
 <h2 class="<?php echo esc_attr( $heading_class ); ?>">
-	<?php echo esc_html_x( 'Want to withdraw certain items only?', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ); ?>
+	<?php if ( $has_multiple ) : ?>
+		<?php echo esc_html_x( 'More than one matching order found', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ); ?>
+	<?php else : ?>
+		<?php echo esc_html_x( 'Want to withdraw certain items only?', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ); ?>
+	<?php endif; ?>
 </h2>
 
 <div class="withdrawal__edit_link_wrapper" style="margin-bottom: 40px;">
-	<a href="<?php echo esc_url( $edit_withdrawal_link ); ?>" class="withdrawal__edit_link" id="notification__action_button"><?php echo esc_html_x( 'Choose items to withdraw now', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ); ?></a>
+	<?php if ( $has_multiple ) : ?>
+		<p><?php echo esc_html_x( 'We found more than one order matching your criteria—please use the link below to edit your withdrawal or select a different order.', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ); ?></p>
+	<?php endif; ?>
+
+	<a href="<?php echo esc_url( $edit_withdrawal_link ); ?>" class="withdrawal__edit_link" id="notification__action_button"><?php echo $has_multiple ? esc_html_x( 'Edit withdrawal request', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ) : esc_html_x( 'Choose items', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ); ?></a>
 </div>
 

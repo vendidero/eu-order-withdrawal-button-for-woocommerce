@@ -1,8 +1,8 @@
 <?php
 /**
- * Customer withdrawal request confirmed email
+ * Admin withdrawal request deleted email
  *
- * This template can be overridden by copying it to yourtheme/woocommerce/emails/customer-withdrawal-request-confirmed.php.
+ * This template can be overridden by copying it to yourtheme/woocommerce/emails/admin-deleted-withdrawal-request.php.
  *
  * HOWEVER, on occasion EU OWB will need to update template files and you
  * (the theme developer) will need to copy the new files to your theme to
@@ -13,12 +13,9 @@
  * @package Vendidero/OrderWithdrawalButton/Templates
  * @version 2.0.0
  */
-if ( ! defined( 'ABSPATH' ) ) {
-	exit;
-}
+defined( 'ABSPATH' ) || exit;
 
 $email_improvements_enabled = \Vendidero\OrderWithdrawalButton\Package::has_email_improvements_enabled();
-$withdrawal_name            = eu_owb_get_order_withdrawal_full_name( $order, $withdrawal );
 
 /*
  * @hooked WC_Emails::email_header() Output the email header
@@ -26,19 +23,7 @@ $withdrawal_name            = eu_owb_get_order_withdrawal_full_name( $order, $wi
 do_action( 'woocommerce_email_header', $email_heading, $email ); ?>
 
 <?php echo $email_improvements_enabled ? '<div class="email-introduction">' : ''; ?>
-<p>
-<?php
-if ( ! empty( $withdrawal_name ) ) {
-	/* translators: %s: Customer full name */
-	printf( esc_html_x( 'Hi %s,', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ), esc_html( $withdrawal_name ) );
-} else {
-	printf( esc_html_x( 'Hi,', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ) );
-}
-?>
-</p>
-
-<p><?php printf( esc_html_x( 'We’ve wanted to let you know that your withdrawal request has been reviewed and is hereby confirmed. We will inform you shortly about the next steps.', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ), esc_html( $order->get_order_number() ) ); ?></p>
-
+	<p><?php printf( esc_html_x( 'A withdrawal request to order #%s has been deleted:', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ), esc_html( $order->get_order_number() ) ); ?></p>
 <?php echo $email_improvements_enabled ? '</div>' : ''; ?>
 
 <?php

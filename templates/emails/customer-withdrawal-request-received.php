@@ -11,14 +11,15 @@
  * the readme will list any important changes.
  *
  * @package Vendidero/OrderWithdrawalButton/Templates
- * @version 1.0.0
+ * @version 2.0.0
  */
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
 $email_improvements_enabled = \Vendidero\OrderWithdrawalButton\Package::has_email_improvements_enabled();
-$withdrawal_date            = eu_owb_get_order_withdrawal_date_received( $order );
+$withdrawal_date            = eu_owb_get_order_withdrawal_date_received( $order, $withdrawal );
+$withdrawal_name            = eu_owb_get_order_withdrawal_full_name( $order, $withdrawal );
 
 /*
  * @hooked WC_Emails::email_header() Output the email header
@@ -28,9 +29,9 @@ do_action( 'woocommerce_email_header', $email_heading, $email ); ?>
 <?php echo $email_improvements_enabled ? '<div class="email-introduction">' : ''; ?>
 <p>
 <?php
-if ( ! empty( $order->get_billing_first_name() ) ) {
-	/* translators: %s: Customer first name */
-	printf( esc_html_x( 'Hi %s,', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ), esc_html( $order->get_billing_first_name() ) );
+if ( ! empty( $withdrawal_name ) ) {
+	/* translators: %s: Customer full name */
+	printf( esc_html_x( 'Hi %s,', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ), esc_html( $withdrawal_name ) );
 } else {
 	printf( esc_html_x( 'Hi,', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ) );
 }
@@ -43,9 +44,9 @@ if ( ! empty( $order->get_billing_first_name() ) ) {
 
 <?php
 
-do_action( 'eu_owb_woocommerce_withdrawal_request_details', $order, $sent_to_admin, $plain_text, $email );
+do_action( 'eu_owb_woocommerce_withdrawal_request_details', $order, $sent_to_admin, $plain_text, $email, $withdrawal );
 
-do_action( 'eu_owb_woocommerce_withdrawal_request_meta', $order, $sent_to_admin, $plain_text, $email );
+do_action( 'eu_owb_woocommerce_withdrawal_request_meta', $order, $sent_to_admin, $plain_text, $email, $withdrawal );
 
 /**
  * Show user-defined additional content - this is set in each email's settings.

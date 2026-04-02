@@ -6,7 +6,7 @@
  * Author: vendidero
  * Author URI: https://vendidero.com
  * Text Domain: eu-order-withdrawal-button-for-woocommerce
- * Version: 1.0.2
+ * Version: 2.0.0
  * Requires at least: 5.4
  * Requires PHP: 7.4
  * License: GPLv3
