@@ -124,7 +124,7 @@ $show_submit             = true;
 						</div>
 					<?php endif; ?>
 
-					<input type="hidden" name="original_order_id" id="original-order-id" value="<?php echo esc_attr( $order->get_id() ); ?>" /
+					<input type="hidden" name="original_order_id" id="original-order-id" value="<?php echo esc_attr( $order->get_id() ); ?>" />
 
 					<?php if ( ! empty( $order_key ) ) : ?>
 						<input type="hidden" name="order_key" value="<?php echo esc_attr( $order_key ); ?>" />
