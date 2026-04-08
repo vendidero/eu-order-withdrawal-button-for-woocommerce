@@ -607,7 +607,7 @@ function eu_owb_get_withdrawal_or_request( $order, $id = '' ) {
 	$withdrawal = false;
 
 	if ( is_array( $id ) && ! empty( $id['id'] ) ) {
-		$withdrawal = $id;
+		$withdrawal = wp_parse_args( $id, eu_owb_get_order_withdrawal_default_args() );
 	} elseif ( empty( $id ) ) {
 		$withdrawal = eu_owb_get_withdrawal_request( $order );
 

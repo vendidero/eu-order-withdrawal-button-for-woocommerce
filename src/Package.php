@@ -585,6 +585,7 @@ class Package {
 					'email'                 => $email,
 					'withdrawal'            => $withdrawal,
 					'show_deleted_original' => is_a( $email, 'EU_OWB_Email_Customer_Withdrawal_Request_Received' ) ? true : false,
+					'hide_items'            => is_a( $email, 'EU_OWB_Email_Customer_Withdrawal_Request_Confirmed' ) ? false : ! eu_owb_order_withdrawal_email_is_verified( $order, $withdrawal ),
 				)
 			);
 		} else {
@@ -597,6 +598,7 @@ class Package {
 					'email'                 => $email,
 					'withdrawal'            => $withdrawal,
 					'show_deleted_original' => is_a( $email, 'EU_OWB_Email_Customer_Withdrawal_Request_Received' ) ? true : false,
+					'hide_items'            => is_a( $email, 'EU_OWB_Email_Customer_Withdrawal_Request_Confirmed' ) ? false : ! eu_owb_order_withdrawal_email_is_verified( $order, $withdrawal ),
 				)
 			);
 		}

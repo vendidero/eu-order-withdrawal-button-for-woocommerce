@@ -39,17 +39,19 @@ do_action( 'eu_owb_woocommerce_withdrawal_before_order_table', $order, $sent_to_
 <?php echo "\n==========\n"; ?>
 
 <?php
-echo "\n" . eu_owb_get_email_withdrawal_items( // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
-	$order,
-	array(
-		'show_sku'      => $sent_to_admin,
-		'show_image'    => false,
-		'image_size'    => array( 32, 32 ),
-		'plain_text'    => true,
-		'sent_to_admin' => $sent_to_admin,
-		'withdrawal'    => $withdrawal,
-	)
-);
+if ( ! $hide_items ) :
+	echo "\n" . eu_owb_get_email_withdrawal_items( // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+		$order,
+		array(
+			'show_sku'      => $sent_to_admin,
+			'show_image'    => false,
+			'image_size'    => array( 32, 32 ),
+			'plain_text'    => true,
+			'sent_to_admin' => $sent_to_admin,
+			'withdrawal'    => $withdrawal,
+		)
+	);
+endif;
 
 echo "==========\n\n";
 

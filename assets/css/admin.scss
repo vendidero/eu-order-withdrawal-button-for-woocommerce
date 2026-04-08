@@ -71,6 +71,11 @@
   }
 }
 
+tr.wc-settings-row-withdrawal-period td.forminp-number .description {
+  display: inline-block;
+  margin-top: 5px;
+}
+
 .order-status {
   &.status-withdrawn,
   &.status-full-withdrawal,

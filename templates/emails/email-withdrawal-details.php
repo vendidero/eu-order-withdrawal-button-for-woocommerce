@@ -48,32 +48,34 @@ do_action( 'eu_owb_woocommerce_withdrawal_before_order_table', $order, $sent_to_
 	<p><?php echo wp_kses_post( sprintf( _x( 'As you requested, we have deleted your original withdrawal request for order %1$s.', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ), esc_html( $original_order_id ) ) ); ?></p>
 <?php endif; ?>
 
-<div style="margin-bottom: <?php echo $email_improvements_enabled ? '24px' : '40px'; ?>;">
-	<table class="td font-family <?php echo esc_attr( $order_table_class ); ?>" cellspacing="0" cellpadding="6" style="width: 100%;" border="1">
-		<thead>
-			<tr>
-				<th class="td" scope="col" style="text-align:<?php echo esc_attr( $text_align ); ?>;"><?php echo esc_html_x( 'Product', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ); ?></th>
-				<th class="td" scope="col" style="text-align:<?php echo esc_attr( $order_quantity_text_align ); ?>;"><?php echo esc_html_x( 'Quantity', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ); ?></th>
-			</tr>
-		</thead>
-		<tbody>
-			<?php
-			$image_size = $email_improvements_enabled ? 48 : 32;
-			echo eu_owb_get_email_withdrawal_items( // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
-				$order,
-				array(
-					'show_sku'      => $sent_to_admin,
-					'show_image'    => $email_improvements_enabled,
-					'image_size'    => array( $image_size, $image_size ),
-					'plain_text'    => $plain_text,
-					'sent_to_admin' => $sent_to_admin,
-					'withdrawal'    => $withdrawal,
-				)
-			);
-			?>
-		</tbody>
-	</table>
-</div>
+<?php if ( ! $hide_items ) : ?>
+	<div style="margin-bottom: <?php echo $email_improvements_enabled ? '24px' : '40px'; ?>;">
+		<table class="td font-family <?php echo esc_attr( $order_table_class ); ?>" cellspacing="0" cellpadding="6" style="width: 100%;" border="1">
+			<thead>
+				<tr>
+					<th class="td" scope="col" style="text-align:<?php echo esc_attr( $text_align ); ?>;"><?php echo esc_html_x( 'Product', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ); ?></th>
+					<th class="td" scope="col" style="text-align:<?php echo esc_attr( $order_quantity_text_align ); ?>;"><?php echo esc_html_x( 'Quantity', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ); ?></th>
+				</tr>
+			</thead>
+			<tbody>
+				<?php
+				$image_size = $email_improvements_enabled ? 48 : 32;
+				echo eu_owb_get_email_withdrawal_items( // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+					$order,
+					array(
+						'show_sku'      => $sent_to_admin,
+						'show_image'    => $email_improvements_enabled,
+						'image_size'    => array( $image_size, $image_size ),
+						'plain_text'    => $plain_text,
+						'sent_to_admin' => $sent_to_admin,
+						'withdrawal'    => $withdrawal,
+					)
+				);
+				?>
+			</tbody>
+		</table>
+	</div>
+<?php endif; ?>
 
 <?php
 /**
