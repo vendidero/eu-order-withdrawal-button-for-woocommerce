@@ -64,7 +64,7 @@ $show_submit             = true;
 			<?php do_action( 'eu_owb_woocommerce_return_request_guest_form' ); ?>
 			<?php
 		else :
-			$default_email_address = $order ? $order->get_billing_email() : WC()->customer->get_billing_email();
+			$default_email_address = $order ? $order->get_billing_email() : ( WC()->customer ? WC()->customer->get_billing_email() : '' );
 			$orders                = is_user_logged_in() ? eu_owb_get_withdrawable_orders_for_user() : array();
 			$default_order_id      = 0;
 

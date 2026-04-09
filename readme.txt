@@ -61,6 +61,9 @@ Bug reports may be filed via our [GitHub repository](https://github.com/vendider
 2. Admin UI
 
 == Changelog ==
+= 2.0.1 =
+* Fix: Prevent calling customer in admin context
+
 = 2.0.0 =
 * Improvement: Allow withdrawal requests without order number and differing email address
 * Improvement: Mark withdrawal requests as verified/unverified based on email address
