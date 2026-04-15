@@ -504,7 +504,7 @@ function eu_owb_get_order_withdrawal_full_name( $order, $id = '', $placeholder =
 		return '';
 	}
 
-	$full_name = $placeholder ? ( is_bool( $placeholder ) ? _x( 'Not specified', 'owb-full-name-placeholder', 'eu-order-withdrawal-button-for-woocommerce' ) : $placeholder ) : '';
+	$full_name_placeholder = $placeholder ? ( is_bool( $placeholder ) ? _x( 'Not specified', 'owb-full-name-placeholder', 'eu-order-withdrawal-button-for-woocommerce' ) : $placeholder ) : '';
 
 	if ( $withdrawal = eu_owb_get_withdrawal_or_request( $order, $id ) ) {
 		$meta = wp_parse_args(
@@ -529,6 +529,10 @@ function eu_owb_get_order_withdrawal_full_name( $order, $id = '', $placeholder =
 		if ( empty( $full_name ) && 'yes' === $withdrawal['has_verified_email'] ) {
 			$full_name = $order->get_formatted_billing_full_name();
 		}
+	}
+
+	if ( empty( $full_name ) ) {
+		$full_name = $full_name_placeholder;
 	}
 
 	return apply_filters( 'eu_owb_woocommerce_order_withdrawal_full_name', $full_name, $order, $id );
@@ -1259,6 +1263,68 @@ function eu_owb_find_order( $order_id, $email ) {
 	return apply_filters( 'eu_owb_woocommerce_find_order', $db_order_id, $order_id, $email );
 }
 
+function eu_owb_find_orders_by_custom_order_number( $args ) {
+	$args = wp_parse_args(
+		$args,
+		array(
+			'order_id' => '',
+			'email'    => '',
+		)
+	);
+
+	$args['email'] = sanitize_email( $args['email'] );
+
+	$custom_query_cpt_cb = function ( $query, $query_vars ) {
+		$meta_field_name = apply_filters( 'eu_owb_woocommerce_customer_order_number_meta_key', '_order_number' );
+
+		if ( ! empty( $query_vars['order_number'] ) ) {
+			$query['meta_query'][] = array(
+				'key'     => $meta_field_name,
+				'value'   => wc_clean( $query_vars['order_number'] ),
+				'compare' => '=',
+			);
+		}
+
+		return $query;
+	};
+
+	$custom_query_hpos_cb = function ( $query_vars ) {
+		$meta_field_name = apply_filters( 'eu_owb_woocommerce_customer_order_number_meta_key', '_order_number' );
+
+		if ( ! empty( $query_vars['order_number'] ) ) {
+			$query_vars['meta_query'][] = array(
+				'key'     => $meta_field_name,
+				'value'   => wc_clean( $query_vars['order_number'] ),
+				'compare' => '=',
+			);
+
+			unset( $query_vars['order_number'] );
+		}
+
+		return $query_vars;
+	};
+
+	add_filter( 'woocommerce_order_data_store_cpt_get_orders_query', $custom_query_cpt_cb, 10, 2 );
+	add_filter( 'woocommerce_orders_table_datastore_get_orders_query', $custom_query_hpos_cb, 10 );
+
+	$query_args_custom = array(
+		'order_number' => $args['order_id'],
+		'limit'        => 10,
+		'return'       => 'ids',
+	);
+
+	if ( ! empty( $args['email'] ) ) {
+		$query_args_custom['billing_email'] = $args['email'];
+	}
+
+	$orders = wc_get_orders( apply_filters( 'eu_owb_woocommerce_find_order_alternate_order_query_args', $query_args_custom ) );
+
+	remove_filter( 'woocommerce_order_data_store_cpt_get_orders_query', $custom_query_cpt_cb, 10 );
+	remove_filter( 'woocommerce_orders_table_datastore_get_orders_query', $custom_query_hpos_cb, 10 );
+
+	return $orders;
+}
+
 /**
  * @param $order_id
  * @param $email
@@ -1308,53 +1374,7 @@ function eu_owb_find_orders( $args ) {
 
 	// Now lets try to find the order by a custom order number field
 	if ( empty( $orders ) && ! empty( $order_id_parsed ) ) {
-		$custom_query_cpt_cb = function ( $query, $query_vars ) {
-			$meta_field_name = apply_filters( 'eu_owb_woocommerce_customer_order_number_meta_key', '_order_number' );
-
-			if ( ! empty( $query_vars['order_number'] ) ) {
-				$query['meta_query'][] = array(
-					'key'     => $meta_field_name,
-					'value'   => esc_attr( wc_clean( $query_vars['order_number'] ) ),
-					'compare' => '=',
-				);
-			}
-
-			return $query;
-		};
-
-		$custom_query_hpos_cb = function ( $query_vars ) {
-			$meta_field_name = apply_filters( 'eu_owb_woocommerce_customer_order_number_meta_key', '_order_number' );
-
-			if ( ! empty( $query_vars['order_number'] ) ) {
-				$query_vars['meta_query'][] = array(
-					'key'     => $meta_field_name,
-					'value'   => esc_attr( wc_clean( $query_vars['order_number'] ) ),
-					'compare' => '=',
-				);
-
-				unset( $query_vars['order_number'] );
-			}
-
-			return $query_vars;
-		};
-
-		add_filter( 'woocommerce_order_data_store_cpt_get_orders_query', $custom_query_cpt_cb, 10, 2 );
-		add_filter( 'woocommerce_orders_table_datastore_get_orders_query', $custom_query_hpos_cb, 10 );
-
-		$query_args_custom = array(
-			'order_number' => $args['order_id'],
-			'limit'        => 1,
-			'return'       => 'ids',
-		);
-
-		if ( ! empty( $args['email'] ) ) {
-			$query_args_custom['billing_email'] = $args['email'];
-		}
-
-		$orders = wc_get_orders( apply_filters( 'eu_owb_woocommerce_find_order_alternate_order_query_args', $query_args_custom ) );
-
-		remove_filter( 'woocommerce_order_data_store_cpt_get_orders_query', $custom_query_cpt_cb, 10 );
-		remove_filter( 'woocommerce_orders_table_datastore_get_orders_query', $custom_query_hpos_cb, 10 );
+		$orders = eu_owb_find_orders_by_custom_order_number( $args );
 	}
 
 	/**
@@ -1384,6 +1404,16 @@ function eu_owb_find_orders( $args ) {
 		}
 
 		$orders = wc_get_orders( apply_filters( 'eu_owb_woocommerce_find_order_by_id_query_args', $main_query_args ) );
+
+		if ( empty( $orders ) ) {
+			$custom_args = $args;
+
+			if ( isset( $custom_args['email'] ) ) {
+				unset( $custom_args['email'] );
+			}
+
+			$orders = eu_owb_find_orders_by_custom_order_number( $custom_args );
+		}
 	}
 
 	return apply_filters( 'eu_owb_woocommerce_find_orders', $orders, $args );
