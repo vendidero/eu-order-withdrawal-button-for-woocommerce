@@ -13,7 +13,7 @@ class Package {
 	 *
 	 * @var string
 	 */
-	const VERSION = '2.0.1';
+	const VERSION = '2.0.2';
 
 	protected static $localized_scripts = array();
 
@@ -62,7 +62,6 @@ class Package {
 		add_action( 'woocommerce_order_refunded', array( __CLASS__, 'maybe_link_refund' ), 10, 2 );
 		add_action( 'woocommerce_refund_deleted', array( __CLASS__, 'maybe_remove_refund' ), 10, 2 );
 		add_action( 'add_meta_boxes', array( __CLASS__, 'add_order_meta_box' ), 35 );
-
 		add_action( 'init', array( __CLASS__, 'maybe_embed' ) );
 	}
 

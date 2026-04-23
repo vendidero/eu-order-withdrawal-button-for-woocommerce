@@ -11,7 +11,7 @@
  * the readme will list any important changes.
  *
  * @package Vendidero/OrderWithdrawalButton/Templates
- * @version 2.0.0
+ * @version 2.0.2
  */
 if ( ! defined( 'ABSPATH' ) ) {
 	exit; // Exit if accessed directly.
@@ -65,17 +65,15 @@ $show_submit             = true;
 			<?php
 		else :
 			$default_email_address = $order ? $order->get_billing_email() : ( WC()->customer ? WC()->customer->get_billing_email() : '' );
-			$orders                = is_user_logged_in() ? eu_owb_get_withdrawable_orders_for_user() : array();
+			$orders                = is_user_logged_in() ? eu_owb_get_orders_for_user() : array();
 			$default_order_id      = 0;
 
 			if ( $order ) {
 				$default_order_id = $order->get_id();
-				$orders           = eu_owb_get_withdrawable_orders(
-					eu_owb_find_orders(
-						array(
-							'email'       => $order->get_billing_email(),
-							'customer_id' => $order->get_customer_id(),
-						)
+				$orders           = eu_owb_find_orders(
+					array(
+						'email'       => $order->get_billing_email(),
+						'customer_id' => $order->get_customer_id(),
 					)
 				);
 

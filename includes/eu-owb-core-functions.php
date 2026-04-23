@@ -140,11 +140,12 @@ function eu_owb_order_get_date_delivered( $order ) {
 
 /**
  * @param WC_Order|integer $order
+ * @param boolean $include_non_withdrawable
  *
  * @return bool
  */
-function eu_owb_order_supports_partial_withdrawal( $order ) {
-	$cancelable_items = eu_owb_get_withdrawable_order_items( $order );
+function eu_owb_order_supports_partial_withdrawal( $order, $include_non_withdrawable = false ) {
+	$cancelable_items = eu_owb_get_withdrawable_order_items( $order, $include_non_withdrawable );
 	$supports         = false;
 
 	if ( \Vendidero\OrderWithdrawalButton\Package::enable_partial_withdrawals() ) {
@@ -246,10 +247,11 @@ function eu_owb_get_contact_support_url() {
 
 /**
  * @param WC_Order|integer $order
+ * @param boolean $include_non_withdrawable
  *
  * @return WC_Order_Item_Product[]
  */
-function eu_owb_get_withdrawable_order_items( $order ) {
+function eu_owb_get_withdrawable_order_items( $order, $include_non_withdrawable = false ) {
 	if ( ! is_a( $order, 'WC_Order' ) ) {
 		$order = wc_get_order( $order );
 	}
@@ -261,7 +263,7 @@ function eu_owb_get_withdrawable_order_items( $order ) {
 	$items_to_withdraw = array();
 
 	foreach ( $order->get_items() as $item ) {
-		$total_qty_left = eu_owb_get_order_item_quantity_left_to_withdraw( $item, $order );
+		$total_qty_left = eu_owb_get_order_item_quantity_left_to_withdraw( $item, $order, $include_non_withdrawable );
 
 		if ( $total_qty_left <= 0 ) {
 			continue;
@@ -282,11 +284,12 @@ function eu_owb_get_stock_amount( $quantity ) {
 
 /**
  * @param WC_Order_Item_Product $item
- * @param WC_Order|null $order;
+ * @param WC_Order|null $order
+ * @param boolean $include_non_withdrawable
  *
  * @return mixed
  */
-function eu_owb_get_order_item_quantity_left_to_withdraw( $item, $order = null ) {
+function eu_owb_get_order_item_quantity_left_to_withdraw( $item, $order = null, $include_non_withdrawable = false ) {
 	$order              = ! $order ? $item->get_order() : $order;
 	$rejected           = $order ? eu_owb_get_order_withdrawals( $order, array( 'status' => 'rejected' ) ) : array();
 	$refunded_qty       = $order ? $order->get_qty_refunded_for_item( $item->get_id() ) : 0;
@@ -316,7 +319,7 @@ function eu_owb_get_order_item_quantity_left_to_withdraw( $item, $order = null )
 		$total_qty_left = 0;
 	}
 
-	if ( ! eu_owb_order_item_is_withdrawable( $item, $order ) ) {
+	if ( ! $include_non_withdrawable && ! eu_owb_order_item_is_withdrawable( $item, $order ) ) {
 		$total_qty_left = 0;
 	}
 
@@ -1154,20 +1157,30 @@ function eu_owb_product_matches_type( $product, $types ) {
 }
 
 function eu_owb_get_withdrawable_orders_for_user( $user_id = 0 ) {
+	$orders = eu_owb_get_orders_for_user( $user_id );
+
+	return eu_owb_get_withdrawable_orders( $orders );
+}
+
+function eu_owb_get_orders_for_user( $user_id = 0, $as_id = false ) {
 	$user_id          = 0 === $user_id ? get_current_user_id() : $user_id;
 	$min_date_created = strtotime( '-12 months' );
-	$orders           = wc_get_orders(
+
+	if ( empty( $user_id ) ) {
+		return array();
+	}
+
+	$orders = wc_get_orders(
 		array(
 			'customer_id'  => $user_id,
-			'status'       => eu_owb_get_withdrawable_order_statuses(),
 			'limit'        => -1,
 			'orderby'      => 'date_created',
 			'date_created' => '>' . $min_date_created,
-			'return'       => 'ids',
+			'return'       => $as_id ? 'ids' : 'objects',
 		)
 	);
 
-	return eu_owb_get_withdrawable_orders( $orders );
+	return $orders;
 }
 
 /**

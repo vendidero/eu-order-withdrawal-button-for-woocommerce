@@ -11,13 +11,13 @@
  * the readme will list any important changes.
  *
  * @package Vendidero/OrderWithdrawalButton/Templates
- * @version 1.0.0
+ * @version 2.0.2
  */
 if ( ! defined( 'ABSPATH' ) ) {
 	exit; // Exit if accessed directly.
 }
 
-$cancelable_items      = eu_owb_get_withdrawable_order_items( $order );
+$cancelable_items      = eu_owb_get_withdrawable_order_items( $order, true );
 $manually_select_items = apply_filters( 'eu_owb_woocommerce_manually_select_items_default', $manually_select_items );
 ?>
 <p class="eu-owb-woocommerce-withdrawal-order-details">
@@ -36,7 +36,7 @@ echo wp_kses_post(
 );
 ?>
 </p>
-<?php if ( eu_owb_order_supports_partial_withdrawal( $order ) ) : ?>
+<?php if ( eu_owb_order_supports_partial_withdrawal( $order, true ) ) : ?>
 	<div class="form-row form-row-full">
 		<label class="woocommerce-form__label woocommerce-form__label-for-checkbox checkbox" for="manually-select-items">
 			<input type="checkbox" class="woocommerce-form__input woocommerce-form__input-checkbox input-checkbox" name="manually_select_items" <?php checked( $manually_select_items, true ); // WPCS: input var ok, csrf ok. ?> id="manually-select-items" />
