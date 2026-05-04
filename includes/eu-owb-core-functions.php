@@ -240,6 +240,10 @@ function eu_owb_get_contact_support_url() {
 		$email = $from;
 	}
 
+	if ( $from = \Vendidero\OrderWithdrawalButton\Package::get_setting( 'contact_email_address' ) ) {
+		$email = sanitize_email( $from );
+	}
+
 	$business_email = apply_filters( 'eu_owb_get_contact_support_email', $email );
 
 	return apply_filters( 'eu_owb_get_contact_support_url', "mailto:{$business_email}" );

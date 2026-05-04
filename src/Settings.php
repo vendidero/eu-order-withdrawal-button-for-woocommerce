@@ -24,6 +24,13 @@ class Settings {
 	}
 
 	public static function get_settings( $current_section = '' ) {
+		$default_email = get_option( 'admin_email' );
+		$woo_mail      = sanitize_email( get_option( 'woocommerce_email_from_address' ) );
+
+		if ( $woo_mail ) {
+			$default_email = $woo_mail;
+		}
+
 		$settings = array(
 			array(
 				'title' => '',
@@ -95,6 +102,17 @@ class Settings {
 				'type'     => Package::is_integration() ? 'gzd_toggle' : 'checkbox',
 				'default'  => 'yes',
 				'autoload' => false,
+			),
+
+			array(
+				'title'        => _x( 'Contact email', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ),
+				'desc_tip'     => _x( 'Please provide an email address where customers can contact you if they have any issues.', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ),
+				'id'           => 'eu_owb_woocommerce_contact_email_address',
+				'type'         => 'email',
+				'placeholder'  => $default_email,
+				'default'      => '',
+				'skip_install' => true,
+				'autoload'     => false,
 			),
 
 			array(
