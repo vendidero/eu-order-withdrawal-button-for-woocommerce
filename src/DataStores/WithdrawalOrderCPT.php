@@ -1,0 +1,181 @@
+<?php
+
+namespace Vendidero\OrderWithdrawalButton\DataStores;
+
+use Vendidero\OrderWithdrawalButton\Package;
+
+defined( 'ABSPATH' ) || exit;
+
+class WithdrawalOrderCPT extends \Abstract_WC_Order_Data_Store_CPT implements \WC_Object_Data_Store_Interface {
+
+	/**
+	 * Data stored in meta keys, but not considered "meta" for an order.
+	 *
+	 * @since 3.0.0
+	 * @var array
+	 */
+	protected $internal_meta_keys = array(
+		'_order_currency',
+		'_cart_discount',
+		'_cart_discount_tax',
+		'_order_shipping',
+		'_order_shipping_tax',
+		'_order_tax',
+		'_order_total',
+		'_order_version',
+		'_prices_include_tax',
+		'_payment_tokens',
+		'_withdrawal_number',
+		'_date_confirmed',
+		'_date_rejected',
+		'_original_status',
+		'_rejection_reason',
+		'_is_partial',
+		'_has_verified_email',
+		'_is_update',
+		'_is_guest',
+		'_refund_id',
+		'_first_name',
+		'_last_name',
+		'_customer_id',
+		'_email',
+		'_order_number',
+		'_order_key',
+	);
+
+	/**
+	 * Delete a withdrawal - no trash is supported.
+	 *
+	 * @param \WC_Order $order Order object.
+	 * @param array     $args Array of args to pass to the delete method.
+	 */
+	public function delete( &$order, $args = array() ) {
+		$id = $order->get_id();
+
+		if ( ! $id ) {
+			return;
+		}
+
+		$parent_order_id      = $order->get_parent_id();
+		$withdrawal_cache_key = \WC_Cache_Helper::get_cache_prefix( 'orders' ) . 'withdrawals' . $parent_order_id;
+		wp_delete_post( $id );
+		wp_cache_delete( $withdrawal_cache_key, 'orders' );
+		$order->set_id( 0 );
+
+		do_action( 'eu_owb_woocommerce_withdrawal_order_deleted', $id );
+	}
+
+	public function clear_caches( &$order ) {
+		parent::clear_caches( $order );
+
+		$parent_order_id = $order->get_parent_id();
+
+		if ( $parent_order_id > 0 ) {
+			$withdrawal_cache_key = \WC_Cache_Helper::get_cache_prefix( 'orders' ) . 'withdrawals' . $parent_order_id;
+			wp_cache_delete( $withdrawal_cache_key, 'orders' );
+		}
+	}
+
+	/**
+	 * Read withdrawal data. Can be overridden by child classes to load other props.
+	 *
+	 * @param \Vendidero\OrderWithdrawalButton\WithdrawalOrder $withdrawal Withdrawal object.
+	 * @param object          $post_object Post object.
+	 * @since 3.0.0
+	 */
+	protected function read_order_data( &$withdrawal, $post_object ) {
+		parent::read_order_data( $withdrawal, $post_object );
+		$id        = $withdrawal->get_id();
+		$post_meta = get_post_meta( $id );
+		$props     = Package::get_withdrawal_order_props( true );
+
+		foreach ( $props as $meta_key => $prop ) {
+			$setter = "set_{$prop}";
+
+			if ( is_callable( array( $withdrawal, $setter ) ) ) {
+				$value = metadata_exists( 'post', $id, $meta_key ) ? $post_meta[ $meta_key ][0] : null;
+
+				$this->{$setter}( $value );
+			}
+		}
+	}
+
+	public function create( &$withdrawal ) {
+		if ( ! $withdrawal->get_withdrawal_number( 'edit' ) ) {
+			$withdrawal->set_withdrawal_number( md5( uniqid( '', true ) ) );
+		}
+
+		if ( '' === $withdrawal->get_order_key() ) {
+			$withdrawal->set_order_key( wc_generate_order_key() );
+		}
+
+		parent::create( $withdrawal );
+	}
+
+	/**
+	 * Helper method that updates all the post meta for an order based on it's settings in the WC_Order class.
+	 *
+	 * @param \Vendidero\OrderWithdrawalButton\WithdrawalOrder $withdrawal Withdrawal object.
+	 *
+	 * @since 3.0.0
+	 */
+	protected function update_post_meta( &$withdrawal ) {
+		parent::update_post_meta( $withdrawal );
+
+		$updated_props     = array();
+		$meta_key_to_props = Package::get_withdrawal_order_props( true );
+
+		$props_to_update = $this->get_props_to_update( $withdrawal, $meta_key_to_props );
+		foreach ( $props_to_update as $meta_key => $prop ) {
+			$value = $withdrawal->{"get_$prop"}( 'edit' );
+
+			switch ( $meta_key ) {
+				case '_is_partial':
+				case '_has_verified_email':
+				case '_is_update':
+				case '_is_guest':
+					$value = wc_bool_to_string( $value );
+					break;
+				case '_date_confirmed':
+				case '_date_rejected':
+					$value = $value ? $value->getTimestamp() : null;
+					break;
+			}
+
+			update_post_meta( $withdrawal->get_id(), $meta_key, $value );
+			$updated_props[] = $prop;
+		}
+	}
+
+	/**
+	 * Get a title for the new post type.
+	 *
+	 * @return string
+	 */
+	protected function get_post_title() {
+		return sprintf(
+			/* translators: %s: Order date */
+			_x( 'Withdrawal &ndash; %s', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ),
+			( new \DateTime( 'now' ) )->format( _x( 'M d, Y @ h:i A', 'owb-order-date-format', 'eu-order-withdrawal-button-for-woocommerce' ) ) // phpcs:ignore WordPress.WP.I18n.MissingTranslatorsComment, WordPress.WP.I18n.UnorderedPlaceholdersText
+		);
+	}
+
+	/**
+	 * Get the status to save to the post object.
+	 *
+	 * Plugins extending the order classes can override this to change the stored status/add prefixes etc.
+	 *
+	 * @since 3.6.0
+	 * @param  \Vendidero\OrderWithdrawalButton\WithdrawalOrder $order Order object.
+	 * @return string
+	 */
+	protected function get_post_status( $withdrawal ) {
+		$status = parent::get_post_status( $withdrawal );
+
+		if ( ! $withdrawal->get_status( 'edit' ) ) {
+			$status = 'wc-owb-requested';
+		}
+
+		return $status;
+	}
+}

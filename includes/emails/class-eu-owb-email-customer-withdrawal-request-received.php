@@ -28,6 +28,9 @@ if ( ! class_exists( 'EU_OWB_Email_Customer_Withdrawal_Request_Received', false 
 		 */
 		public $partial_withdrawal;
 
+		/**
+		 * @var \Vendidero\OrderWithdrawalButton\WithdrawalOrder
+		 */
 		public $withdrawal;
 
 		/**
@@ -134,27 +137,25 @@ if ( ! class_exists( 'EU_OWB_Email_Customer_Withdrawal_Request_Received', false 
 		/**
 		 * Trigger.
 		 *
-		 * @param int $order_id Order ID.
+		 * @param int $withdrawal_id Withdrawal order ID.
 		 */
-		public function trigger( $order_id, $order = false, $recipient = '', $is_partial_withdrawal = null, $is_update = null ) {
+		public function trigger( $withdrawal_id, $withdrawal = false ) {
 			$this->setup_locale();
 
-			$this->recipient = $recipient;
-
-			if ( $order_id && ! is_a( $order, 'WC_Order' ) ) {
-				$order = wc_get_order( $order_id );
+			if ( $withdrawal_id && ! is_a( $withdrawal_id, '\Vendidero\OrderWithdrawalButton\WithdrawalOrder' ) ) {
+				$withdrawal = wc_get_order( $withdrawal_id );
 			}
 
-			if ( $order ) {
-				$this->object             = $order;
-				$this->recipient          = eu_owb_get_order_withdrawal_email( $this->object );
-				$this->withdrawal         = eu_owb_get_withdrawal_request( $this->object );
-				$this->partial_withdrawal = is_bool( $is_partial_withdrawal ) ? $is_partial_withdrawal : eu_owb_order_has_partial_withdrawal_request( $this->object );
-				$this->is_update          = is_bool( $is_update ) ? $is_update : eu_owb_order_is_withdrawal_request_update( $this->object );
+			if ( $withdrawal ) {
+				$this->withdrawal         = $withdrawal;
+				$this->object             = $this->withdrawal->get_parent() ? $this->withdrawal->get_parent() : $withdrawal;
+				$this->recipient          = $this->withdrawal->get_email();
+				$this->partial_withdrawal = $this->withdrawal->is_partial();
+				$this->is_update          = $this->withdrawal->is_update();
 
-				$this->placeholders['{order_number}']    = $this->object->get_order_number();
+				$this->placeholders['{order_number}']    = $this->withdrawal->get_order_number();
 				$this->placeholders['{order_date}']      = wc_format_datetime( $this->object->get_date_created() );
-				$this->placeholders['{withdrawal_date}'] = eu_owb_get_order_withdrawal_date_received( $this->object ) ? wc_format_datetime( eu_owb_get_order_withdrawal_date_received( $this->object ) ) : '';
+				$this->placeholders['{withdrawal_date}'] = wc_format_datetime( $this->withdrawal->get_date_received() );
 			}
 
 			$this->id = $this->partial_withdrawal ? 'customer_partial_withdrawal_request_received' : 'customer_withdrawal_request_received';

@@ -11,14 +11,14 @@
  * the readme will list any important changes.
  *
  * @package Vendidero/OrderWithdrawalButton/Templates
- * @version 2.0.0
+ * @version 3.0.0
  */
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
 $email_improvements_enabled = \Vendidero\OrderWithdrawalButton\Package::has_email_improvements_enabled();
-$withdrawal_name            = eu_owb_get_order_withdrawal_full_name( $order, $withdrawal );
+$withdrawal_name            = $withdrawal->get_formatted_full_name( false, 'email' );
 
 /*
  * @hooked WC_Emails::email_header() Output the email header

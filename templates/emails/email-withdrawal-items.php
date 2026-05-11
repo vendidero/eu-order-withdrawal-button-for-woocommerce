@@ -11,7 +11,7 @@
  * the readme will list any important changes.
  *
  * @package Vendidero/OrderWithdrawalButton/Templates
- * @version 1.0.0
+ * @version 3.0.0
  */
 defined( 'ABSPATH' ) || exit;
 
@@ -21,11 +21,13 @@ $email_improvements_enabled = \Vendidero\OrderWithdrawalButton\Package::has_emai
 $price_text_align           = $email_improvements_enabled ? 'right' : 'left';
 
 foreach ( $items as $item_id => $item_data ) :
-	$item     = $item_data['item'];
-	$quantity = $item_data['quantity'];
-	$product  = $item->get_product();
-	$sku      = '';
-	$image    = '';
+	$item        = $item_data['item'];
+	$quantity    = $item_data['quantity'];
+	$product     = $item->get_product();
+	$org_item    = $item->get_parent() ? $item->get_parent() : $item;
+	$org_item_id = $item->get_parent_id() > 0 ? $item->get_parent_id() : $item_id;
+	$sku         = '';
+	$image       = '';
 
 	if ( is_object( $product ) ) {
 		$sku   = $product->get_sku();
@@ -39,7 +41,7 @@ foreach ( $items as $item_id => $item_data ) :
 					<tr>
 						<?php
 						// Show title/image etc.
-						if ( $show_image ) {
+						if ( $show_image && $image ) {
 							/**
 							 * Email Order Item Thumbnail hook.
 							 *
@@ -47,7 +49,7 @@ foreach ( $items as $item_id => $item_data ) :
 							 * @param WC_Order_Item_Product $item  The item being displayed.
 							 * @since 2.1.0
 							 */
-							echo '<td>' . wp_kses_post( apply_filters( 'woocommerce_order_item_thumbnail', $image, $item ) ) . '</td>';
+							echo '<td>' . wp_kses_post( apply_filters( 'woocommerce_order_item_thumbnail', $image, $org_item ) ) . '</td>';
 						}
 						?>
 						<td>
@@ -59,7 +61,7 @@ foreach ( $items as $item_id => $item_data ) :
 							 * @param WC_Order_Item_Product $item      The item being displayed.
 							 * @since 2.1.0
 							 */
-							$order_item_name = apply_filters( 'woocommerce_order_item_name', $item->get_name(), $item, false );
+							$order_item_name = $withdrawal->has_parent() ? apply_filters( 'woocommerce_order_item_name', $item->get_name(), $org_item, false ) : $item->get_name();
 							echo wp_kses_post( "<h3 style='font-size: inherit;font-weight: inherit;'>{$order_item_name}</h3>" );
 
 							// SKU.
@@ -67,55 +69,57 @@ foreach ( $items as $item_id => $item_data ) :
 								echo wp_kses_post( ' (#' . $sku . ')' );
 							}
 
-							/**
-							 * Allow other plugins to add additional product information.
-							 *
-							 * @param int                   $item_id    The item ID.
-							 * @param WC_Order_Item_Product $item       The item object.
-							 * @param WC_Order              $order      The order object.
-							 * @param bool                  $plain_text Whether the email is plain text or not.
-							 * @since 2.3.0
-							 */
-							do_action( 'woocommerce_order_item_meta_start', $item_id, $item, $order, $plain_text );
+							if ( $withdrawal->has_parent() ) {
+								/**
+								 * Allow other plugins to add additional product information.
+								 *
+								 * @param int                   $item_id    The item ID.
+								 * @param WC_Order_Item_Product $item       The item object.
+								 * @param WC_Order              $order      The order object.
+								 * @param bool                  $plain_text Whether the email is plain text or not.
+								 * @since 2.3.0
+								 */
+								do_action( 'woocommerce_order_item_meta_start', $org_item_id, $org_item, $order, $plain_text );
 
-							$item_meta = wc_display_item_meta(
-								$item,
-								array(
-									'before'       => '',
-									'after'        => '',
-									'separator'    => '<br>',
-									'echo'         => false,
-									'label_before' => '<span>',
-									'label_after'  => ':</span> ',
-								)
-							);
-							echo '<div class="email-order-item-meta">';
-							// Using wp_kses instead of wp_kses_post to remove all block elements.
-							echo wp_kses(
-								$item_meta,
-								array(
-									'br'   => array(),
-									'span' => array(),
-									'a'    => array(
-										'href'   => true,
-										'target' => true,
-										'rel'    => true,
-										'title'  => true,
-									),
-								)
-							);
-							echo '</div>';
+								$item_meta = wc_display_item_meta(
+									$item,
+									array(
+										'before'       => '',
+										'after'        => '',
+										'separator'    => '<br>',
+										'echo'         => false,
+										'label_before' => '<span>',
+										'label_after'  => ':</span> ',
+									)
+								);
+								echo '<div class="email-order-item-meta">';
+								// Using wp_kses instead of wp_kses_post to remove all block elements.
+								echo wp_kses(
+									$item_meta,
+									array(
+										'br'   => array(),
+										'span' => array(),
+										'a'    => array(
+											'href'   => true,
+											'target' => true,
+											'rel'    => true,
+											'title'  => true,
+										),
+									)
+								);
+								echo '</div>';
 
-							/**
-							 * Allow other plugins to add additional product information.
-							 *
-							 * @param int                   $item_id    The item ID.
-							 * @param WC_Order_Item_Product $item       The item object.
-							 * @param WC_Order              $order      The order object.
-							 * @param bool                  $plain_text Whether the email is plain text or not.
-							 * @since 2.3.0
-							 */
-							do_action( 'woocommerce_order_item_meta_end', $item_id, $item, $order, $plain_text );
+								/**
+								 * Allow other plugins to add additional product information.
+								 *
+								 * @param int                   $item_id    The item ID.
+								 * @param WC_Order_Item_Product $item       The item object.
+								 * @param WC_Order              $order      The order object.
+								 * @param bool                  $plain_text Whether the email is plain text or not.
+								 * @since 2.3.0
+								 */
+								do_action( 'woocommerce_order_item_meta_end', $item_id, $item, $order, $plain_text );
+							}
 							?>
 						</td>
 					</tr>
@@ -124,7 +128,7 @@ foreach ( $items as $item_id => $item_data ) :
 			} else {
 
 				// Show title/image etc.
-				if ( $show_image ) {
+				if ( $show_imag && $image ) {
 					/**
 					 * Email Order Item Thumbnail hook.
 					 *
@@ -132,7 +136,7 @@ foreach ( $items as $item_id => $item_data ) :
 					 * @param WC_Order_Item_Product $item  The item being displayed.
 					 * @since 2.1.0
 					 */
-					echo wp_kses_post( apply_filters( 'woocommerce_order_item_thumbnail', $image, $item ) );
+					echo wp_kses_post( apply_filters( 'woocommerce_order_item_thumbnail', $image, $org_item ) ) . '</td>';
 				}
 
 				/**
@@ -142,41 +146,45 @@ foreach ( $items as $item_id => $item_data ) :
 				 * @param WC_Order_Item_Product $item      The item being displayed.
 				 * @since 2.1.0
 				 */
-				echo wp_kses_post( apply_filters( 'woocommerce_order_item_name', $item->get_name(), $item, false ) );
+				echo wp_kses_post( $withdrawal->has_parent() ? apply_filters( 'woocommerce_order_item_name', $item->get_name(), $org_item, false ) : $item->get_name() );
 
 				// SKU.
 				if ( $show_sku && $sku ) {
 					echo wp_kses_post( ' (#' . $sku . ')' );
 				}
 
-				/**
-				 * Allow other plugins to add additional product information.
-				 *
-				 * @param int                   $item_id    The item ID.
-				 * @param WC_Order_Item_Product $item       The item object.
-				 * @param WC_Order              $order      The order object.
-				 * @param bool                  $plain_text Whether the email is plain text or not.
-				 * @since 2.3.0
-				 */
-				do_action( 'woocommerce_order_item_meta_start', $item_id, $item, $order, $plain_text );
+				if ( $withdrawal->has_parent() ) {
+					/**
+					 * Allow other plugins to add additional product information.
+					 *
+					 * @param int $item_id The item ID.
+					 * @param WC_Order_Item_Product $item The item object.
+					 * @param WC_Order $order The order object.
+					 * @param bool $plain_text Whether the email is plain text or not.
+					 *
+					 * @since 2.3.0
+					 */
+					do_action( 'woocommerce_order_item_meta_start', $item_id, $item, $order, $plain_text );
 
-				wc_display_item_meta(
-					$item,
-					array(
-						'label_before' => '<strong class="wc-item-meta-label" style="float: ' . ( is_rtl() ? 'right' : 'left' ) . '; margin-' . esc_attr( $margin_side ) . ': .25em; clear: both">',
-					)
-				);
+					wc_display_item_meta(
+						$item,
+						array(
+							'label_before' => '<strong class="wc-item-meta-label" style="float: ' . ( is_rtl() ? 'right' : 'left' ) . '; margin-' . esc_attr( $margin_side ) . ': .25em; clear: both">',
+						)
+					);
 
-				/**
-				 * Allow other plugins to add additional product information.
-				 *
-				 * @param int                   $item_id    The item ID.
-				 * @param WC_Order_Item_Product $item       The item object.
-				 * @param WC_Order              $order      The order object.
-				 * @param bool                  $plain_text Whether the email is plain text or not.
-				 * @since 2.3.0
-				 */
-				do_action( 'woocommerce_order_item_meta_end', $item_id, $item, $order, $plain_text );
+					/**
+					 * Allow other plugins to add additional product information.
+					 *
+					 * @param int $item_id The item ID.
+					 * @param WC_Order_Item_Product $item The item object.
+					 * @param WC_Order $order The order object.
+					 * @param bool $plain_text Whether the email is plain text or not.
+					 *
+					 * @since 2.3.0
+					 */
+					do_action( 'woocommerce_order_item_meta_end', $item_id, $item, $order, $plain_text );
+				}
 			}
 			?>
 		</td>

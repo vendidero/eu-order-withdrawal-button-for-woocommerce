@@ -294,40 +294,39 @@ function eu_owb_get_stock_amount( $quantity ) {
  * @return mixed
  */
 function eu_owb_get_order_item_quantity_left_to_withdraw( $item, $order = null, $include_non_withdrawable = false ) {
-	$order              = ! $order ? $item->get_order() : $order;
-	$rejected           = $order ? eu_owb_get_order_withdrawals( $order, array( 'status' => 'rejected' ) ) : array();
-	$refunded_qty       = $order ? $order->get_qty_refunded_for_item( $item->get_id() ) : 0;
-	$total_qty          = $item->get_quantity();
-	$quantity_withdrawn = $item->meta_exists( '_withdrawn_quantity', true ) ? eu_owb_get_stock_amount( $item->get_meta( '_withdrawn_quantity', true ) ) : 0.0;
-	$rejected_qty       = 0;
+	$order = ! $order ? $item->get_order() : $order;
 
-	/**
-	 * Calculate the rejected qty for the item and prevent customers from submitting new
-	 * withdrawal requests for rejected items.
-	 */
-	foreach ( $rejected as $rejected_withdrawal ) {
-		$items = $rejected_withdrawal['items'];
-
-		if ( array_key_exists( $item->get_id(), $items ) ) {
-			$rejected_qty += eu_owb_get_stock_amount( $items[ $item->get_id() ]['quantity'] );
-		}
+	if ( ! $order ) {
+		return 0;
 	}
+
+	$total_qty    = $item->get_quantity();
+	$withdrawals  = eu_owb_get_order_withdrawals( $order, array( 'status' => array( 'confirmed', 'rejected' ) ) );
+	$refunded_qty = $order->get_qty_refunded_for_item( $item->get_id() );
 
 	if ( $refunded_qty < 0 ) {
 		$refunded_qty *= -1;
 	}
 
-	$total_qty_left = $total_qty - $refunded_qty - $quantity_withdrawn - $rejected_qty;
+	$total_qty = $total_qty - $refunded_qty;
 
-	if ( $total_qty_left <= 0 ) {
-		$total_qty_left = 0;
+	foreach ( $withdrawals as $withdrawal ) {
+		foreach ( $withdrawal->get_items() as $withdrawal_item ) {
+			if ( $withdrawal_item->get_parent_id() === $item->get_id() ) {
+				$total_qty -= $withdrawal_item->get_quantity();
+			}
+		}
+	}
+
+	if ( $total_qty <= 0 ) {
+		$total_qty = 0;
 	}
 
 	if ( ! $include_non_withdrawable && ! eu_owb_order_item_is_withdrawable( $item, $order ) ) {
-		$total_qty_left = 0;
+		$total_qty = 0;
 	}
 
-	return apply_filters( 'eu_owb_woocommerce_order_item_quantity_left_to_withdraw', eu_owb_get_stock_amount( $total_qty_left ), $item, $order );
+	return apply_filters( 'eu_owb_woocommerce_order_item_quantity_left_to_withdraw', eu_owb_get_stock_amount( $total_qty ), $item, $order );
 }
 
 /**
@@ -403,35 +402,37 @@ function eu_owb_order_has_confirmed_withdrawals( $order ) {
 	return ! empty( $withdrawals ) ? true : false;
 }
 
+/**
+ * @param \Vendidero\OrderWithdrawalButton\WithdrawalOrder $request
+ *
+ * @return bool
+ */
 function eu_owb_order_withdrawal_request_has_multiple_orders( $request ) {
-	$has_multiple = isset( $request['meta']['has_multiple_matching_orders'] ) ? wc_string_to_bool( $request['meta']['has_multiple_matching_orders'] ) : false;
+	$has_multiple = $request->get_meta( '_has_multiple_matching_orders' ) ? wc_string_to_bool( $request->get_meta( '_has_multiple_matching_orders' ) ) : false;
 
 	return $has_multiple;
 }
 
+/**
+ * @param \Vendidero\OrderWithdrawalButton\WithdrawalOrder $request
+ *
+ * @return int
+ */
 function eu_owb_order_withdrawal_request_get_original_order_id( $request ) {
-	$order_id = isset( $request['meta']['original_request_order_id'] ) ? absint( $request['meta']['original_request_order_id'] ) : 0;
+	$order_id = $request->get_meta( '_original_request_order_id' ) ? absint( $request->get_meta( '_original_request_order_id' ) ) : 0;
 
 	return $order_id;
 }
 
 function eu_owb_get_order_withdrawal_email( $order, $id = '' ) {
-	if ( ! is_a( $order, 'WC_Order' ) ) {
+	if ( is_numeric( $order ) ) {
 		$order = wc_get_order( $order );
 	}
 
-	if ( ! $order ) {
-		return '';
-	}
+	$email = '';
 
-	$withdrawal = eu_owb_get_withdrawal_or_request( $order, $id );
-
-	if ( $withdrawal ) {
-		$email = $withdrawal['request_email'];
-	}
-
-	if ( empty( $email ) ) {
-		$email = $order->get_billing_email();
+	if ( $withdrawal = eu_owb_get_withdrawal_or_request( $order, $id ) ) {
+		$email = $withdrawal->get_email();
 	}
 
 	return $email;
@@ -461,88 +462,42 @@ function eu_owb_timestamp_to_datetime( $timestamp ) {
  * @return WC_DateTime|null
  */
 function eu_owb_get_order_withdrawal_date_received( $order, $id = '' ) {
-	if ( ! is_a( $order, 'WC_Order' ) ) {
+	if ( is_numeric( $order ) ) {
 		$order = wc_get_order( $order );
-	}
-
-	if ( ! $order ) {
-		return null;
 	}
 
 	$date = null;
 
 	if ( $withdrawal = eu_owb_get_withdrawal_or_request( $order, $id ) ) {
-		$date = eu_owb_timestamp_to_datetime( $withdrawal['date_received'] );
+		$date = $withdrawal->get_date_received();
 	}
 
 	return $date;
 }
 
 function eu_owb_order_withdrawal_email_is_verified( $order, $id = '' ) {
-	if ( ! is_a( $order, 'WC_Order' ) ) {
+	if ( is_numeric( $order ) ) {
 		$order = wc_get_order( $order );
-	}
-
-	if ( ! $order ) {
-		return null;
 	}
 
 	$is_verified = false;
 
 	if ( $withdrawal = eu_owb_get_withdrawal_or_request( $order, $id ) ) {
-		$is_verified = 'yes' === $withdrawal['has_verified_email'];
+		$is_verified = $withdrawal->has_verified_email();
 	}
 
 	return $is_verified;
 }
 
 /**
- * @param $order
- * @param string $id,
+ * @param \Vendidero\OrderWithdrawalButton\WithdrawalOrder $order
  *
  * @return string
  */
-function eu_owb_get_order_withdrawal_full_name( $order, $id = '', $placeholder = false ) {
-	if ( ! is_a( $order, 'WC_Order' ) ) {
-		$order = wc_get_order( $order );
-	}
+function eu_owb_get_order_withdrawal_full_name( $order, $placeholder = false ) {
+	$full_name = $order->get_formatted_full_name( $placeholder );
 
-	if ( ! $order ) {
-		return '';
-	}
-
-	$full_name_placeholder = $placeholder ? ( is_bool( $placeholder ) ? _x( 'Not specified', 'owb-full-name-placeholder', 'eu-order-withdrawal-button-for-woocommerce' ) : $placeholder ) : '';
-
-	if ( $withdrawal = eu_owb_get_withdrawal_or_request( $order, $id ) ) {
-		$meta = wp_parse_args(
-			$withdrawal['meta'],
-			array(
-				'first_name' => '',
-				'last_name'  => '',
-			)
-		);
-
-		if ( empty( $meta['last_name'] ) && ! empty( $meta['first_name'] ) ) {
-			/* translators: 1: first name */
-			$full_name = sprintf( _x( '%1$s', 'owb-first-name', 'eu-order-withdrawal-button-for-woocommerce' ), $meta['first_name'] ); // phpcs:ignore WordPress.WP.I18n.NoEmptyStrings
-		} elseif ( empty( $meta['first_name'] ) && ! empty( $meta['last_name'] ) ) {
-			/* translators: 1: last name */
-			$full_name = sprintf( _x( '%1$s', 'owb-last-name', 'eu-order-withdrawal-button-for-woocommerce' ), $meta['last_name'] ); // phpcs:ignore WordPress.WP.I18n.NoEmptyStrings
-		} elseif ( ! empty( $meta['first_name'] ) && ! empty( $meta['last_name'] ) ) {
-			/* translators: 1: last name 2: last name */
-			$full_name = sprintf( _x( '%1$s %2$s', 'owb-full-name', 'eu-order-withdrawal-button-for-woocommerce' ), $meta['first_name'], $meta['last_name'] );
-		}
-
-		if ( empty( $full_name ) && 'yes' === $withdrawal['has_verified_email'] ) {
-			$full_name = $order->get_formatted_billing_full_name();
-		}
-	}
-
-	if ( empty( $full_name ) ) {
-		$full_name = $full_name_placeholder;
-	}
-
-	return apply_filters( 'eu_owb_woocommerce_order_withdrawal_full_name', $full_name, $order, $id );
+	return apply_filters( 'eu_owb_woocommerce_order_withdrawal_full_name', $full_name, $order );
 }
 
 /**
@@ -552,19 +507,11 @@ function eu_owb_get_order_withdrawal_full_name( $order, $id = '', $placeholder =
  * @return WC_DateTime|null
  */
 function eu_owb_get_order_withdrawal_date_confirmed( $order, $id = '' ) {
-	if ( ! is_a( $order, 'WC_Order' ) ) {
-		$order = wc_get_order( $order );
-	}
-
-	if ( ! $order ) {
-		return null;
-	}
-
 	$date = null;
 
 	if ( $withdrawal = eu_owb_get_order_withdrawal( $order, $id ) ) {
-		if ( 'confirmed' === $withdrawal['status'] ) {
-			$date = eu_owb_timestamp_to_datetime( $withdrawal['date_confirmed'] );
+		if ( 'confirmed' === $withdrawal->get_status() ) {
+			$date = $withdrawal->get_date_confirmed();
 		}
 	}
 
@@ -578,19 +525,11 @@ function eu_owb_get_order_withdrawal_date_confirmed( $order, $id = '' ) {
  * @return WC_DateTime|null
  */
 function eu_owb_get_order_withdrawal_date_rejected( $order, $id = '' ) {
-	if ( ! is_a( $order, 'WC_Order' ) ) {
-		$order = wc_get_order( $order );
-	}
-
-	if ( ! $order ) {
-		return null;
-	}
-
 	$date = null;
 
 	if ( $withdrawal = eu_owb_get_order_withdrawal( $order, $id ) ) {
-		if ( 'rejected' === $withdrawal['status'] ) {
-			$date = eu_owb_timestamp_to_datetime( $withdrawal['date_rejected'] );
+		if ( 'rejected' === $withdrawal->get_status() ) {
+			$date = $withdrawal->get_date_rejected();
 		}
 	}
 
@@ -598,11 +537,11 @@ function eu_owb_get_order_withdrawal_date_rejected( $order, $id = '' ) {
 }
 
 function eu_owb_get_last_order_withdrawal( $order ) {
-	$withdrawals = eu_owb_get_order_withdrawals( $order );
+	$withdrawals = eu_owb_get_order_withdrawals( $order, array( 'confirmed', 'rejected' ) );
 	$withdrawal  = false;
 
 	if ( ! empty( $withdrawals ) ) {
-		$withdrawal = wp_parse_args( $withdrawals[ count( $withdrawals ) - 1 ], eu_owb_get_order_withdrawal_default_args() );
+		$withdrawal = $withdrawals[ count( $withdrawals ) - 1 ];
 	}
 
 	return $withdrawal;
@@ -617,16 +556,16 @@ function eu_owb_get_last_order_withdrawal( $order ) {
 function eu_owb_get_withdrawal_or_request( $order, $id = '' ) {
 	$withdrawal = false;
 
-	if ( is_array( $id ) && ! empty( $id['id'] ) ) {
-		$withdrawal = wp_parse_args( $id, eu_owb_get_order_withdrawal_default_args() );
-	} elseif ( empty( $id ) ) {
+	if ( is_a( $order, '\Vendidero\OrderWithdrawalButton\WithdrawalOrder' ) ) {
+		$withdrawal = $order;
+	} elseif ( is_a( $order, 'WC_Order' ) && ! empty( $id ) ) {
+		$withdrawal = eu_owb_get_order_withdrawal_by_id( $order, $id );
+	} elseif ( is_a( $order, 'WC_Order' ) ) {
 		$withdrawal = eu_owb_get_withdrawal_request( $order );
 
 		if ( ! $withdrawal ) {
 			$withdrawal = eu_owb_get_last_order_withdrawal( $order );
 		}
-	} else {
-		$withdrawal = eu_owb_get_order_withdrawal_by_id( $order, $id );
 	}
 
 	return $withdrawal;
@@ -635,57 +574,23 @@ function eu_owb_get_withdrawal_or_request( $order, $id = '' ) {
 function eu_owb_get_order_withdrawal( $order, $id = '' ) {
 	$withdrawal = false;
 
-	if ( is_array( $id ) && ! empty( $id['id'] ) ) {
-		$withdrawal = $id;
-	} elseif ( empty( $id ) ) {
-		$withdrawal = eu_owb_get_last_order_withdrawal( $order );
-	} else {
+	if ( is_a( $order, '\Vendidero\OrderWithdrawalButton\WithdrawalOrder' ) ) {
+		$withdrawal = $order;
+	} elseif ( is_a( $order, 'WC_Order' ) && ! empty( $id ) ) {
 		$withdrawal = eu_owb_get_order_withdrawal_by_id( $order, $id );
+	} elseif ( is_a( $order, 'WC_Order' ) ) {
+		$withdrawal = eu_owb_get_last_order_withdrawal( $order );
 	}
 
 	return $withdrawal;
 }
 
 /**
- * @param WC_Order|integer $order
- * @param string|array $id
+ * @param \Vendidero\OrderWithdrawalButton\WithdrawalOrder|integer $order
  *
  * @return array
  */
-function eu_owb_get_withdrawal_order_items( $order, $id = '' ) {
-	if ( ! is_a( $order, 'WC_Order' ) ) {
-		$order = wc_get_order( $order );
-	}
-
-	if ( ! $order ) {
-		return array();
-	}
-
-	$withdrawal = eu_owb_get_withdrawal_or_request( $order, $id );
-	$items      = array();
-
-	if ( $withdrawal ) {
-		foreach ( $withdrawal['items'] as $item_id => $item_data ) {
-			$item_data = wp_parse_args(
-				(array) $item_data,
-				array(
-					'quantity' => 1,
-				)
-			);
-
-			if ( $item = $order->get_item( $item_id ) ) {
-				$items[ $item_id ] = array(
-					'item'     => $item,
-					'quantity' => $item_data['quantity'],
-				);
-			}
-		}
-	}
-
-	return $items;
-}
-
-function eu_owb_get_order_withdrawals( $order, $by = array() ) {
+function eu_owb_get_withdrawal_order_items( $order ) {
 	if ( is_numeric( $order ) ) {
 		$order = wc_get_order( $order );
 	}
@@ -694,13 +599,71 @@ function eu_owb_get_order_withdrawals( $order, $by = array() ) {
 		return array();
 	}
 
-	$withdrawals = array_filter( (array) $order->get_meta( '_withdrawals', true ) );
+	$items = array();
 
-	if ( ! empty( $by ) ) {
-		$withdrawals = wp_list_filter( $withdrawals, $by );
+	foreach ( $order->get_items() as $item_id => $item ) {
+		$items[ $item_id ] = array(
+			'item'     => $item,
+			'quantity' => $item->get_quantity(),
+		);
 	}
 
-	return $withdrawals;
+	return $items;
+}
+
+/**
+ * @param WC_Order $order
+ * @param array $query
+ *
+ * @return \Vendidero\OrderWithdrawalButton\WithdrawalOrder[]
+ */
+function eu_owb_get_order_withdrawals( $order, $query = array() ) {
+	$order_id    = is_numeric( $order ) ? $order : $order->get_id();
+	$cache_key   = WC_Cache_Helper::get_cache_prefix( 'orders' ) . 'withdrawals' . $order_id;
+	$withdrawals = wp_cache_get( $cache_key, 'orders' );
+
+	if ( false === $withdrawals ) {
+		$withdrawals = wc_get_orders(
+			array(
+				'type'   => 'shop_order_withdraw',
+				'status' => array( 'wc-owb-requested', 'wc-owb-confirmed', 'wc-owb-rejected' ),
+				'parent' => $order_id,
+				'limit'  => -1,
+			)
+		);
+		wp_cache_set( $cache_key, $withdrawals, 'orders' );
+	}
+
+	$args = array(
+		'status' => array(),
+	);
+
+	$args           = array_replace_recursive( $args, $query );
+	$args['status'] = (array) $args['status'];
+
+	$results = array();
+
+	if ( ! empty( $withdrawals ) && is_array( $withdrawals ) ) {
+		foreach ( $withdrawals as $withdrawal ) {
+			if ( $withdrawal instanceof \Vendidero\OrderWithdrawalButton\WithdrawalOrder ) {
+				if ( ! empty( $args['status'] ) ) {
+					if ( ! $withdrawal->has_status( $args['status'] ) ) {
+						continue;
+					}
+				}
+
+				if ( ! empty( $args['withdrawal_number'] ) ) {
+					if ( $args['withdrawal_number'] !== $withdrawal->get_withdrawal_number() ) {
+						continue;
+					}
+				}
+
+				$results[] = $withdrawal;
+			}
+		}
+	}
+
+	return $results;
 }
 
 function eu_owb_order_has_withdrawals( $order ) {
@@ -710,10 +673,16 @@ function eu_owb_order_has_withdrawals( $order ) {
 }
 
 function eu_owb_get_order_withdrawal_by_id( $order, $id ) {
-	$withdrawals = eu_owb_get_order_withdrawals( $order, array( 'id' => $id ) );
+	$withdrawals = eu_owb_get_order_withdrawals(
+		$order,
+		array(
+			'withdrawal_number' => $id,
+			'limit'             => 1,
+		)
+	);
 
 	if ( ! empty( $withdrawals ) ) {
-		return wp_parse_args( $withdrawals[ count( $withdrawals ) - 1 ], eu_owb_get_order_withdrawal_default_args() );
+		return $withdrawals[ count( $withdrawals ) - 1 ];
 	}
 
 	return false;
@@ -739,138 +708,168 @@ function eu_owb_get_order_withdrawal_default_args() {
 	);
 }
 
+/**
+ * @param WC_Order|integer $order
+ *
+ * @return \Vendidero\OrderWithdrawalButton\WithdrawalOrder|null
+ */
 function eu_owb_get_withdrawal_request( $order ) {
-	if ( is_numeric( $order ) ) {
-		$order = wc_get_order( $order );
+	$order = wc_get_order( $order );
+
+	if ( is_a( $order, 'WC_Order' ) ) {
+		$withdrawals = eu_owb_get_order_withdrawals(
+			$order,
+			array(
+				'status' => 'requested',
+				'limit'  => 1,
+			)
+		);
+
+		if ( ! empty( $withdrawals ) ) {
+			return $withdrawals[ count( $withdrawals ) - 1 ];
+		}
+	} elseif ( is_a( $order, '\Vendidero\OrderWithdrawalButton\WithdrawalOrder' ) ) {
+		return $order;
 	}
 
-	if ( ! $order ) {
-		return false;
-	}
-
-	$pending = array_filter( (array) $order->get_meta( '_withdrawal_request', true ) );
-
-	if ( ! empty( $pending['id'] ) ) {
-		return wp_parse_args( $pending, eu_owb_get_order_withdrawal_default_args() );
-	}
-
-	return false;
+	return null;
 }
 
+/**
+ * @param \Vendidero\OrderWithdrawalButton\WithdrawalOrder $request
+ *
+ * @return bool
+ */
 function eu_owb_withdrawal_request_needs_manual_verification( $request ) {
 	$needs_verification = false;
 
 	if ( 'yes' === \Vendidero\OrderWithdrawalButton\Package::get_setting( 'separately_store_unverified_withdrawal_requests', 'yes' ) ) {
-		$needs_verification = 'no' === $request['has_verified_email'];
+		$needs_verification = ! $request->get_has_verified_email() || ! $request->has_parent();
 	}
 
 	return $needs_verification;
 }
 
 /**
- * @param WC_Order|integer $order
  * @param $email
+ * @param WC_Order|integer|false $order
  * @param $items
  * @param boolean $as_guest
  *
  * @return WP_Error|true
  */
-function eu_owb_create_order_withdrawal_request( $order, $email, $items = array(), $as_guest = true, $meta = array() ) {
+function eu_owb_create_order_withdrawal_request( $email, $order = false, $items = array(), $as_guest = true, $meta = array() ) {
 	$error = new \WP_Error();
 
 	if ( is_numeric( $order ) ) {
 		$order = wc_get_order( $order );
 	}
 
-	if ( ! $order ) {
-		$error->add( 'invalid_order', _x( 'Invalid order.', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ) );
-		return $error;
-	}
-
-	$is_update          = false;
-	$item_map           = array();
 	$is_full_withdrawal = true;
 	$item_desc          = array();
+	$withdrawal         = new \Vendidero\OrderWithdrawalButton\WithdrawalOrder();
 	$order_note         = _x( 'A new withdrawal request has been submitted to this order', 'owb', 'eu-order-withdrawal-button-for-woocommerce' );
 
-	if ( ! empty( $items ) ) {
-		$items_available = eu_owb_get_withdrawable_order_items( $order );
+	if ( $order ) {
+		if ( $existing_withdrawal = eu_owb_get_withdrawal_request( $order ) ) {
+			$withdrawal = $existing_withdrawal;
 
-		foreach ( $items_available as $item_id => $item ) {
-			if ( ! array_key_exists( $item_id, $items ) ) {
-				$is_full_withdrawal = false;
-				continue;
+			foreach ( $withdrawal->get_meta_data() as $meta ) {
+				$withdrawal->delete_meta_data_by_mid( $meta->id );
 			}
 
-			$item_data = wp_parse_args(
-				$items[ $item_id ],
-				array(
-					'quantity' => 1,
-				)
-			);
-
-			$quantity = min( $item_data['quantity'], $item['quantity'] );
-
-			if ( $quantity < $item['quantity'] ) {
-				$is_full_withdrawal = false;
+			foreach ( $withdrawal->get_items() as $item ) {
+				$item->delete( true );
 			}
 
-			$items[ $item_id ]['quantity'] = eu_owb_get_stock_amount( $quantity );
+			$withdrawal->set_is_update( true );
 		}
 
-		$items = array_intersect_key( $items, $items_available );
+		if ( ! empty( $items ) ) {
+			$items_available = eu_owb_get_withdrawable_order_items( $order );
+
+			foreach ( $items_available as $item_id => $item ) {
+				if ( ! array_key_exists( $item_id, $items ) ) {
+					$is_full_withdrawal = false;
+					continue;
+				}
+
+				$item_data = wp_parse_args(
+					$items[ $item_id ],
+					array(
+						'quantity' => 1,
+					)
+				);
+
+				$quantity = min( $item_data['quantity'], $item['quantity'] );
+
+				if ( $quantity < $item['quantity'] ) {
+					$is_full_withdrawal = false;
+				}
+
+				$items[ $item_id ]['quantity'] = eu_owb_get_stock_amount( $quantity );
+			}
+
+			$items = array_intersect_key( $items, $items_available );
+		} else {
+			$items = eu_owb_get_withdrawable_order_items( $order );
+		}
 	} else {
-		$items = eu_owb_get_withdrawable_order_items( $order );
+		$items = array();
 	}
 
-	$new_withdrawal = wp_parse_args(
-		array(
-			'date_received'      => time(),
-			'request_email'      => $email,
-			'meta'               => $meta,
-			'original_status'    => $order->get_status(),
-			'is_guest'           => wc_bool_to_string( $as_guest ),
-			'is_partial'         => wc_bool_to_string( ! $is_full_withdrawal ),
-			'has_verified_email' => wc_bool_to_string( eu_owb_custom_email_matches_order_email( $order, $email ) ),
-		),
-		eu_owb_get_order_withdrawal_default_args()
-	);
+	$withdrawal->set_email( $email );
+	$withdrawal->set_is_partial( ! $is_full_withdrawal );
+	$withdrawal->set_has_verified_email( false );
+	$withdrawal->set_is_guest( $as_guest );
 
-	if ( eu_owb_order_has_withdrawal_request( $order ) ) {
-		$last                              = eu_owb_get_withdrawal_request( $order );
-		$new_withdrawal['id']              = $last['id'];
-		$new_withdrawal['is_update']       = 'yes';
-		$new_withdrawal['original_status'] = $last['original_status'];
+	if ( $order ) {
+		$withdrawal->set_parent_id( $order->get_id() );
 
-		foreach ( $last['items'] as $item_id => $item ) {
-			if ( $item = $order->get_item( $item_id, false ) ) {
-				$item->delete_meta_data( '_withdrawal_request_quantity' );
-			}
+		if ( ! $withdrawal->get_id() ) {
+			$withdrawal->set_original_status( $order->get_status() );
+		}
+
+		if ( eu_owb_custom_email_matches_order_email( $order, $email ) ) {
+			$withdrawal->set_has_verified_email( true );
+		}
+	}
+
+	foreach ( $meta as $meta_key => $value ) {
+		$setter = "set_{$meta_key}";
+
+		if ( is_callable( array( $withdrawal, $setter ) ) ) {
+			$withdrawal->$setter( $value );
+		} else {
+			$withdrawal->update_meta_data( "_{$meta_key}", $value );
 		}
 	}
 
 	foreach ( $items as $item_id => $item_data ) {
-		$item_map[ $item_id ] = array(
-			'quantity' => $item_data['quantity'],
-		);
-
 		if ( $item = $order->get_item( $item_id, false ) ) {
 			$withdrawal_quantity = $item_data['quantity'];
+			$withdrawal_item     = new \Vendidero\OrderWithdrawalButton\WithdrawalItem();
+			$withdrawal_item->set_parent_id( $item_id );
+			$withdrawal_item->set_quantity( $withdrawal_quantity );
+			$withdrawal_item->set_name( $item->get_name() );
 
-			$item->update_meta_data( '_withdrawal_request_quantity', min( $withdrawal_quantity, $item->get_quantity() ) );
+			$withdrawal->add_item( $withdrawal_item );
 
 			$item_desc[] = $item->get_name() . ' &times; ' . $item_data['quantity'];
 		}
 	}
 
-	$new_withdrawal['items'] = $item_map;
-	$order->update_meta_data( '_withdrawal_request', $new_withdrawal );
+	$withdrawal_request_id = $withdrawal->save();
 
-	$new_order_status = 'pending-wdraw';
+	if ( ! $withdrawal_request_id ) {
+		$error->add( 'invalid_request', _x( 'Error while saving the withdrawal request.', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ) );
+		return $error;
+	}
 
-	if ( eu_owb_withdrawal_request_needs_manual_verification( $new_withdrawal ) ) {
-		$order->update_meta_data( '_withdrawal_request_is_verified', 'no' );
-		$new_order_status = $order->get_status();
+	$new_order_status = '';
+
+	if ( eu_owb_withdrawal_request_needs_manual_verification( $withdrawal ) ) {
+		$new_order_status = 'pending-wdraw';
 	}
 
 	if ( ! $is_full_withdrawal ) {
@@ -883,88 +882,66 @@ function eu_owb_create_order_withdrawal_request( $order, $email, $items = array(
 		$order_note .= '.';
 	}
 
-	if ( $order->has_status( $new_order_status ) ) {
-		$order->add_order_note( $order_note );
-		$order->save();
-	} else {
-		$order->update_status( $new_order_status, $order_note );
+	if ( $order ) {
+		if ( ! empty( $new_order_status ) ) {
+			if ( $order->has_status( $new_order_status ) ) {
+				$order->add_order_note( $order_note );
+				$order->save();
+			} else {
+				$order->update_status( $new_order_status, $order_note );
+			}
+		}
 	}
 
-	do_action( 'eu_owb_woocommerce_withdrawal_request_created', $order, $new_withdrawal );
+	do_action( 'eu_owb_woocommerce_withdrawal_request_created', $order, $withdrawal );
 
-	WC()->mailer()->emails['EU_OWB_Email_Customer_Withdrawal_Request_Received']->trigger( $order->get_id(), $order );
-	WC()->mailer()->emails['EU_OWB_Email_New_Withdrawal_Request']->trigger( $order->get_id(), $order );
+	WC()->mailer()->emails['EU_OWB_Email_Customer_Withdrawal_Request_Received']->trigger( $withdrawal->get_id(), $withdrawal );
+	WC()->mailer()->emails['EU_OWB_Email_New_Withdrawal_Request']->trigger( $withdrawal->get_id(), $withdrawal );
 
 	return true;
 }
 
-function eu_owb_order_confirm_withdrawal_request( $order ) {
-	if ( is_numeric( $order ) ) {
-		$order = wc_get_order( $order );
-	}
-
-	if ( ! $order ) {
-		return false;
-	}
-
-	$request = eu_owb_get_withdrawal_request( $order );
+function eu_owb_order_confirm_withdrawal_request( $request_or_order ) {
+	$request = eu_owb_get_withdrawal_request( $request_or_order );
 
 	if ( ! $request ) {
 		return false;
 	}
 
-	$withdrawals               = eu_owb_get_order_withdrawals( $order );
-	$request['status']         = 'confirmed';
-	$request['date_confirmed'] = time();
-	$withdrawals[]             = $request;
+	$order          = $request->get_parent();
+	$default_status = $request->get_original_status();
 
-	foreach ( eu_owb_get_withdrawal_order_items( $order, $request ) as $item_id => $item_data ) {
-		$item                         = $item_data['item'];
-		$quantities                   = array_filter( (array) $item->get_meta( '_withdrawn_quantities', true ) );
-		$quantities[ $request['id'] ] = $item_data['quantity'];
-		$total_quantity               = array_sum( $quantities );
+	if ( $order ) {
+		$items_left = eu_owb_get_withdrawable_order_items( $order );
 
-		$item->delete_meta_data( '_withdrawal_request_quantity' );
+		if ( empty( $items_left ) ) {
+			$default_status = 'wc-withdrawn';
 
-		$item->update_meta_data( '_withdrawn_quantities', $quantities );
-		$item->update_meta_data( '_withdrawn_quantity', $total_quantity );
-		$item->save();
+			$request->set_is_partial( false );
+		} else {
+			$request->set_is_partial( true );
+		}
 	}
-
-	$items_left     = eu_owb_get_withdrawable_order_items( $order );
-	$default_status = $request['original_status'];
-
-	if ( empty( $items_left ) ) {
-		$default_status        = 'wc-withdrawn';
-		$request['is_partial'] = 'no';
-
-		$order->update_meta_data( '_is_full_withdrawal', 'yes' );
-	} else {
-		$request['is_partial'] = 'yes';
-		$order->delete_meta_data( '_is_full_withdrawal' );
-	}
-
-	$order->update_meta_data( '_withdrawals', $withdrawals );
-	$order->delete_meta_data( '_withdrawal_request' );
-	$order->delete_meta_data( '_withdrawal_request_is_verified' );
 
 	$default_status = apply_filters( 'eu_owb_woocommerce_order_withdrawal_status_confirmed', $default_status, $request );
 	$order_note     = _x( 'A withdrawal request has been confirmed.', 'owb', 'eu-order-withdrawal-button-for-woocommerce' );
 
-	if ( $order->has_status( $default_status ) ) {
-		$order->add_order_note( $order_note );
-		$order->save();
-	} else {
-		if ( 'wc-withdrawn' !== $default_status ) {
-			eu_owb_prevent_order_status_change_notifications( $order );
-		}
+	if ( $order ) {
+		if ( $order->has_status( $default_status ) || empty( $default_status ) ) {
+			$order->add_order_note( $order_note );
+			$order->save();
+		} else {
+			if ( 'wc-withdrawn' !== $default_status ) {
+				eu_owb_prevent_order_status_change_notifications( $order );
+			}
 
-		$order->update_status( $default_status, $order_note );
+			$order->update_status( $default_status, $order_note );
+		}
 	}
 
 	do_action( 'eu_owb_woocommerce_withdrawal_request_confirmed', $order, $request );
 
-	WC()->mailer()->emails['EU_OWB_Email_Customer_Withdrawal_Request_Confirmed']->trigger( $order->get_id(), $order, $request );
+	WC()->mailer()->emails['EU_OWB_Email_Customer_Withdrawal_Request_Confirmed']->trigger( $request->get_id(), $request );
 
 	return true;
 }
@@ -990,117 +967,78 @@ function eu_owb_prevent_order_status_change_notifications( $order ) {
 	do_action( 'eu_owb_woocommerce_prevent_order_status_change_notifications', $order );
 }
 
-function eu_owb_order_delete_withdrawal_request( $order, $by_customer = false ) {
-	if ( is_numeric( $order ) ) {
-		$order = wc_get_order( $order );
-	}
-
-	if ( ! $order ) {
-		return false;
-	}
-
-	$request = eu_owb_get_withdrawal_request( $order );
+function eu_owb_order_delete_withdrawal_request( $request_or_order, $by_customer = false ) {
+	$request = eu_owb_get_withdrawal_request( $request_or_order );
 
 	if ( ! $request ) {
 		return false;
 	}
 
-	$order->delete_meta_data( '_withdrawal_request' );
-	$order->delete_meta_data( '_withdrawal_request_is_verified' );
+	$last_known_status = $request->get_original_status();
+	$order             = $request->get_parent();
 
-	$last_known_status = $request['original_status'];
-
-	foreach ( eu_owb_get_withdrawal_order_items( $order, $request ) as $item_id => $item_data ) {
-		$item = $item_data['item'];
-		$item->delete_meta_data( '_withdrawal_request_quantity' );
-		$item->save();
-	}
-
-	if ( $by_customer ) {
-		$order->add_order_note( _x( 'Deleted withdrawal request as requested by the customer.', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ) );
-	} else {
-		$order->add_order_note( _x( 'Deleted withdrawal request.', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ) );
-	}
-
-	$default_status = apply_filters( 'eu_owb_woocommerce_withdrawal_request_deleted_status', $last_known_status, $order );
+	$default_status = apply_filters( 'eu_owb_woocommerce_withdrawal_request_deleted_status', $last_known_status, $request );
 	$order_note     = _x( 'A withdrawal request has been deleted.', 'owb', 'eu-order-withdrawal-button-for-woocommerce' );
 
 	if ( $by_customer ) {
 		$order_note = _x( 'A withdrawal request has been deleted by the customer.', 'owb', 'eu-order-withdrawal-button-for-woocommerce' );
 	}
 
-	if ( $order->has_status( $default_status ) ) {
-		$order->add_order_note( $order_note );
-		$order->save();
-	} else {
-		eu_owb_prevent_order_status_change_notifications( $order );
+	$request->delete( true );
 
-		$order->update_status( $default_status, $order_note );
+	if ( $order ) {
+		if ( $order->has_status( $default_status ) || empty( $default_status ) ) {
+			$order->add_order_note( $order_note );
+			$order->save();
+		} else {
+			eu_owb_prevent_order_status_change_notifications( $order );
+
+			$order->update_status( $default_status, $order_note );
+		}
 	}
 
 	wc_get_logger()->info( 'Withdrawal request deleted.', array( 'source' => 'eu-owb-woocommerce' ) );
-	wc_get_logger()->info( wc_print_r( $request, true ), array( 'source' => 'eu-owb-woocommerce' ) );
+	wc_get_logger()->info( wc_print_r( $request->get_data(), true ), array( 'source' => 'eu-owb-woocommerce' ) );
 
-	do_action( 'eu_owb_woocommerce_withdrawal_request_deleted', $order, $request, $by_customer );
+	do_action( 'eu_owb_woocommerce_withdrawal_request_deleted', $request, $by_customer );
 
 	if ( $by_customer ) {
-		WC()->mailer()->emails['EU_OWB_Email_Deleted_Withdrawal_Request']->trigger( $order->get_id(), $request, $order );
+		WC()->mailer()->emails['EU_OWB_Email_Deleted_Withdrawal_Request']->trigger( $request->get_id(), $request );
 	}
 
 	return true;
 }
 
-function eu_owb_order_reject_withdrawal_request( $order, $reason = '' ) {
-	if ( is_numeric( $order ) ) {
-		$order = wc_get_order( $order );
-	}
-
-	if ( ! $order ) {
-		return false;
-	}
-
-	$request = eu_owb_get_withdrawal_request( $order );
+function eu_owb_order_reject_withdrawal_request( $request_or_order, $reason = '' ) {
+	$request = eu_owb_get_withdrawal_request( $request_or_order );
 
 	if ( ! $request ) {
 		return false;
 	}
 
-	$last_known_status           = $request['original_status'];
-	$request['status']           = 'rejected';
-	$request['date_rejected']    = time();
-	$request['rejection_reason'] = $reason;
+	$last_known_status = $request->get_original_status();
+	$order             = $request->get_parent();
 
-	$withdrawals   = eu_owb_get_order_withdrawals( $order );
-	$withdrawals[] = $request;
+	$request->set_rejection_reason( $reason );
 
-	$order->update_meta_data( '_withdrawals', $withdrawals );
-	$order->delete_meta_data( '_withdrawal_request' );
-	$order->delete_meta_data( '_withdrawal_request_is_verified' );
+	if ( $order ) {
+		$default_status = apply_filters( 'eu_owb_woocommerce_withdrawal_request_rejected_status', $last_known_status, $order );
+		$order_note     = sprintf( _x( 'A withdrawal request has been rejected: %1$s', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ), $reason );
 
-	foreach ( eu_owb_get_withdrawal_order_items( $order, $request ) as $item_id => $item_data ) {
-		$item = $item_data['item'];
-
-		$item->delete_meta_data( '_withdrawal_request_quantity' );
-		$item->save();
-	}
-
-	eu_owb_prevent_order_status_change_notifications( $order );
-
-	$default_status = apply_filters( 'eu_owb_woocommerce_withdrawal_request_rejected_status', $last_known_status, $order );
-	$order_note     = sprintf( _x( 'A withdrawal request has been rejected: %1$s', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ), $reason );
-
-	if ( $order->has_status( $default_status ) ) {
-		$order->add_order_note( $order_note );
-		$order->save();
-	} else {
-		eu_owb_prevent_order_status_change_notifications( $order );
-
-		$order->update_status( $default_status, $order_note );
+		if ( $order->has_status( $default_status ) || empty( $default_status ) ) {
+			$order->add_order_note( $order_note );
+			$order->save();
+		} else {
+			eu_owb_prevent_order_status_change_notifications( $order );
+			$order->update_status( $default_status, $order_note );
+		}
 	}
 
 	do_action( 'eu_owb_woocommerce_withdrawal_request_rejected', $order, $request, $reason );
 
-	WC()->mailer()->emails['EU_OWB_Email_Customer_Withdrawal_Request_Rejected']->trigger( $order->get_id(), $order, $request, $reason );
+	$request->update_status( 'rejected' );
+
+	WC()->mailer()->emails['EU_OWB_Email_Customer_Withdrawal_Request_Rejected']->trigger( $request->get_id(), $request, $reason );
 
 	return true;
 }
@@ -1439,13 +1377,13 @@ function eu_owb_find_orders( $args ) {
 /**
  * Get HTML for the order items to be shown in emails.
  *
- * @param WC_Order $order Order object.
+ * @param \Vendidero\OrderWithdrawalButton\WithdrawalOrder $withdrawal Order object.
  * @param array    $args Arguments.
  *
  * @since 3.0.0
  * @return string
  */
-function eu_owb_get_email_withdrawal_items( $order, $args = array() ) {
+function eu_owb_get_email_withdrawal_items( $withdrawal, $args = array() ) {
 	ob_start();
 
 	$email_improvements_enabled = \Vendidero\OrderWithdrawalButton\Package::has_email_improvements_enabled();
@@ -1457,7 +1395,6 @@ function eu_owb_get_email_withdrawal_items( $order, $args = array() ) {
 		'image_size'    => array( $image_size, $image_size ),
 		'plain_text'    => false,
 		'sent_to_admin' => false,
-		'withdrawal'    => '',
 	);
 
 	$args     = wp_parse_args( $args, $defaults );
@@ -1468,19 +1405,19 @@ function eu_owb_get_email_withdrawal_items( $order, $args = array() ) {
 		apply_filters(
 			'eu_owb_woocommerce_email_withdrawal_items_args',
 			array(
-				'order'         => $order,
-				'items'         => eu_owb_get_withdrawal_order_items( $order, $args['withdrawal'] ),
+				'order'         => $withdrawal->get_parent() ? $withdrawal->get_parent() : $withdrawal,
+				'items'         => eu_owb_get_withdrawal_order_items( $withdrawal ),
 				'show_sku'      => $args['show_sku'],
 				'show_image'    => $args['show_image'],
 				'image_size'    => $args['image_size'],
 				'plain_text'    => $args['plain_text'],
 				'sent_to_admin' => $args['sent_to_admin'],
-				'withdrawal'    => $args['withdrawal'],
+				'withdrawal'    => $withdrawal,
 			)
 		)
 	);
 
 	$html = ob_get_clean();
 
-	return apply_filters( 'eu_owb_woocommerce_email_withdrawal_items_table', $html, $order );
+	return apply_filters( 'eu_owb_woocommerce_email_withdrawal_items_table', $html, $withdrawal );
 }

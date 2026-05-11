@@ -65,6 +65,8 @@ $show_submit             = true;
 			<?php
 		else :
 			$default_email_address = $order ? $order->get_billing_email() : ( WC()->customer ? WC()->customer->get_billing_email() : '' );
+			$default_first_name    = $order ? $order->get_billing_first_name() : ( WC()->customer ? WC()->customer->get_billing_first_name() : '' );
+			$default_last_name     = $order ? $order->get_billing_last_name() : ( WC()->customer ? WC()->customer->get_billing_last_name() : '' );
 			$orders                = is_user_logged_in() ? eu_owb_get_orders_for_user() : array();
 			$default_order_id      = 0;
 
@@ -110,6 +112,18 @@ $show_submit             = true;
 				<div class="form-row form-row-full">
 					<label for="order-withdrawal-request-email"><?php echo esc_html_x( 'Email', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ); ?></label>
 					<input type="text" class="input-text" name="email" id="order-withdrawal-request-email" autocomplete="email" value="<?php echo esc_attr( $default_email_address ); ?>" />
+				</div>
+
+				<div class="clear"></div>
+
+				<div class="form-row form-row-first">
+					<label for="order-withdrawal-request-first-name"><?php echo esc_html_x( 'First name', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ); ?></label>
+					<input type="text" class="input-text" name="first_name" id="order-withdrawal-request-first-name" autocomplete="off" value="<?php echo esc_attr( $default_first_name ); ?>" />
+				</div>
+
+				<div class="form-row form-row-last">
+					<label for="order-withdrawal-request-last-name"><?php echo esc_html_x( 'Last name', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ); ?></label>
+					<input type="text" class="input-text" name="last_name" id="order-withdrawal-request-last-name" autocomplete="off" value="<?php echo esc_attr( $default_last_name ); ?>" />
 				</div>
 
 				<?php if ( $order ) : ?>
