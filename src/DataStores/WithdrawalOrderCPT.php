@@ -46,23 +46,46 @@ class WithdrawalOrderCPT extends \Abstract_WC_Order_Data_Store_CPT implements \W
 	/**
 	 * Delete a withdrawal - no trash is supported.
 	 *
-	 * @param \WC_Order $order Order object.
+	 * @param \Vendidero\OrderWithdrawalButton\WithdrawalOrder $order Order object.
 	 * @param array     $args Array of args to pass to the delete method.
 	 */
-	public function delete( &$order, $args = array() ) {
-		$id = $order->get_id();
+	public function delete( &$withdrawal, $args = array() ) {
+		$id   = $withdrawal->get_id();
+		$args = wp_parse_args(
+			$args,
+			array(
+				'force_delete'     => false,
+				'suppress_filters' => false,
+			)
+		);
 
 		if ( ! $id ) {
 			return;
 		}
 
-		$parent_order_id      = $order->get_parent_id();
-		$withdrawal_cache_key = \WC_Cache_Helper::get_cache_prefix( 'orders' ) . 'withdrawals' . $parent_order_id;
-		wp_delete_post( $id );
-		wp_cache_delete( $withdrawal_cache_key, 'orders' );
-		$order->set_id( 0 );
+		if ( $args['force_delete'] ) {
+			do_action( 'eu_owb_woocommerce_before_delete_withdrawal', $id, $withdrawal );
 
-		do_action( 'eu_owb_woocommerce_withdrawal_order_deleted', $id );
+			wp_delete_post( $id );
+
+			$parent_order_id = $withdrawal->get_parent_id();
+
+			if ( $parent_order_id > 0 ) {
+				$withdrawal_cache_key = \WC_Cache_Helper::get_cache_prefix( 'orders' ) . 'withdrawals' . $parent_order_id;
+				wp_cache_delete( $withdrawal_cache_key, 'orders' );
+			}
+
+			$withdrawal->set_id( 0 );
+
+			do_action( 'eu_owb_woocommerce_withdrawal_order_deleted', $withdrawal );
+		} else {
+			do_action( 'eu_owb_woocommerce_before_trash_withdrawal', $id, $withdrawal );
+
+			wp_trash_post( $id );
+			$withdrawal->set_status( 'trash' );
+
+			do_action( 'eu_owb_woocommerce_withdrawal_order_trashed', $id );
+		}
 	}
 
 	public function clear_caches( &$order ) {
@@ -95,11 +118,30 @@ class WithdrawalOrderCPT extends \Abstract_WC_Order_Data_Store_CPT implements \W
 			if ( is_callable( array( $withdrawal, $setter ) ) ) {
 				$value = metadata_exists( 'post', $id, $meta_key ) ? $post_meta[ $meta_key ][0] : null;
 
-				$this->{$setter}( $value );
+				$withdrawal->{$setter}( $value );
 			}
 		}
 	}
 
+	/**
+	 * Attempts to restore the specified order back to its original status (after having been trashed).
+	 *
+	 * @param \Vendidero\OrderWithdrawalButton\WithdrawalOrder $order The order to be untrashed.
+	 *
+	 * @return bool If the operation was successful.
+	 */
+	public function untrash_withdrawal( $order ) {
+		wp_untrash_post( $order->get_id() );
+
+		return true;
+	}
+
+	/**
+	 * @param \Vendidero\OrderWithdrawalButton\WithdrawalOrder $withdrawal
+	 *
+	 * @return void
+	 * @throws \WC_Data_Exception
+	 */
 	public function create( &$withdrawal ) {
 		if ( ! $withdrawal->get_withdrawal_number( 'edit' ) ) {
 			$withdrawal->set_withdrawal_number( md5( uniqid( '', true ) ) );
@@ -109,7 +151,26 @@ class WithdrawalOrderCPT extends \Abstract_WC_Order_Data_Store_CPT implements \W
 			$withdrawal->set_order_key( wc_generate_order_key() );
 		}
 
+		if ( '' === $withdrawal->get_order_number( 'edit' ) ) {
+			if ( $parent = $withdrawal->get_parent() ) {
+				$withdrawal->set_order_number( $parent->get_order_number() );
+			}
+		}
+
 		parent::create( $withdrawal );
+
+		do_action( 'eu_owb_woocommerce_new_withdrawal_order', $withdrawal->get_id(), $withdrawal );
+	}
+
+	/**
+	 * @param \Vendidero\OrderWithdrawalButton\WithdrawalOrder $withdrawal
+	 *
+	 * @return void
+	 */
+	public function update( &$withdrawal ) {
+		parent::update( $withdrawal );
+
+		do_action( 'eu_owb_woocommerce_withdrawal_order_updated', $withdrawal->get_id(), $withdrawal );
 	}
 
 	/**
@@ -120,6 +181,16 @@ class WithdrawalOrderCPT extends \Abstract_WC_Order_Data_Store_CPT implements \W
 	 * @since 3.0.0
 	 */
 	protected function update_post_meta( &$withdrawal ) {
+		$props_changed = $withdrawal->get_changes();
+		$search_props  = $withdrawal->get_search_props();
+
+		foreach ( $search_props as $prop => $search_value ) {
+			if ( array_key_exists( $prop, $props_changed ) ) {
+				$withdrawal->update_meta_data( '_billing_address_index', implode( ' ', array_filter( array_values( $search_props ) ) ) );
+				break;
+			}
+		}
+
 		parent::update_post_meta( $withdrawal );
 
 		$updated_props     = array();

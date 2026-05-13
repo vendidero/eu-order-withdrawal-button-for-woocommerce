@@ -102,10 +102,14 @@ class WithdrawalOrder extends \WC_Abstract_Order {
 		$this->set_prop( 'email', $value );
 	}
 
+	protected function has_first_or_last_name() {
+		return ! empty( $this->get_first_name( 'edit' ) ) || ! empty( $this->get_last_name( 'edit' ) );
+	}
+
 	public function get_first_name( $context = 'view' ) {
 		$value = $this->get_prop( 'first_name', $context );
 
-		if ( 'view' === $context && empty( $value ) ) {
+		if ( 'view' === $context && empty( $value ) && ! $this->has_first_or_last_name() ) {
 			if ( $parent = $this->get_parent() ) {
 				$value = $parent->get_billing_first_name();
 			}
@@ -121,7 +125,7 @@ class WithdrawalOrder extends \WC_Abstract_Order {
 	public function get_last_name( $context = 'view' ) {
 		$value = $this->get_prop( 'last_name', $context );
 
-		if ( 'view' === $context && empty( $value ) ) {
+		if ( 'view' === $context && empty( $value ) && ! $this->has_first_or_last_name() ) {
 			if ( $parent = $this->get_parent() ) {
 				$value = $parent->get_billing_last_name();
 			}
@@ -148,7 +152,7 @@ class WithdrawalOrder extends \WC_Abstract_Order {
 		$first_name            = $this->get_first_name( $context );
 		$last_name             = $this->get_last_name( $context );
 
-		if ( empty( $first_name ) && ! empty( $last_name ) ) {
+		if ( empty( $last_name ) && ! empty( $first_name ) ) {
 			/* translators: 1: first name */
 			$full_name = sprintf( _x( '%1$s', 'owb-first-name', 'eu-order-withdrawal-button-for-woocommerce' ), $first_name ); // phpcs:ignore WordPress.WP.I18n.NoEmptyStrings
 		} elseif ( empty( $first_name ) && ! empty( $last_name ) ) {
@@ -350,7 +354,14 @@ class WithdrawalOrder extends \WC_Abstract_Order {
 
 	public function set_parent_id( $value ) {
 		parent::set_parent_id( $value );
+
 		$this->parent = null;
+
+		if ( true === $this->object_read && array_key_exists( 'parent_id', $this->changes ) ) {
+			if ( $parent = $this->get_parent() ) {
+				$this->set_order_number( $parent->get_order_number() );
+			}
+		}
 	}
 
 	public function calculate_taxes( $args = array() ) {}
@@ -371,7 +382,7 @@ class WithdrawalOrder extends \WC_Abstract_Order {
 		$status = $this->get_prop( 'status', $context );
 
 		if ( empty( $status ) && 'view' === $context ) {
-			$status = 'requested';
+			$status = 'owb-requested';
 		}
 
 		return $status;
@@ -386,7 +397,7 @@ class WithdrawalOrder extends \WC_Abstract_Order {
 	 * @return array
 	 */
 	public function set_status( $new_status, $manual_update = false ) {
-		$new_status = Package::maybe_remove_withdrawal_order_status_prefix( (string) $new_status );
+		$new_status = 'trash' === $new_status ? $new_status : 'owb-' . Package::maybe_remove_withdrawal_order_status_prefix( $new_status );
 		$result     = parent::set_status( $new_status );
 
 		if ( true === $this->object_read && ! empty( $result['from'] ) && $result['from'] !== $result['to'] ) {
@@ -412,6 +423,27 @@ class WithdrawalOrder extends \WC_Abstract_Order {
 		if ( $this->has_status( 'rejected' ) ) {
 			$this->set_date_rejected( time() );
 		}
+	}
+
+	public function get_search_props() {
+		return array(
+			'order_number' => $this->get_order_number(),
+			'first_name'   => $this->get_first_name(),
+			'last_name'    => $this->get_last_name(),
+			'email'        => $this->get_email(),
+		);
+	}
+
+	public function has_status( $status ) {
+		$statuses = (array) $status;
+
+		foreach ( $statuses as $k => $status ) {
+			if ( 'owb-' !== substr( $status, 0, 4 ) ) {
+				$statuses[ $k ] = 'owb-' . $status;
+			}
+		}
+
+		return apply_filters( 'eu_owb_woocommerce_order_withdrawal_has_status', in_array( $this->get_status(), $statuses, true ), $this, $statuses );
 	}
 
 	/**
@@ -492,13 +524,7 @@ class WithdrawalOrder extends \WC_Abstract_Order {
 	}
 
 	protected function get_valid_statuses() {
-		return array_keys(
-			array(
-				'wc-owb-requested' => _x( 'Requested', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ),
-				'wc-owb-confirmed' => _x( 'Confirmed', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ),
-				'wc-owb-rejected'  => _x( 'Rejected', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ),
-			)
-		);
+		return array_keys( Package::get_withdrawal_statuses() );
 	}
 
 	/**

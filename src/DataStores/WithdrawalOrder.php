@@ -90,15 +90,77 @@ class WithdrawalOrder extends OrdersTableDataStore {
 	 */
 	public function delete( &$withdrawal, $args = array() ) {
 		$withdrawal_id = $withdrawal->get_id();
+
 		if ( ! $withdrawal_id ) {
 			return;
 		}
 
-		$withdrawal_cache_key = WC_Cache_Helper::get_cache_prefix( 'orders' ) . 'withdrawals' . $withdrawal->get_parent_id();
-		wp_cache_delete( $withdrawal_cache_key, 'orders' );
+		$args = wp_parse_args(
+			$args,
+			array(
+				'force_delete'     => false,
+				'suppress_filters' => false,
+			)
+		);
 
-		$this->delete_order_data_from_custom_order_tables( $withdrawal_id );
-		$withdrawal->set_id( 0 );
+		if ( $args['force_delete'] ) {
+			do_action( 'eu_owb_woocommerce_before_delete_withdrawal', $withdrawal_id, $withdrawal );
+
+			$withdrawal_cache_key = WC_Cache_Helper::get_cache_prefix( 'orders' ) . 'withdrawals' . $withdrawal->get_parent_id();
+			wp_cache_delete( $withdrawal_cache_key, 'orders' );
+
+			$this->delete_order_data_from_custom_order_tables( $withdrawal_id );
+			$withdrawal->set_id( 0 );
+
+			do_action( 'eu_owb_woocommerce_withdrawal_order_deleted', $withdrawal );
+		} else {
+			do_action( 'eu_owb_woocommerce_before_trash_withdrawal', $withdrawal_id, $withdrawal );
+
+			$this->trash_order( $withdrawal );
+
+			do_action( 'eu_owb_woocommerce_withdrawal_order_trashed', $withdrawal_id );
+		}
+	}
+
+	/**
+	 * Attempts to restore the specified order back to its original status (after having been trashed).
+	 *
+	 * @param \Vendidero\OrderWithdrawalButton\WithdrawalOrder $order The order to be untrashed.
+	 *
+	 * @return bool If the operation was successful.
+	 */
+	public function untrash_withdrawal( $order ) {
+		$id     = $order->get_id();
+		$status = $order->get_status();
+
+		if ( 'trash' !== $status ) {
+			return false;
+		}
+
+		$previous_status           = $order->get_meta( '_wp_trash_meta_status' );
+		$valid_statuses            = Package::get_withdrawal_statuses();
+		$previous_state_is_invalid = ! array_key_exists( $previous_status, $valid_statuses );
+
+		if ( $previous_state_is_invalid ) {
+			$previous_status = 'requested';
+		}
+
+		do_action( 'eu_owb_woocommerce_untrash_withdrawal', $order->get_id(), $previous_status );
+
+		$order->set_status( $previous_status );
+		$order->save();
+
+		// Was the status successfully restored? Let's clean up the meta and indicate success...
+		if ( 'wc-' . $order->get_status() === $previous_status ) {
+			$order->delete_meta_data( '_wp_trash_meta_status' );
+			$order->delete_meta_data( '_wp_trash_meta_time' );
+			$order->delete_meta_data( '_wp_trash_meta_comments_status' );
+			$order->save_meta_data();
+
+			return true;
+		}
+
+		return false;
 	}
 
 	/**
@@ -123,7 +185,7 @@ class WithdrawalOrder extends OrdersTableDataStore {
 	/**
 	 * Method to create a withdrawal in the database.
 	 *
-	 * @param \WC_Abstract_Order $withdrawal Withdrawal object.
+	 * @param \Vendidero\OrderWithdrawalButton\WithdrawalOrder $withdrawal Withdrawal object.
 	 */
 	public function create( &$withdrawal ) {
 		if ( ! $withdrawal->get_withdrawal_number( 'edit' ) ) {
@@ -134,32 +196,51 @@ class WithdrawalOrder extends OrdersTableDataStore {
 			$withdrawal->set_order_key( wc_generate_order_key() );
 		}
 
+		if ( '' === $withdrawal->get_order_number( 'edit' ) ) {
+			if ( $parent = $withdrawal->get_parent() ) {
+				$withdrawal->set_order_number( $parent->get_order_number() );
+			}
+		}
+
 		$this->persist_save( $withdrawal, false, false );
+
+		do_action( 'eu_owb_woocommerce_new_withdrawal_order', $withdrawal->get_id(), $withdrawal );
 	}
 
 	/**
 	 * Update withdrawal in database.
 	 *
-	 * @param \WC_Order $withdrawal Withdrawal object.
+	 * @param \Vendidero\OrderWithdrawalButton\WithdrawalOrder $withdrawal Withdrawal object.
 	 */
 	public function update( &$withdrawal ) {
 		$this->persist_updates( $withdrawal, false );
 		$withdrawal->apply_changes();
+
+		do_action( 'eu_owb_woocommerce_withdrawal_order_updated', $withdrawal->get_id(), $withdrawal );
 	}
 
 	/**
 	 * Helper method that updates post meta based on an refund object.
 	 * Mostly used for backwards compatibility purposes in this datastore.
 	 *
-	 * @param \WC_Order $withdrawal Withdrawal object.
+	 * @param \Vendidero\OrderWithdrawalButton\WithdrawalOrder $withdrawal Withdrawal object.
 	 */
 	public function update_order_meta( &$withdrawal ) {
+		$props_changed = $withdrawal->get_changes();
+		$search_props  = $withdrawal->get_search_props();
+
+		foreach ( $search_props as $prop => $search_value ) {
+			if ( array_key_exists( $prop, $props_changed ) ) {
+				$withdrawal->update_meta_data( '_billing_address_index', implode( ' ', array_filter( array_values( $search_props ) ) ) );
+				break;
+			}
+		}
+
 		parent::update_order_meta( $withdrawal );
 
 		// Update additional props.
 		$updated_props      = array();
 		$internal_meta_keys = array_keys( Package::get_withdrawal_order_props() );
-		$props_changed      = $withdrawal->get_changes();
 
 		foreach ( $internal_meta_keys as $meta_key ) {
 			$prop          = substr( $meta_key, 1 );

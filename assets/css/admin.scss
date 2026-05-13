@@ -79,17 +79,26 @@ tr.wc-settings-row-withdrawal-period td.forminp-number .description {
 .order-status {
   &.status-withdrawn,
   &.status-full-withdrawal,
+  &.status-owb-rejected,
   &.withdrawal-request-status-unverified {
     background: #eba3a3;
     color: #570000;
   }
-  &.status-pending-wdraw, &.status-partial-withdrawal {
+  &.status-pending-wdraw,
+  &.status-partial-withdrawal,
+  &.status-owb-type-partial,
+  &.status-owb-requested {
     background: #f8dda7;
     color: #573b00;
   }
-  &.withdrawal-request-status-verified {
+  &.withdrawal-request-status-verified,
+  &.status-owb-confirmed {
     background-color: #C6E1C6;
     color: #13550F;
+  }
+  &.status-owb-type-full {
+    background: #c8d7e1;
+    color: #003d66;
   }
 }
 
@@ -169,6 +178,104 @@ a.wc-action-button.wc-action-button-delete:after {
         &::after {
           border-color: #cdd7ca transparent;
         }
+      }
+    }
+  }
+}
+
+.wp-core-ui {
+  a.eu-owb-order-toggle-order-search {
+    padding: 10px 4px 4px 4px;
+    overflow: hidden;
+    position: relative;
+    float: right;
+    border: 2px solid transparent;
+    border-radius: 4px;
+
+    &::before {
+      font-family: "Dashicons" !important;
+      content: "\f464" !important;
+      font-size: 17px !important;
+    }
+
+    &:hover {
+      border: 2px solid var(--wp-admin-theme-color, #00a0d2);
+    }
+  }
+}
+
+.woocommerce_page_wc-orders,
+.post-type-shop_order {
+  table.wp-list-table {
+    .eu-owb-order-inline-edit-wrapper {
+      box-sizing: border-box;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+
+      &.hidden {
+        display: none !important;
+      }
+
+      &.inline-single-row {
+        flex-wrap: nowrap;
+        justify-content: flex-start;
+
+        .eu-owb-order-withdrawal-order-save {
+          margin-top: 0;
+        }
+      }
+
+      margin-top: 10px;
+
+      .eu-owb-order-search,
+      .select2-container {
+        width: 240px !important;
+        font-size: 14px;
+        vertical-align: middle;
+      }
+
+      .eu-owb-order-withdrawal-order-save {
+        position: relative;
+        margin-left: 10px;
+        margin-top: 10px;
+        display: inline-flex !important;
+        justify-content: center;
+        align-items: center;
+
+        &.eu-owb-woocommerce-success {
+          background: #008a20;
+        }
+
+        &.eu-owb-woocommerce-is-loading {
+          .btn-text {
+            opacity: .3;
+            z-index: 0;
+          }
+
+          .spinner {
+            position: absolute;
+            z-index: 5;
+            background-size: 16px 16px;
+            float: none;
+            text-align: center;
+            width: 16px;
+            height: 16px;
+            vertical-align: middle;
+            margin: 0;
+          }
+        }
+      }
+    }
+  }
+}
+
+.woocommerce_page_wc-owb-withdrawals {
+  table.wp-list-table {
+    td.order_number {
+      .eu-owb-woocommerce-verified-status {
+        margin-left: 3px;
+        line-height: inherit;
       }
     }
   }

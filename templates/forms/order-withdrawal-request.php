@@ -76,11 +76,14 @@ $show_submit             = true;
 					array(
 						'email'       => $order->get_billing_email(),
 						'customer_id' => $order->get_customer_id(),
+						'return'      => 'objects',
 					)
 				);
 
 				if ( $request = eu_owb_get_withdrawal_request( $order ) ) {
-					$default_email_address = eu_owb_get_order_withdrawal_email( $order, $request );
+					$default_email_address = $request->get_email();
+					$default_first_name    = $request->get_first_name();
+					$default_last_name     = $request->get_last_name();
 				}
 			}
 			?>
@@ -125,6 +128,8 @@ $show_submit             = true;
 					<label for="order-withdrawal-request-last-name"><?php echo esc_html_x( 'Last name', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ); ?></label>
 					<input type="text" class="input-text" name="last_name" id="order-withdrawal-request-last-name" autocomplete="off" value="<?php echo esc_attr( $default_last_name ); ?>" />
 				</div>
+
+				<div class="clear"></div>
 
 				<?php if ( $order ) : ?>
 					<?php if ( eu_owb_get_withdrawal_request( $order ) ) : ?>
