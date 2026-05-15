@@ -18,6 +18,8 @@ class WithdrawalItem extends \Abstract_WC_Order_Item_Type_Data_Store implements 
 	protected $internal_meta_keys = array(
 		'_parent_id',
 		'_quantity',
+		'_product_id',
+		'_variation_id',
 	);
 
 	/**
@@ -32,8 +34,10 @@ class WithdrawalItem extends \Abstract_WC_Order_Item_Type_Data_Store implements 
 		$id = $item->get_id();
 		$item->set_props(
 			array(
-				'parent_id' => get_metadata( 'order_item', $id, '_parent_id', true ),
-				'quantity'  => get_metadata( 'order_item', $id, '_quantity', true ),
+				'parent_id'    => get_metadata( 'order_item', $id, '_parent_id', true ),
+				'quantity'     => get_metadata( 'order_item', $id, '_quantity', true ),
+				'product_id'   => get_metadata( 'order_item', $id, '_product_id', true ),
+				'variation_id' => get_metadata( 'order_item', $id, '_variation_id', true ),
 			)
 		);
 
@@ -51,8 +55,10 @@ class WithdrawalItem extends \Abstract_WC_Order_Item_Type_Data_Store implements 
 		$id                = $item->get_id();
 		$changes           = $item->get_changes();
 		$meta_key_to_props = array(
-			'_parent_id' => 'parent_id',
-			'_quantity'  => 'quantity',
+			'_parent_id'    => 'parent_id',
+			'_quantity'     => 'quantity',
+			'_product_id'   => 'product_id',
+			'_variation_id' => 'variation_id',
 		);
 		$props_to_update   = $this->get_props_to_update( $item, $meta_key_to_props, 'order_item' );
 

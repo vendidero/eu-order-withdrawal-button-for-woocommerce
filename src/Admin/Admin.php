@@ -355,7 +355,7 @@ class Admin {
 					} elseif ( 'reject_withdrawal_requests' === $action ) {
 						$result = eu_owb_order_reject_withdrawal_request( $order );
 					} elseif ( 'delete_withdrawal_requests' === $action ) {
-						$result = eu_owb_order_delete_withdrawal_request( $order );
+						$result = eu_owb_order_delete_withdrawal_request( $order, false, false );
 					}
 
 					if ( $result ) {

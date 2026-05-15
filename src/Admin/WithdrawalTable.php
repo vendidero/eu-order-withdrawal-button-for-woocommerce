@@ -815,6 +815,10 @@ class WithdrawalTable extends \WP_List_Table {
 			$getter = "get_{$field}";
 			$value  = $order->$getter();
 
+			if ( empty( $value ) ) {
+				continue;
+			}
+
 			if ( 'email' === $field ) {
 				$value = '<a href="' . esc_url( 'mailto:' . $value ) . '">' . esc_html( $value ) . '</a>';
 			}

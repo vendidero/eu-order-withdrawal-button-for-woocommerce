@@ -13,8 +13,10 @@ class WithdrawalItem extends \WC_Order_Item {
 	 * @var array
 	 */
 	protected $extra_data = array(
-		'parent_id' => 0,
-		'quantity'  => 1,
+		'parent_id'    => 0,
+		'quantity'     => 1,
+		'product_id'   => 0,
+		'variation_id' => 0,
 	);
 
 	protected $parent = null;
@@ -28,6 +30,18 @@ class WithdrawalItem extends \WC_Order_Item {
 		return 'withdrawal';
 	}
 
+	/**
+	 * @param \WC_Order_Item_Product $item
+	 *
+	 * @return void
+	 */
+	public function from_order_item( $item ) {
+		$this->set_parent_id( $item->get_id() );
+		$this->set_name( $item->get_name() );
+		$this->set_product_id( $item->get_product_id() );
+		$this->set_variation_id( $item->get_variation_id() );
+	}
+
 	public function calculate_taxes( $calculate_tax_for = array() ) {
 		return true;
 	}
@@ -39,6 +53,59 @@ class WithdrawalItem extends \WC_Order_Item {
 	public function set_parent_id( $parent_id ) {
 		$this->set_prop( 'parent_id', absint( $parent_id ) );
 		$this->parent = null;
+	}
+
+	/**
+	 * Get product ID.
+	 *
+	 * @param  string $context What the value is for. Valid values are 'view' and 'edit'.
+	 * @return int
+	 */
+	public function get_product_id( $context = 'view' ) {
+		return $this->get_prop( 'product_id', $context );
+	}
+
+	/**
+	 * Get variation ID.
+	 *
+	 * @param  string $context What the value is for. Valid values are 'view' and 'edit'.
+	 * @return int
+	 */
+	public function get_variation_id( $context = 'view' ) {
+		return $this->get_prop( 'variation_id', $context );
+	}
+
+	/**
+	 * Set Product ID
+	 *
+	 * @param int $value Product ID.
+	 */
+	public function set_product_id( $value ) {
+		$this->set_prop( 'product_id', absint( $value ) );
+	}
+
+	/**
+	 * Set variation ID.
+	 *
+	 * @param int $value Variation ID.
+	 */
+	public function set_variation_id( $value ) {
+		$this->set_prop( 'variation_id', absint( $value ) );
+	}
+
+	/**
+	 * Get the associated product.
+	 *
+	 * @return \WC_Product|bool
+	 */
+	public function get_product() {
+		if ( $this->get_variation_id() ) {
+			$product = wc_get_product( $this->get_variation_id() );
+		} else {
+			$product = wc_get_product( $this->get_product_id() );
+		}
+
+		return apply_filters( 'eu_owb_woocommerce_withdrawal_item_product', $product, $this );
 	}
 
 	/**
@@ -56,10 +123,6 @@ class WithdrawalItem extends \WC_Order_Item {
 		}
 
 		return $this->parent;
-	}
-
-	public function get_product() {
-		return $this->get_parent() ? $this->get_parent()->get_product() : null;
 	}
 
 	/**

@@ -38,7 +38,7 @@ class WithdrawalOrder extends \WC_Abstract_Order {
 		'rejection_reason'   => '',
 		'is_partial'         => false,
 		'is_guest'           => false,
-		'has_verified_email' => true,
+		'has_verified_email' => false,
 		'order_number'       => '',
 		'is_update'          => false,
 		'refund_id'          => 0,
@@ -352,16 +352,108 @@ class WithdrawalOrder extends \WC_Abstract_Order {
 		$this->set_prop( 'order_key', substr( $value, 0, 22 ) );
 	}
 
-	public function set_parent_id( $value ) {
+	public function set_parent_id( $value, $trigger_change = true ) {
+		$parent_id_changed = false;
+
+		if ( true === $this->object_read && $this->get_id() > 0 && $value !== $this->get_parent_id( 'edit' ) ) {
+			$parent_id_changed = true;
+		}
+
 		parent::set_parent_id( $value );
 
 		$this->parent = null;
 
-		if ( true === $this->object_read && array_key_exists( 'parent_id', $this->changes ) ) {
-			if ( $parent = $this->get_parent() ) {
-				$this->set_order_number( $parent->get_order_number() );
+		/**
+		 * Update props automatically in case parent order changes.
+		 */
+		if ( $parent_id_changed && $trigger_change ) {
+			$this->update_parent( $this->get_parent() );
+		}
+	}
+
+	public function update_items( $items = array() ) {
+		foreach ( $this->get_items() as $item ) {
+			if ( $item->get_parent_id() > 0 ) {
+				$this->remove_item( $item->get_id() );
 			}
 		}
+
+		$is_full_withdrawal = true;
+
+		if ( $parent = $this->get_parent() ) {
+			if ( ! empty( $items ) ) {
+				$items_available = eu_owb_get_withdrawable_order_items( $parent );
+
+				foreach ( $items_available as $item_id => $item ) {
+					if ( ! array_key_exists( $item_id, $items ) ) {
+						$is_full_withdrawal = false;
+						continue;
+					}
+
+					$item_data = wp_parse_args(
+						$items[ $item_id ],
+						array(
+							'quantity' => 1,
+						)
+					);
+
+					$quantity = min( $item_data['quantity'], $item['quantity'] );
+
+					if ( $quantity < $item['quantity'] ) {
+						$is_full_withdrawal = false;
+					}
+
+					$items[ $item_id ]['quantity'] = eu_owb_get_stock_amount( $quantity );
+				}
+
+				$items = array_intersect_key( $items, $items_available );
+			} else {
+				$items = eu_owb_get_withdrawable_order_items( $parent );
+			}
+
+			foreach ( $items as $item_id => $item_data ) {
+				if ( $item = $parent->get_item( $item_id, false ) ) {
+					if ( ! is_a( $item, 'WC_Order_Item_Product' ) ) {
+						continue;
+					}
+
+					$withdrawal_item = new \Vendidero\OrderWithdrawalButton\WithdrawalItem();
+
+					$withdrawal_item->from_order_item( $item );
+					$withdrawal_item->set_quantity( $item_data['quantity'] );
+
+					$this->add_item( $withdrawal_item );
+				}
+			}
+		} else {
+			$is_full_withdrawal = empty( $this->get_items() ) ? true : false;
+		}
+
+		$this->set_is_partial( $is_full_withdrawal );
+	}
+
+	/**
+	 * @param \WC_Order|null $order
+	 *
+	 * @return void
+	 */
+	public function update_parent( $order, $items = array() ) {
+		if ( $order ) {
+			$this->set_parent_id( $order->get_id(), false );
+			$this->set_order_number( $order->get_order_number() );
+			$this->set_has_verified_email( eu_owb_custom_email_matches_order_email( $order, $this->get_email() ) );
+			$this->set_original_status( $order->get_status() );
+		} else {
+			$this->set_parent_id( 0, false );
+			$this->set_has_verified_email( false );
+			$this->set_original_status( '' );
+		}
+
+		$this->delete_meta_data( '_original_request_order_id' );
+		$this->delete_meta_data( '_has_multiple_matching_orders' );
+		$this->set_is_update( false );
+		$this->set_is_partial( false );
+		$this->update_items( $items );
 	}
 
 	public function calculate_taxes( $args = array() ) {}

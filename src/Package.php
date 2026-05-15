@@ -58,6 +58,179 @@ class Package {
 		add_filter( 'woocommerce_get_order_item_classname', array( __CLASS__, 'register_order_item_classname' ), 10, 3 );
 		add_action( 'init', array( __CLASS__, 'register_order_status_cache' ) );
 		add_filter( 'wp_untrash_post_status', array( __CLASS__, 'wp_untrash_post_status' ), 10, 3 );
+
+		add_action( 'woocommerce_prepare_email_for_preview', array( __CLASS__, 'prepare_email_for_preview' ) );
+		add_action( 'eu_owb_migrate_withdrawals', array( __CLASS__, 'migrate_withdrawals' ) );
+	}
+
+	public static function migrate_withdrawals( $offset ) {
+		$orders = Install::legacy_withdrawal_query( $offset );
+
+		if ( ! empty( $orders ) ) {
+			foreach ( $orders as $order ) {
+				$request     = $order->get_meta( '_withdrawal_request', true );
+				$withdrawals = $order->get_meta( '_withdrawals', true );
+
+				if ( ! empty( $request ) ) {
+					$withdrawal = self::get_withdrawal_from_legacy_order_meta( $order, $request, true );
+
+					if ( $withdrawal->save() ) {
+						$order->delete_meta_data( '_withdrawal_request' );
+						$order->update_meta_data( '_imported_withdrawal_request', $request );
+						$order->save();
+					}
+				}
+
+				if ( ! empty( $withdrawals ) ) {
+					$withdrawals = (array) $withdrawals;
+
+					foreach ( $withdrawals as $order_withdrawal ) {
+						$withdrawal = self::get_withdrawal_from_legacy_order_meta( $order, $order_withdrawal );
+						$withdrawal->save();
+					}
+
+					$order->delete_meta_data( '_withdrawals' );
+					$order->update_meta_data( '_imported_withdrawals', $withdrawals );
+					$order->save();
+				}
+			}
+
+			if ( count( $orders ) >= 10 ) {
+				if ( $queue = WC()->queue() ) {
+					$queue->schedule_single(
+						time() + 50,
+						'eu_owb_migrate_withdrawals',
+						array( 'offset' => $offset + 10 ),
+						'eu_order_withdrawal_button'
+					);
+				}
+			}
+		} elseif ( $queue = WC()->queue() ) {
+			$queue->cancel_all( 'eu_owb_migrate_withdrawals' );
+		}
+	}
+
+	/**
+	 * @param \WC_Order $order
+	 * @param array $order_withdrawal
+	 * @param bool $is_request
+	 *
+	 * @return WithdrawalOrder
+	 */
+	protected static function get_withdrawal_from_legacy_order_meta( $order, $order_withdrawal, $is_request = false ) {
+		$legacy_default_args = array(
+			'id'                 => md5( uniqid( '', true ) ),
+			'date_received'      => time(),
+			'date_confirmed'     => null,
+			'date_rejected'      => null,
+			'request_email'      => '',
+			'original_status'    => '',
+			'status'             => '',
+			'items'              => array(),
+			'meta'               => array(),
+			'rejection_reason'   => '',
+			'is_partial'         => 'no',
+			'has_verified_email' => 'yes',
+			'is_update'          => 'no',
+			'is_guest'           => 'yes',
+			'has_refund'         => 'no',
+			'refund_id'          => 0,
+		);
+
+		$order_withdrawal = wp_parse_args( (array) $order_withdrawal, $legacy_default_args );
+
+		$withdrawal = new WithdrawalOrder();
+
+		$withdrawal->set_date_received( $order_withdrawal['date_received'] );
+		$withdrawal->set_email( empty( $order_withdrawal['request_email'] ) ? $order->get_billing_email() : $order_withdrawal['request_email'] );
+		$withdrawal->set_original_status( $order_withdrawal['original_status'] );
+		$withdrawal->set_is_partial( $order_withdrawal['is_partial'] );
+		$withdrawal->set_is_update( $order_withdrawal['is_update'] );
+		$withdrawal->set_is_guest( $order_withdrawal['is_guest'] );
+		$withdrawal->set_has_verified_email( $order_withdrawal['has_verified_email'] );
+		$withdrawal->set_refund_id( $order_withdrawal['refund_id'] );
+		$withdrawal->set_rejection_reason( $order_withdrawal['rejection_reason'] );
+		$withdrawal->set_withdrawal_number( $order_withdrawal['id'] );
+
+		try {
+			$withdrawal->set_parent_id( $order->get_id() );
+		} catch ( \Exception $e ) { // phpcs:ignore Generic.CodeAnalysis.EmptyStatement.DetectedCatch
+		}
+
+		$withdrawal->set_order_number( $order->get_order_number() );
+
+		if ( $is_request ) {
+			$withdrawal->set_status( 'requested' );
+		} else {
+			$withdrawal->set_status( $order_withdrawal['status'] );
+
+			if ( $withdrawal->has_status( 'confirmed' ) && ! empty( $order_withdrawal['date_confirmed'] ) ) {
+				$withdrawal->set_date_confirmed( $order_withdrawal['date_confirmed'] );
+			} elseif ( $withdrawal->has_status( 'rejected' ) && ! empty( $order_withdrawal['date_rejected'] ) ) {
+				$withdrawal->set_date_rejected( $order_withdrawal['date_rejected'] );
+			}
+		}
+
+		foreach ( $order_withdrawal['meta'] as $meta_key => $value ) {
+			if ( 'has_multiple_matching_orders' === $meta_key ) {
+				$withdrawal->update_meta_data( '_has_multiple_matching_orders', $value );
+			} elseif ( 'first_name' === $meta_key ) {
+				$withdrawal->set_first_name( $value );
+			} elseif ( 'last_name' === $meta_key ) {
+				$withdrawal->set_last_name( $value );
+			}
+		}
+
+		foreach ( $order_withdrawal['items'] as $item_id => $item_data ) {
+			$item_data = wp_parse_args(
+				(array) $item_data,
+				array(
+					'quantity' => 1,
+				)
+			);
+
+			if ( $item = $order->get_item( $item_id, false ) ) {
+				if ( ! is_a( $item, 'WC_Order_Item_Product' ) ) {
+					continue;
+				}
+
+				$withdrawal_item = new WithdrawalItem();
+				$withdrawal_item->from_order_item( $item );
+				$withdrawal_item->set_quantity( $item_data['quantity'] );
+
+				$withdrawal->add_item( $withdrawal_item );
+			}
+		}
+
+		return $withdrawal;
+	}
+
+	public static function prepare_email_for_preview( $email_instance ) {
+		$returns = array(
+			'EU_OWB_Email_New_Withdrawal_Request',
+			'EU_OWB_Email_Deleted_Withdrawal_Request',
+			'EU_OWB_Email_Customer_Withdrawal_Request_Rejected',
+			'EU_OWB_Email_Customer_Withdrawal_Request_Received',
+			'EU_OWB_Email_Customer_Withdrawal_Request_Confirmed',
+		);
+
+		if ( in_array( get_class( $email_instance ), $returns, true ) ) {
+			$withdrawal = new WithdrawalOrder();
+			$withdrawal->set_order_number( '1234' );
+			$withdrawal->set_date_received( time() );
+			$withdrawal->set_is_partial( false );
+			$withdrawal->set_is_guest( true );
+			$withdrawal->set_withdrawal_number( '12345678' );
+			$withdrawal->set_first_name( _x( 'John', 'owb-email-preview', 'eu-order-withdrawal-button-for-woocommerce' ) );
+			$withdrawal->set_last_name( _x( 'Doe', 'owb-email-preview', 'eu-order-withdrawal-button-for-woocommerce' ) );
+			$withdrawal->set_email( 'test@test.com' );
+			$withdrawal->set_has_verified_email( false );
+			$withdrawal->set_rejection_reason( _x( 'An example rejection reason.', 'owb-email-preview', 'eu-order-withdrawal-button-for-woocommerce' ) );
+
+			$email_instance->withdrawal = $withdrawal;
+		}
+
+		return $email_instance;
 	}
 
 	/**

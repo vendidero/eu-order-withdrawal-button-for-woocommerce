@@ -34,13 +34,6 @@ if ( ! class_exists( 'EU_OWB_Email_Customer_Withdrawal_Request_Rejected', false 
 		public $withdrawal;
 
 		/**
-		 * The reason for rejection.
-		 *
-		 * @var string
-		 */
-		public $reason = '';
-
-		/**
 		 * Constructor.
 		 */
 		public function __construct() {
@@ -89,10 +82,8 @@ if ( ! class_exists( 'EU_OWB_Email_Customer_Withdrawal_Request_Rejected', false 
 		 * @param \Vendidero\OrderWithdrawalButton\WithdrawalOrder|false $withdrawal
 		 * @param string $reason
 		 */
-		public function trigger( $withdrawal_id, $withdrawal = false, $reason = '' ) {
+		public function trigger( $withdrawal_id, $withdrawal = false ) {
 			$this->setup_locale();
-
-			$this->reason = $reason;
 
 			if ( $withdrawal_id && ! is_a( $withdrawal, '\Vendidero\OrderWithdrawalButton\WithdrawalOrder' ) ) {
 				$withdrawal = wc_get_order( $withdrawal_id );
@@ -143,7 +134,7 @@ if ( ! class_exists( 'EU_OWB_Email_Customer_Withdrawal_Request_Rejected', false 
 					'order'              => $this->object,
 					'partial_withdrawal' => $this->partial_withdrawal,
 					'withdrawal'         => $this->withdrawal,
-					'reason'             => $this->reason,
+					'reason'             => $this->withdrawal->get_rejection_reason(),
 					'email_heading'      => $this->get_heading(),
 					'additional_content' => $this->get_additional_content(),
 					'sent_to_admin'      => false,
@@ -165,7 +156,7 @@ if ( ! class_exists( 'EU_OWB_Email_Customer_Withdrawal_Request_Rejected', false 
 					'order'              => $this->object,
 					'partial_withdrawal' => $this->partial_withdrawal,
 					'withdrawal'         => $this->withdrawal,
-					'reason'             => $this->reason,
+					'reason'             => $this->withdrawal->get_rejection_reason(),
 					'email_heading'      => $this->get_heading(),
 					'additional_content' => $this->get_additional_content(),
 					'sent_to_admin'      => false,
