@@ -30,6 +30,111 @@ class Admin {
 		add_action( 'woocommerce_process_shop_order_meta', array( __CLASS__, 'process_withdrawal_rejection' ), 45 );
 		add_filter( 'woocommerce_menu_order_count', array( __CLASS__, 'menu_order_count' ) );
 		add_action( 'add_meta_boxes', array( __CLASS__, 'add_order_meta_box' ), 35 );
+
+		add_action( 'woocommerce_system_status_report', array( __CLASS__, 'status_report' ) );
+	}
+
+	public static function status_report() {
+		$template_info = self::get_template_info();
+		?>
+		<table class="wc_status_table widefat" id="status-table-shiptastic" cellspacing="0">
+			<thead>
+			<tr>
+				<th colspan="3" data-export-label="Order Withdrawal Button for WooCommerce"><h2><?php echo esc_html_x( 'EU Order Withdrawal Button for WooCommerce', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ); ?></h2></th>
+			</tr>
+			</thead>
+			<tbody>
+			<tr>
+				<td data-export-label="Order withdrawal Button for WooCommerce Database Version"><?php echo esc_html_x( 'Database Version', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ); ?></td>
+				<td class="help">&nbsp</td>
+				<td><?php echo esc_html( get_option( 'eu_owb_woocommerce_db_version' ) ); ?></td>
+			</tr>
+			<tr>
+				<td data-export-label="Order withdrawal Button for WooCommerce Overrides"><?php echo esc_html_x( 'Overrides', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ); ?></td>
+				<td class="help">&nbsp;</td>
+				<td>
+					<?php if ( ! empty( $template_info['files'] ) ) : ?>
+						<?php foreach ( $template_info['files'] as $file ) : ?>
+							<?php printf( '<code>%s</code>', esc_html( str_replace( WP_CONTENT_DIR . '/themes/', '', $file['theme_file'] ) ) ); ?>
+							<?php if ( $file['outdated'] ) : ?>
+								<?php printf( esc_html_x( 'Version %1$s is out of date. The core version %2$s is available at: %3$s', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ), '<span class="red" style="color:red">' . esc_html( $file['theme_version'] ) . '</span>', esc_html( $file['core_version'] ), '<code>' . esc_html( str_replace( WP_PLUGIN_DIR, '', $file['core_file'] ) ) . '</code>' ); ?>
+							<?php endif; ?>
+							<br/>
+						<?php endforeach; ?>
+					<?php else : ?>
+						&ndash;
+					<?php endif; ?>
+				</td>
+			</tr>
+			<?php if ( true === $template_info['has_outdated_templates'] ) : ?>
+				<tr>
+					<td data-export-label="Order withdrawal Button for WooCommerce Outdated Templates"><?php echo esc_html_x( 'Outdated templates', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ); ?>:</td>
+					<td class="help">&nbsp;</td>
+					<td>
+						<mark class="error">
+							<span class="dashicons dashicons-warning"></span>
+						</mark>
+					</td>
+				</tr>
+			<?php endif; ?>
+			</tbody>
+		</table>
+		<?php
+	}
+
+	public static function get_template_info() {
+		$core_path     = Package::get_path( 'templates' );
+		$files         = \WC_Admin_Status::scan_template_files( $core_path );
+		$template_path = Package::get_template_path();
+		$template_data = array(
+			'files'                  => array(),
+			'has_outdated_templates' => false,
+		);
+
+		foreach ( $files as $file ) {
+			if ( '.DS_Store' === $file ) {
+				continue;
+			}
+
+			$theme_file = false;
+
+			if ( file_exists( get_stylesheet_directory() . '/' . $file ) ) {
+				$theme_file = get_stylesheet_directory() . '/' . $file;
+			} elseif ( file_exists( get_stylesheet_directory() . '/' . $template_path . $file ) ) {
+				$theme_file = get_stylesheet_directory() . '/' . $template_path . $file;
+			} elseif ( file_exists( get_template_directory() . '/' . $file ) ) {
+				$theme_file = get_template_directory() . '/' . $file;
+			} elseif ( file_exists( get_template_directory() . '/' . $template_path . $file ) ) {
+				$theme_file = get_template_directory() . '/' . $template_path . $file;
+			}
+
+			if ( false !== $theme_file ) {
+				$core_version  = \WC_Admin_Status::get_file_version( trailingslashit( $core_path ) . $file );
+				$theme_version = \WC_Admin_Status::get_file_version( $theme_file );
+
+				if ( ! $theme_version ) {
+					$theme_version = '1.0';
+				}
+
+				$file_data = array(
+					'core_file'     => trailingslashit( $core_path ) . $file,
+					'template'      => $file,
+					'theme_file'    => $theme_file,
+					'theme_version' => $theme_version,
+					'core_version'  => $core_version,
+					'outdated'      => false,
+				);
+
+				if ( $core_version && $theme_version && version_compare( $theme_version, $core_version, '<' ) ) {
+					$file_data['outdated']                   = true;
+					$template_data['has_outdated_templates'] = true;
+				}
+
+				$template_data['files'][] = $file_data;
+			}
+		}
+
+		return $template_data;
 	}
 
 	public static function inline_order_actions( $order ) {
@@ -65,18 +170,46 @@ class Admin {
 		return $new_value;
 	}
 
+	public static function can_view_woocommerce_menu_item() {
+		return current_user_can( 'edit_others_shop_orders' );
+	}
+
 	public static function register_menu() {
+		global $submenu;
+
+		$show_in_menu = apply_filters( 'eu_owb_woocommerce_show_withdrawals_in_menu', ! empty( $_GET['page'] ) && 'wc-owb-withdrawals' === wc_clean( wp_unslash( $_GET['page'] ) ) ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+
+		if ( ! $show_in_menu ) {
+			return;
+		}
+
 		$order_type = 'shop_order_withdraw';
 		$post_type  = get_post_type_object( $order_type );
 
 		add_submenu_page(
-			\WC_Admin_Menus::can_view_woocommerce_menu_item() ? 'woocommerce' : 'admin.php',
+			self::can_view_woocommerce_menu_item() ? 'woocommerce' : 'admin.php',
 			$post_type->labels->name,
 			$post_type->labels->menu_name,
 			$post_type->cap->edit_posts,
 			'wc-owb-withdrawals',
 			array( __CLASS__, 'output_table_view' )
 		);
+
+		if ( isset( $submenu['woocommerce'] ) ) {
+			// Add count if user has access.
+			if ( current_user_can( 'edit_others_shop_orders' ) ) {
+				$withdrawal_count = self::get_withdrawal_count( 'requested' );
+
+				if ( $withdrawal_count ) {
+					foreach ( $submenu['woocommerce'] as $key => $menu_item ) {
+						if ( 0 === strpos( $menu_item[0], $post_type->labels->name ) ) {
+							$submenu['woocommerce'][ $key ][0] .= ' <span class="menu-counter count-' . esc_attr( $withdrawal_count ) . '"><span class="processing-count">' . number_format_i18n( $withdrawal_count ) . '</span></span>'; // phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited
+							break;
+						}
+					}
+				}
+			}
+		}
 
 		add_action( 'load-' . self::get_table_screen_id(), array( __CLASS__, 'setup_table_view' ) );
 	}
@@ -137,7 +270,7 @@ class Admin {
 
 	public static function get_table_screen_id() {
 		$page_suffix = 'wc-owb-withdrawals';
-		$page_name   = ( \WC_Admin_Menus::can_view_woocommerce_menu_item() ? 'woocommerce_page_' : 'admin_page_' ) . $page_suffix;
+		$page_name   = ( self::can_view_woocommerce_menu_item() ? 'woocommerce_page_' : 'admin_page_' ) . $page_suffix;
 
 		return $page_name;
 	}
@@ -188,20 +321,20 @@ class Admin {
 										$item_list[] = sprintf( _x( '%1$s x %2$s', 'item-quantity', 'eu-order-withdrawal-button-for-woocommerce' ), wp_kses_post( $item->get_name() ), esc_html( $item->get_quantity() ) );
 									}
 									?>
-									<li class="withdrawal withdrawal-<?php echo esc_attr( $withdrawal->get_status() ); ?>">
+									<li class="withdrawal withdrawal-<?php echo esc_attr( Package::maybe_remove_withdrawal_order_status_prefix( $withdrawal->get_status() ) ); ?>">
 										<div class="withdrawal-content">
 											<p><?php echo wp_kses_post( sprintf( _x( '%1$s received on %2$s @ %3$s by <a href="mailto:%4$s">%5$s</a> %6$s', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ), ( $withdrawal->is_partial() ) ? esc_html_x( 'Partial withdrawal', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ) : esc_html_x( 'Full withdrawal', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ), wc_format_datetime( $withdrawal->get_date_received() ), wc_format_datetime( $withdrawal->get_date_received(), get_option( 'time_format' ) ), $withdrawal->get_email(), $withdrawal->get_formatted_full_name( $withdrawal->get_email() ), self::get_withdrawal_email_verified_html( $withdrawal ) ) ); ?></p>
 											<p class="withdrawal-items"><?php echo implode( ', ', $item_list ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></p>
 
-											<?php if ( 'rejected' === $withdrawal->get_status() && ! empty( $withdrawal->get_rejection_reason() ) ) : ?>
+											<?php if ( $withdrawal->has_status( 'rejected' ) && ! empty( $withdrawal->get_rejection_reason() ) ) : ?>
 												<?php echo wp_kses_post( wpautop( make_clickable( $withdrawal->get_rejection_reason() ) ) ); ?>
 											<?php endif; ?>
 										</div>
 
 										<p class="meta">
-											<?php if ( 'confirmed' === $withdrawal->get_status() && $withdrawal->get_date_confirmed() ) : ?>
+											<?php if ( $withdrawal->has_status( 'confirmed' ) && $withdrawal->get_date_confirmed() ) : ?>
 												<abbr class="confirmed-date" title=""><?php echo esc_html( sprintf( _x( 'Confirmed %1$s at %2$s', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ), wc_format_datetime( $withdrawal->get_date_confirmed() ), wc_format_datetime( $withdrawal->get_date_confirmed(), get_option( 'time_format' ) ) ) ); ?></abbr>
-											<?php elseif ( 'rejected' === $withdrawal->get_status() && $withdrawal->get_date_rejected() ) : ?>
+											<?php elseif ( $withdrawal->has_status( 'confirmed' ) && $withdrawal->get_date_rejected() ) : ?>
 												<abbr class="rejected-date" title=""><?php echo esc_html( sprintf( _x( 'Rejected %1$s at %2$s', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ), wc_format_datetime( $withdrawal->get_date_rejected() ), wc_format_datetime( $withdrawal->get_date_rejected(), get_option( 'time_format' ) ) ) ); ?></abbr>
 											<?php endif; ?>
 

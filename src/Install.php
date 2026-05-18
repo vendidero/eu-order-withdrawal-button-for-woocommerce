@@ -16,6 +16,15 @@ class Install {
 
 		if ( ! $current_version ) {
 			self::maybe_create_page();
+
+			/**
+			 * Flush the order count cache to prevent undefined index errors
+			 * after introducing new order statuses.
+			 */
+			if ( class_exists( '\Automattic\WooCommerce\Caches\OrderCountCache' ) ) {
+				$order_count_cache = new \Automattic\WooCommerce\Caches\OrderCountCache();
+				$order_count_cache->flush();
+			}
 		}
 
 		if ( ! is_null( $current_version ) && version_compare( $current_version, '2.2.0', '<' ) ) {

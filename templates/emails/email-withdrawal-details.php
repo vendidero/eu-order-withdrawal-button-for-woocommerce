@@ -11,7 +11,7 @@
  * the readme will list any important changes.
  *
  * @package Vendidero/OrderWithdrawalButton/Templates
- * @version 3.0.0
+ * @version 2.2.0
  */
 
 defined( 'ABSPATH' ) || exit;
@@ -25,7 +25,7 @@ $order_total_text_align     = $email_improvements_enabled ? 'right' : 'left';
 $order_quantity_text_align  = $email_improvements_enabled ? 'right' : 'left';
 $verified_notice            = $withdrawal->has_verified_email() ? esc_html_x( 'verified', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ) : esc_html_x( 'unknown', 'owb', 'eu-order-withdrawal-button-for-woocommerce' );
 
-if ( $sent_to_admin && $withdrawal->has_parent() ) {
+if ( $sent_to_admin ) {
 	$formatted_order_number = '<a class="link" href="' . esc_url( $order->get_edit_order_url() ) . '">' . esc_html( $order->get_order_number() ) . '</a>';
 } else {
 	$formatted_order_number = esc_html( $order->get_order_number() );
@@ -68,7 +68,6 @@ do_action( 'eu_owb_woocommerce_withdrawal_before_order_table', $order, $sent_to_
 						'image_size'    => array( $image_size, $image_size ),
 						'plain_text'    => $plain_text,
 						'sent_to_admin' => $sent_to_admin,
-						'withdrawal'    => $withdrawal,
 					)
 				);
 				?>

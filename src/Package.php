@@ -377,8 +377,10 @@ class Package {
 			$props = array_merge(
 				$props,
 				array(
-					'_order_key'   => 'order_key',
-					'_customer_id' => 'customer_id',
+					'_order_key'           => 'order_key',
+					'_customer_id'         => 'customer_id',
+					'_customer_ip_address' => 'customer_ip_address',
+					'_customer_user_agent' => 'customer_user_agent',
 				)
 			);
 		}

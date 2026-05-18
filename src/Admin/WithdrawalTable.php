@@ -29,11 +29,51 @@ class WithdrawalTable extends \WP_List_Table {
 		add_filter( 'set_screen_option_edit_' . $this->order_type . '_per_page', array( $this, 'set_items_per_page' ), 10, 3 );
 		add_filter( 'default_hidden_columns', array( $this, 'default_hidden_columns' ), 10, 2 );
 		add_action( 'admin_footer', array( $this, 'enqueue_scripts' ) );
+		add_action( 'parse_query', array( $this, 'setup_cpt_search' ) );
 
 		$this->items_per_page();
 		set_screen_options();
 
 		add_action( 'manage_' . Admin::get_table_screen_id() . '_custom_column', array( $this, 'render_column' ), 10, 2 );
+	}
+
+	/**
+	 * Setup fallback search for CPT orders
+	 *
+	 * @param $wp
+	 *
+	 * @return void
+	 */
+	public function setup_cpt_search( $wp ) {
+		if ( ! Package::is_hpos_enabled() ) {
+			global $pagenow;
+
+			if ( 'admin.php' !== $pagenow || ! isset( $wp->query_vars['post_type'] ) || $this->wp_post_type->name !== $wp->query_vars['post_type'] ) { // phpcs:ignore  WordPress.Security.NonceVerification.Recommended
+				return;
+			}
+
+			$post_ids = array();
+
+			try {
+				$data_store = \WC_Data_Store::load( 'order-withdrawal' );
+
+				if ( is_callable( array( $data_store, 'search_orders' ) ) ) {
+					$post_ids = isset( $_GET['s'] ) && ! empty( $wp->query_vars['s'] ) ? $data_store->search_orders( wc_clean( wp_unslash( $_GET['s'] ) ) ) : array(); // phpcs:ignore  WordPress.Security.NonceVerification.Recommended
+				}
+			} catch ( \Exception $e ) { // phpcs:ignore Generic.CodeAnalysis.EmptyStatement.DetectedCatch
+			}
+
+			if ( ! empty( $post_ids ) ) {
+				// Remove "s" - we don't want to search order name.
+				unset( $wp->query_vars['s'] );
+
+				// so we know we're doing this.
+				$wp->query_vars['shop_order_search'] = true;
+
+				// Search by found posts.
+				$wp->query_vars['post__in'] = array_merge( $post_ids, array( 0 ) );
+			}
+		}
 	}
 
 	/**
@@ -697,7 +737,7 @@ class WithdrawalTable extends \WP_List_Table {
 		$css_classes = array(
 			'order-' . $order->get_id(),
 			'type-' . $order->get_type(),
-			'status-' . $order->get_status(),
+			'status-' . Package::maybe_remove_withdrawal_order_status_prefix( $order->get_status() ),
 		);
 
 		echo '<tr id="order-' . esc_attr( $order->get_id() ) . '" class="' . esc_attr( implode( ' ', $css_classes ) ) . '">';
@@ -761,7 +801,7 @@ class WithdrawalTable extends \WP_List_Table {
 
 		?>
 		<div class="eu-owb-order-search-container eu-owb-order-inline-edit-wrapper inline-single-row hidden">
-			<select class="eu-owb-order-search" name="order" id="parent_id_<?php echo esc_attr( $order->get_id() ); ?>" data-placeholder="<?php echo esc_attr_x( 'Search for an order', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ); ?>" data-allow_clear="true">
+			<select class="eu-owb-order-search" name="inline_form_parent" id="parent_id_<?php echo esc_attr( $order->get_id() ); ?>" data-placeholder="<?php echo esc_attr_x( 'Search for an order', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ); ?>" data-allow_clear="true">
 				<?php
 				if ( $order->get_parent() ) :
 					$order_string = sprintf(
@@ -875,7 +915,7 @@ class WithdrawalTable extends \WP_List_Table {
 		if ( $order->has_status( array( 'requested' ) ) ) {
 			?>
 			<div class="no-link eu-owb-withdrawal-reject-container hidden eu-owb-order-inline-edit-wrapper">
-				<textarea class="eu-owb-withdrawal-reject-reason" name="rejection_reason" id="rejection_reason_<?php echo esc_attr( $order->get_id() ); ?>" placeholder="<?php echo esc_attr_x( 'Reason', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ); ?>"></textarea>
+				<textarea class="eu-owb-withdrawal-reject-reason" name="inline_form_rejection_reason" id="rejection_reason_<?php echo esc_attr( $order->get_id() ); ?>" placeholder="<?php echo esc_attr_x( 'Reason', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ); ?>"></textarea>
 				<button class="button button-primary eu-owb-order-withdrawal-order-save" href="#" data-save="rejection_reason" data-action="reject" data-id="<?php echo esc_attr( $order->get_id() ); ?>"><span class="btn-text"><span class="dashicons dashicons-saved"></span></span></button>
 			</div>
 			<?php

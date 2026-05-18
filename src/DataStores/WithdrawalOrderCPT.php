@@ -41,6 +41,8 @@ class WithdrawalOrderCPT extends \Abstract_WC_Order_Data_Store_CPT implements \W
 		'_email',
 		'_order_number',
 		'_order_key',
+		'_customer_ip_address',
+		'_customer_user_agent',
 	);
 
 	/**
@@ -171,6 +173,45 @@ class WithdrawalOrderCPT extends \Abstract_WC_Order_Data_Store_CPT implements \W
 		parent::update( $withdrawal );
 
 		do_action( 'eu_owb_woocommerce_withdrawal_order_updated', $withdrawal->get_id(), $withdrawal );
+	}
+
+	/**
+	 * Search order data for a term and return ids.
+	 *
+	 * @param  string $term Searched term.
+	 * @return array of ids
+	 */
+	public function search_orders( $term ) {
+		global $wpdb;
+
+		$order_ids = array();
+
+		$search_fields = array_map(
+			'wc_clean',
+			array(
+				'_billing_address_index',
+			)
+		);
+
+		if ( is_numeric( $term ) ) {
+			$order_ids[] = absint( $term );
+		}
+
+		if ( ! empty( $search_fields ) ) {
+			$order_ids = array_unique(
+				array_merge(
+					$order_ids,
+					$wpdb->get_col(
+						$wpdb->prepare(
+							"SELECT DISTINCT p1.post_id FROM {$wpdb->postmeta} p1 WHERE p1.meta_value LIKE %s AND p1.meta_key IN ('" . implode( "','", array_map( 'esc_sql', $search_fields ) ) . "')", // @codingStandardsIgnoreLine
+							'%' . $wpdb->esc_like( wc_clean( $term ) ) . '%'
+						)
+					)
+				)
+			);
+		}
+
+		return array_map( 'absint', $order_ids );
 	}
 
 	/**

@@ -4,7 +4,7 @@ namespace Vendidero\OrderWithdrawalButton;
 
 defined( 'ABSPATH' ) || exit;
 
-class WithdrawalOrder extends \WC_Abstract_Order {
+class WithdrawalOrder extends \WC_Abstract_Order implements \ArrayAccess {
 
 	/**
 	 * Which data store to load.
@@ -31,22 +31,24 @@ class WithdrawalOrder extends \WC_Abstract_Order {
 	 * @var array
 	 */
 	protected $extra_data = array(
-		'withdrawal_number'  => '',
-		'date_confirmed'     => null,
-		'date_rejected'      => null,
-		'original_status'    => '',
-		'rejection_reason'   => '',
-		'is_partial'         => false,
-		'is_guest'           => false,
-		'has_verified_email' => false,
-		'order_number'       => '',
-		'is_update'          => false,
-		'refund_id'          => 0,
-		'customer_id'        => 0,
-		'email'              => '',
-		'first_name'         => '',
-		'last_name'          => '',
-		'order_key'          => '',
+		'withdrawal_number'   => '',
+		'date_confirmed'      => null,
+		'date_rejected'       => null,
+		'original_status'     => '',
+		'rejection_reason'    => '',
+		'is_partial'          => false,
+		'is_guest'            => false,
+		'has_verified_email'  => false,
+		'order_number'        => '',
+		'is_update'           => false,
+		'refund_id'           => 0,
+		'customer_id'         => 0,
+		'email'               => '',
+		'first_name'          => '',
+		'last_name'           => '',
+		'order_key'           => '',
+		'customer_ip_address' => '',
+		'customer_user_agent' => '',
 	);
 
 	protected $legacy_datastore_props = array();
@@ -100,6 +102,34 @@ class WithdrawalOrder extends \WC_Abstract_Order {
 
 	public function set_email( $value ) {
 		$this->set_prop( 'email', $value );
+	}
+
+	public function get_customer_ip_address( $context = 'view' ) {
+		return $this->get_prop( 'customer_ip_address', $context );
+	}
+
+	/**
+	 * Set customer ip address.
+	 *
+	 * @param string $value Customer ip address.
+	 * @return void
+	 */
+	public function set_customer_ip_address( $value ) {
+		$this->set_prop( 'customer_ip_address', $value );
+	}
+
+	public function get_customer_user_agent( $context = 'view' ) {
+		return $this->get_prop( 'customer_user_agent', $context );
+	}
+
+	/**
+	 * Set customer user agent.
+	 *
+	 * @param string $value Customer user agent.
+	 * @return void
+	 */
+	public function set_customer_user_agent( $value ) {
+		$this->set_prop( 'customer_user_agent', $value );
 	}
 
 	protected function has_first_or_last_name() {
@@ -170,6 +200,11 @@ class WithdrawalOrder extends \WC_Abstract_Order {
 		return $full_name;
 	}
 
+	/**
+	 * @param $context
+	 *
+	 * @return null|\WC_DateTime
+	 */
 	public function get_date_confirmed( $context = 'view' ) {
 		return $this->get_prop( 'date_confirmed', $context );
 	}
@@ -178,6 +213,11 @@ class WithdrawalOrder extends \WC_Abstract_Order {
 		$this->set_date_prop( 'date_confirmed', $date );
 	}
 
+	/**
+	 * @param $context
+	 *
+	 * @return null|\WC_DateTime
+	 */
 	public function get_date_rejected( $context = 'view' ) {
 		return $this->get_prop( 'date_rejected', $context );
 	}
@@ -186,6 +226,11 @@ class WithdrawalOrder extends \WC_Abstract_Order {
 		$this->set_date_prop( 'date_rejected', $date );
 	}
 
+	/**
+	 * @param $context
+	 *
+	 * @return null|\WC_DateTime
+	 */
 	public function get_date_received( $context = 'view' ) {
 		return $this->get_date_created( $context );
 	}
@@ -429,7 +474,7 @@ class WithdrawalOrder extends \WC_Abstract_Order {
 			$is_full_withdrawal = empty( $this->get_items() ) ? true : false;
 		}
 
-		$this->set_is_partial( $is_full_withdrawal );
+		$this->set_is_partial( ! $is_full_withdrawal );
 	}
 
 	/**
@@ -453,6 +498,7 @@ class WithdrawalOrder extends \WC_Abstract_Order {
 		$this->delete_meta_data( '_has_multiple_matching_orders' );
 		$this->set_is_update( false );
 		$this->set_is_partial( false );
+
 		$this->update_items( $items );
 	}
 
@@ -519,10 +565,12 @@ class WithdrawalOrder extends \WC_Abstract_Order {
 
 	public function get_search_props() {
 		return array(
-			'order_number' => $this->get_order_number(),
-			'first_name'   => $this->get_first_name(),
-			'last_name'    => $this->get_last_name(),
-			'email'        => $this->get_email(),
+			'order_number'      => $this->get_order_number(),
+			'withdrawal_number' => $this->get_withdrawal_number(),
+			'id'                => $this->get_id(),
+			'first_name'        => $this->get_first_name(),
+			'last_name'         => $this->get_last_name(),
+			'email'             => $this->get_email(),
 		);
 	}
 
@@ -552,9 +600,9 @@ class WithdrawalOrder extends \WC_Abstract_Order {
 	public function get_edit_order_url() {
 		if ( $parent = $this->get_parent() ) {
 			return $parent->get_edit_order_url();
+		} else {
+			return add_query_arg( array( 's' => $this->get_id() ), get_admin_url( null, 'admin.php?page=wc-owb-withdrawals' ) );
 		}
-
-		return '';
 	}
 
 	/**
@@ -666,5 +714,93 @@ class WithdrawalOrder extends \WC_Abstract_Order {
 				'withdrawal_lines' => $this->get_items(),
 			)
 		);
+	}
+
+	#[\ReturnTypeWillChange]
+	public function offsetExists( $offset ) {
+		$legacy = array(
+			'id',
+			'date_received',
+			'date_confirmed',
+			'date_rejected',
+			'request_email',
+			'original_status',
+			'status',
+			'items',
+			'meta',
+			'rejection_reason',
+			'is_partial',
+			'has_verified_email',
+			'is_update',
+			'is_guest',
+			'has_refund',
+			'refund_id',
+		);
+
+		return isset( $legacy[ $offset ] );
+	}
+
+	#[\ReturnTypeWillChange]
+	public function offsetGet( $offset ) {
+		$getter = "get_$offset";
+
+		if ( 'id' === $offset ) {
+			return $this->get_withdrawal_number();
+		} elseif ( 'date_rejected' === $offset || 'date_confirmed' === $offset || 'date_received' === $offset ) {
+			return $this->get_date_rejected() ? $this->get_date_rejected()->getTimestamp() : null;
+		} elseif ( 'request_email' === $offset ) {
+			return $this->get_email();
+		} elseif ( in_array( $offset, array( 'is_partial', 'has_verified_email', 'is_update', 'is_guest', 'has_refund' ), true ) ) {
+			$result = 'no';
+
+			if ( is_callable( array( $this, $getter ) ) ) {
+				$result = wc_bool_to_string( $this->$getter() );
+			}
+
+			return $result;
+		} elseif ( 'items' === $offset ) {
+			$items = array();
+
+			foreach ( $this->get_items() as $item ) {
+				$items[ $item->get_parent_id() ] = array(
+					'quantity' => $item->get_quantity(),
+				);
+			}
+
+			return $items;
+		} elseif ( 'meta' === $offset ) {
+			$meta = array(
+				'first_name' => $this->get_first_name(),
+				'last_name'  => $this->get_last_name(),
+			);
+
+			foreach ( $this->get_meta_data() as $meta_obj ) {
+				$meta[ ( '_' === substr( $meta_obj->key, 0, 1 ) ) ? substr( $meta_obj->key, 1 ) : $meta_obj->key ] = $meta_obj->value;
+			}
+
+			return $meta;
+		} elseif ( is_callable( array( $this, $getter ) ) ) {
+			return $this->$getter();
+		}
+
+		return false;
+	}
+
+	#[\ReturnTypeWillChange]
+	public function offsetSet( $offset, $value ) {
+		$setter = "set_{$offset}";
+
+		if ( is_callable( array( $this, $setter ) ) ) {
+			$this->$setter( $value );
+		}
+	}
+
+	#[\ReturnTypeWillChange]
+	public function offsetUnset( $offset ) {
+		$setter = "set_{$offset}";
+
+		if ( is_callable( array( $this, $setter ) ) ) {
+			$this->$setter( null );
+		}
 	}
 }

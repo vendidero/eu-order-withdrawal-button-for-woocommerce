@@ -11,7 +11,7 @@
  * the readme will list any important changes.
  *
  * @package Vendidero/OrderWithdrawalButton/Templates
- * @version 2.0.0
+ * @version 2.2.0
  */
 
 defined( 'ABSPATH' ) || exit;
@@ -48,7 +48,6 @@ if ( ! $hide_items ) :
 			'image_size'    => array( 32, 32 ),
 			'plain_text'    => true,
 			'sent_to_admin' => $sent_to_admin,
-			'withdrawal'    => $withdrawal,
 		)
 	);
 endif;
