@@ -300,8 +300,12 @@ class WithdrawalOrder extends \WC_Abstract_Order implements \ArrayAccess {
 	public function get_order_number( $context = 'view' ) {
 		$value = $this->get_prop( 'order_number', $context );
 
-		if ( 'view' === $context && ( $parent = $this->get_parent() ) ) {
-			$value = $parent->get_order_number();
+		if ( 'view' === $context && '' === $value ) {
+			if ( $parent = $this->get_parent() ) {
+				$value = $parent->get_order_number();
+			} else {
+				$value = _x( 'Not specified', 'owb-order-number', 'eu-order-withdrawal-button-for-woocommerce' );
+			}
 		}
 
 		return $value;
@@ -601,7 +605,7 @@ class WithdrawalOrder extends \WC_Abstract_Order implements \ArrayAccess {
 		if ( $parent = $this->get_parent() ) {
 			return $parent->get_edit_order_url();
 		} else {
-			return add_query_arg( array( 's' => $this->get_id() ), get_admin_url( null, 'admin.php?page=wc-owb-withdrawals' ) );
+			return add_query_arg( array( 's' => $this->get_id() ), Package::get_withdrawals_url() );
 		}
 	}
 
@@ -750,6 +754,8 @@ class WithdrawalOrder extends \WC_Abstract_Order implements \ArrayAccess {
 			return $this->get_date_rejected() ? $this->get_date_rejected()->getTimestamp() : null;
 		} elseif ( 'request_email' === $offset ) {
 			return $this->get_email();
+		} elseif ( 'status' === $offset ) {
+			return Package::maybe_remove_withdrawal_order_status_prefix( $this->get_status() );
 		} elseif ( in_array( $offset, array( 'is_partial', 'has_verified_email', 'is_update', 'is_guest', 'has_refund' ), true ) ) {
 			$result = 'no';
 

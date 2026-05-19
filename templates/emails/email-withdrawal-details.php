@@ -11,7 +11,7 @@
  * the readme will list any important changes.
  *
  * @package Vendidero/OrderWithdrawalButton/Templates
- * @version 2.2.0
+ * @version 2.1.0
  */
 
 defined( 'ABSPATH' ) || exit;

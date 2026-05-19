@@ -27,7 +27,7 @@ class Install {
 			}
 		}
 
-		if ( ! is_null( $current_version ) && version_compare( $current_version, '2.2.0', '<' ) ) {
+		if ( ! is_null( $current_version ) && version_compare( $current_version, '2.1.0', '<' ) ) {
 			self::migrate_withdrawals();
 		}
 

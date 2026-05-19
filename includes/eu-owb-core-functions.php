@@ -945,6 +945,10 @@ function eu_owb_order_confirm_withdrawal_request( $request_or_order ) {
 		return false;
 	}
 
+	if ( ! $request->has_status( 'requested' ) ) {
+		return false;
+	}
+
 	$order          = $request->get_parent();
 	$default_status = $request->get_original_status();
 
@@ -1052,6 +1056,10 @@ function eu_owb_order_reject_withdrawal_request( $request_or_order, $reason = ''
 	$request = eu_owb_get_withdrawal_request( $request_or_order );
 
 	if ( ! $request ) {
+		return false;
+	}
+
+	if ( ! $request->has_status( 'requested' ) ) {
 		return false;
 	}
 
@@ -1324,7 +1332,7 @@ function eu_owb_find_orders_by_custom_order_number( $args ) {
 	remove_filter( 'woocommerce_order_data_store_cpt_get_orders_query', $custom_query_cpt_cb, 10 );
 	remove_filter( 'woocommerce_orders_table_datastore_get_orders_query', $custom_query_hpos_cb, 10 );
 
-	return $orders;
+	return apply_filters( 'eu_owb_woocommerce_find_orders_by_custom_order_number', $orders, $args );
 }
 
 /**

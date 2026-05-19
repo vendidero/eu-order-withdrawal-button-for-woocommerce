@@ -63,8 +63,20 @@ class Settings {
 			),
 
 			array(
+				'title'             => _x( 'Display everywhere', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ),
+				'desc'              => _x( 'Display the button on every page, not just on shop-related pages.', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ),
+				'id'                => 'eu_owb_woocommerce_embed_everywhere',
+				'type'              => Package::is_integration() ? 'gzd_toggle' : 'checkbox',
+				'default'           => 'no',
+				'autoload'          => true,
+				'custom_attributes' => array(
+					'data-show_if_eu_owb_woocommerce_enable_embed' => '',
+				),
+			),
+
+			array(
 				'title'    => _x( 'Partial withdrawals', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ),
-				'desc'     => _x( 'Allow your customers to select which order items to withdraw.', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ),
+				'desc'     => _x( 'Allow customers and verified guests to select which order items to withdraw.', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ),
 				'id'       => 'eu_owb_woocommerce_enable_partial_withdrawals',
 				'type'     => Package::is_integration() ? 'gzd_toggle' : 'checkbox',
 				'default'  => 'yes',

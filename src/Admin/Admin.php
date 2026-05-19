@@ -643,7 +643,7 @@ class Admin {
 	}
 
 	public static function register_withdrawal_view( $views ) {
-		$base_url             = get_admin_url( null, 'admin.php?page=wc-owb-withdrawals' );
+		$base_url             = Package::get_withdrawals_url();
 		$requested            = self::get_withdrawal_count( 'requested' );
 		$views['withdrawals'] = '<a class="" href="' . esc_url( $base_url ) . '">' . _x( 'Withdrawals', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ) . ' <span class="count">(' . esc_html( $requested ) . ')</span></a>';
 

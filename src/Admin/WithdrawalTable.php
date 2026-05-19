@@ -129,21 +129,24 @@ class WithdrawalTable extends \WP_List_Table {
 		$changed = 0;
 
 		foreach ( $order_ids as $id ) {
-			$order = eu_owb_get_withdrawal( $id );
+			$order  = eu_owb_get_withdrawal( $id );
+			$result = false;
 
 			if ( ! $order ) {
 				continue;
 			}
 
 			if ( 'confirmed' === $new_status ) {
-				eu_owb_order_confirm_withdrawal_request( $order );
-			} elseif ( 'rejected' === $new_status ) {
-				eu_owb_order_reject_withdrawal_request( $order );
+				$result = eu_owb_order_confirm_withdrawal_request( $order );
+			} elseif ( 'rejected' === $new_status && $order->has_status( 'requested' ) ) {
+				$result = eu_owb_order_reject_withdrawal_request( $order );
 			} else {
-				$order->update_status( $new_status, true );
+				$result = $order->update_status( $new_status, true );
 			}
 
-			++$changed;
+			if ( true === $result ) {
+				++$changed;
+			}
 		}
 
 		return $changed;
@@ -719,7 +722,7 @@ class WithdrawalTable extends \WP_List_Table {
 	 * @return string
 	 */
 	private function get_view_link( $slug, $name, $count, $current ) {
-		$base_url = get_admin_url( null, 'admin.php?page=wc-owb-withdrawals' );
+		$base_url = Package::get_withdrawals_url();
 		$url      = esc_url( add_query_arg( 'status', $slug, $base_url ) );
 		$name     = esc_html( $name );
 		$count    = number_format_i18n( $count );
@@ -796,9 +799,8 @@ class WithdrawalTable extends \WP_List_Table {
 		if ( $order->has_parent() ) {
 			echo '<a href="' . esc_url( OrderUtil::get_order_admin_edit_url( $order->get_parent_id() ) ) . '" class="order-view"><strong>#' . esc_attr( $order->get_order_number() ) . ' ' . wp_kses_post( $buyer ) . '</strong></a>';
 		} else {
-			echo '<strong>' . esc_attr( $order->get_order_number() ) . ' ' . wp_kses_post( $buyer ) . '</strong>';
+			echo '<strong>' . esc_attr( $order->get_order_number( 'admin' ) ? ( '#' . $order->get_order_number() . ' ' ) : '' ) . wp_kses_post( $buyer ) . '</strong>';
 		}
-
 		?>
 		<div class="eu-owb-order-search-container eu-owb-order-inline-edit-wrapper inline-single-row hidden">
 			<select class="eu-owb-order-search" name="inline_form_parent" id="parent_id_<?php echo esc_attr( $order->get_id() ); ?>" data-placeholder="<?php echo esc_attr_x( 'Search for an order', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ); ?>" data-allow_clear="true">

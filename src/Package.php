@@ -15,7 +15,7 @@ class Package {
 	 *
 	 * @var string
 	 */
-	const VERSION = '2.0.2';
+	const VERSION = '2.1.0';
 
 	protected static $localized_scripts = array();
 
@@ -430,9 +430,13 @@ class Package {
 	}
 
 	public static function print_button() {
-		if ( self::is_shop_request() ) {
+		if ( self::is_shop_request() || 'yes' === self::get_setting( 'embed_everywhere', 'no' ) ) {
 			wc_get_template( 'global/order-withdrawal-button.php' );
 		}
+	}
+
+	public static function get_withdrawals_url() {
+		return admin_url( 'admin.php?page=wc-owb-withdrawals' );
 	}
 
 	public static function register_plugin_links() {
