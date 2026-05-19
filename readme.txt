@@ -42,7 +42,8 @@ containing the shortcode as a draft. After testing the withdrawal process, make 
 Place the shortcode [eu_owb_order_withdrawal_request_form] anywhere on a page to render the form.
 
 = How to embed the button within my shop? =
-You may either use the option to embed the button directly within your footer or you may use your theme's options, e.g. a footer menu, to link the withdrawal page.
+Use the option to embed the button directly within your footer or your theme's options, e.g. a footer menu, to link the withdrawal page.
+You may furthermore use the shortcode [eu_owb_order_withdrawal_button] to place the button wherever you want.
 
 = The embedded button does not show =
 Make sure that you've published your withdrawal page (which by default is created as a draft during installation). The embedded button does only show on shop-related pages.

@@ -11,20 +11,12 @@
  * the readme will list any important changes.
  *
  * @package Vendidero/OrderWithdrawalButton/Templates
- * @version 1.0.0
+ * @version 2.2.0
  */
 defined( 'ABSPATH' ) || exit;
 
-$button_classes = implode(
-	' ',
-	array_filter(
-		array(
-			'button',
-			eu_owb_get_element_class_name( 'button' ),
-		)
-	)
-);
+$include_wrapper = wc_string_to_bool( $include_wrapper );
 ?>
-<p class="eu-owb-order-withdraw-from-contract-button align-center has-text-align-center">
-	<a href="<?php echo esc_url( eu_owb_get_withdrawal_page_permalink() ); ?>" class="<?php echo esc_attr( $button_classes ); ?>"><?php echo esc_html( eu_owb_get_withdrawal_button_text() ); ?></a>
-</p>
+<?php echo $include_wrapper ? '<p class="eu-owb-order-withdraw-from-contract-button align-center has-text-align-center">' : ''; ?>
+	<a href="<?php echo esc_url( eu_owb_get_withdrawal_page_permalink() ); ?>" class="<?php echo esc_attr( $button_classes ); ?>"><?php echo esc_html( $button_text ); ?></a>
+<?php echo $include_wrapper ? '</p>' : ''; ?>

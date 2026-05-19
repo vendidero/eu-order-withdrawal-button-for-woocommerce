@@ -431,7 +431,7 @@ class Package {
 
 	public static function print_button() {
 		if ( self::is_shop_request() || 'yes' === self::get_setting( 'embed_everywhere', 'no' ) ) {
-			wc_get_template( 'global/order-withdrawal-button.php' );
+			echo wp_kses_post( self::order_withdrawal_button() );
 		}
 	}
 
@@ -699,6 +699,7 @@ class Package {
 
 	public static function register_shortcodes() {
 		add_shortcode( 'eu_owb_order_withdrawal_request_form', array( __CLASS__, 'order_withdrawal_request_form' ) );
+		add_shortcode( 'eu_owb_order_withdrawal_button', array( __CLASS__, 'order_withdrawal_button' ) );
 
 		/**
 		 * Mark the return page as a Woo page to make sure default form styles work.
@@ -713,6 +714,31 @@ class Package {
 				return $is_woocommerce;
 			}
 		);
+	}
+
+	public static function order_withdrawal_button( $args = array(), $content = '' ) {
+		$args = wp_parse_args(
+			$args,
+			array(
+				'include_wrapper' => true,
+				'button_classes'  => implode(
+					' ',
+					array_filter(
+						array(
+							'button',
+							eu_owb_get_element_class_name( 'button' ),
+						)
+					)
+				),
+				'button_text'     => eu_owb_get_withdrawal_button_text(),
+			)
+		);
+
+		if ( ! empty( $content ) ) {
+			$args['button_text'] = $content;
+		}
+
+		return wc_get_template_html( 'global/order-withdrawal-button.php', $args );
 	}
 
 	public static function order_withdrawal_request_form( $args = array() ) {
