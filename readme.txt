@@ -5,7 +5,7 @@ Requires at least: 5.4
 Tested up to: 7.0
 WC requires at least: 3.9
 WC tested up to: 10.7
-Stable tag: 2.0.2
+Stable tag: 2.1.0
 Requires PHP: 7.4
 License: GPLv3
 License URI: http://www.gnu.org/licenses/gpl-3.0.html
@@ -61,6 +61,12 @@ Bug reports may be filed via our [GitHub repository](https://github.com/vendider
 2. Admin UI
 
 == Changelog ==
+= 2.1.0 =
+* New: Accept withdrawal requests without matching order
+* New: Withdrawal admin UI
+* New: Store withdrawals as custom order type
+* New: Allow choosing a different support email via setting
+
 = 2.0.2 =
 * Improvement: List all orders for logged-in users and show non-withdrawable notices on request
 

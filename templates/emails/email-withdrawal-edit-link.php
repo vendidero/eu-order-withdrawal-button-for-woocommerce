@@ -11,14 +11,14 @@
  * the readme will list any important changes.
  *
  * @package Vendidero/OrderWithdrawalButton/Templates
- * @version 2.0.0
+ * @version 2.1.0
  */
 defined( 'ABSPATH' ) || exit;
 
 $text_align                 = is_rtl() ? 'right' : 'left';
 $email_improvements_enabled = \Vendidero\OrderWithdrawalButton\Package::has_email_improvements_enabled();
 $heading_class              = $email_improvements_enabled ? 'email-order-detail-heading' : '';
-$has_multiple               = isset( $withdrawal['meta']['has_multiple_matching_orders'] ) ? wc_string_to_bool( $withdrawal['meta']['has_multiple_matching_orders'] ) : false;
+$has_multiple               = eu_owb_order_withdrawal_request_has_multiple_orders( $withdrawal );
 ?>
 <h2 class="<?php echo esc_attr( $heading_class ); ?>">
 	<?php if ( $has_multiple ) : ?>

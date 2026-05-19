@@ -11,13 +11,13 @@
  * the readme will list any important changes.
  *
  * @package Vendidero/OrderWithdrawalButton/Templates
- * @version 2.0.2
+ * @version 2.1.0
  */
 if ( ! defined( 'ABSPATH' ) ) {
 	exit; // Exit if accessed directly.
 }
 
-$cancelable_items      = eu_owb_get_withdrawable_order_items( $order, true );
+$cancelable_items      = eu_owb_get_withdrawable_order_items( $order, array( 'include_non_withdrawable' => true ) );
 $manually_select_items = apply_filters( 'eu_owb_woocommerce_manually_select_items_default', $manually_select_items );
 ?>
 <p class="eu-owb-woocommerce-withdrawal-order-details">

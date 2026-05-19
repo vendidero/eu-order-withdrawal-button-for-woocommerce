@@ -23,6 +23,9 @@ if ( ! class_exists( 'EU_OWB_Email_Deleted_Withdrawal_Request', false ) ) :
 
 		public $withdrawal_email = '';
 
+		/**
+		 * @var \Vendidero\OrderWithdrawalButton\WithdrawalOrder
+		 */
 		public $withdrawal;
 
 		/**
@@ -73,24 +76,24 @@ if ( ! class_exists( 'EU_OWB_Email_Deleted_Withdrawal_Request', false ) ) :
 		/**
 		 * Trigger.
 		 *
-		 * @param int|WC_Order $order_id Order ID.
-		 * @param array $request
+		 * @param int|\Vendidero\OrderWithdrawalButton\WithdrawalOrder $withdrawal_id Withdrawal order ID.
+		 * @param \Vendidero\OrderWithdrawalButton\WithdrawalOrder|false $withdrawal
 		 */
-		public function trigger( $order_id, $request, $order = false ) {
+		public function trigger( $withdrawal_id, $withdrawal = false ) {
 			$this->setup_locale();
 
-			if ( $order_id && ! is_a( $order, 'WC_Order' ) ) {
-				$order = wc_get_order( $order_id );
+			if ( $withdrawal_id && ! is_a( $withdrawal, '\Vendidero\OrderWithdrawalButton\Withdrawal' ) ) {
+				$withdrawal = wc_get_order( $withdrawal_id );
 			}
 
-			if ( $order ) {
-				$this->object           = $order;
-				$this->withdrawal       = $request;
-				$this->withdrawal_email = eu_owb_get_order_withdrawal_email( $this->object, $this->withdrawal );
+			if ( $withdrawal ) {
+				$this->withdrawal       = $withdrawal;
+				$this->object           = $this->withdrawal->get_parent() ? $this->withdrawal->get_parent() : $withdrawal;
+				$this->withdrawal_email = $this->withdrawal->get_email();
 
-				$this->placeholders['{order_number}']     = $this->object->get_order_number();
+				$this->placeholders['{order_number}']     = $this->withdrawal->get_order_number();
 				$this->placeholders['{order_date}']       = wc_format_datetime( $this->object->get_date_created() );
-				$this->placeholders['{withdrawal_date}']  = eu_owb_get_order_withdrawal_date_received( $this->object, $this->withdrawal ) ? wc_format_datetime( eu_owb_get_order_withdrawal_date_received( $this->object, $this->withdrawal ) ) : '';
+				$this->placeholders['{withdrawal_date}']  = wc_format_datetime( $this->withdrawal->get_date_received() );
 				$this->placeholders['{withdrawal_email}'] = $this->withdrawal_email;
 			}
 

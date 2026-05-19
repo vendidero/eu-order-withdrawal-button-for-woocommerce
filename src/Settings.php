@@ -63,8 +63,20 @@ class Settings {
 			),
 
 			array(
+				'title'             => _x( 'Display everywhere', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ),
+				'desc'              => _x( 'Display the button on every page, not just on shop-related pages.', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ),
+				'id'                => 'eu_owb_woocommerce_embed_everywhere',
+				'type'              => Package::is_integration() ? 'gzd_toggle' : 'checkbox',
+				'default'           => 'no',
+				'autoload'          => true,
+				'custom_attributes' => array(
+					'data-show_if_eu_owb_woocommerce_enable_embed' => '',
+				),
+			),
+
+			array(
 				'title'    => _x( 'Partial withdrawals', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ),
-				'desc'     => _x( 'Allow your customers to select which order items to withdraw.', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ),
+				'desc'     => _x( 'Allow customers and verified guests to select which order items to withdraw.', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ),
 				'id'       => 'eu_owb_woocommerce_enable_partial_withdrawals',
 				'type'     => Package::is_integration() ? 'gzd_toggle' : 'checkbox',
 				'default'  => 'yes',
@@ -86,7 +98,7 @@ class Settings {
 			array(
 				'title'     => _x( 'Withdrawal period', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ),
 				'desc_tip'  => _x( 'Choose the number of days, starting with the orders\' completed date, to accept withdrawals for orders.', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ),
-				'desc'      => _x( 'Days', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ) . '<div class="eu-owb-settings-additional-desc">' . sprintf( _x( 'Keep in mind that the withdrawal period does not begin until the customer receives the order. If necessary add a buffer period depending on your shipping process', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ), esc_url( get_admin_url( null, 'admin.php?page=wc-orders&unverified_withdrawals=yes' ) ) ) . '</div>',
+				'desc'      => _x( 'Days', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ) . '<div class="eu-owb-settings-additional-desc">' . sprintf( _x( 'Keep in mind that the withdrawal period does not begin until the customer receives the order. If necessary add a buffer period depending on your shipping process.', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ), esc_url( get_admin_url( null, 'admin.php?page=wc-orders&unverified_withdrawals=yes' ) ) ) . '</div>',
 				'css'       => 'max-width: 60px;',
 				'row_class' => 'withdrawal-period',
 				'type'      => 'number',
@@ -97,7 +109,7 @@ class Settings {
 
 			array(
 				'title'    => _x( 'Unverified requests', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ),
-				'desc'     => _x( 'Separately list unverified withdrawal requests.', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ) . '<div class="eu-owb-settings-additional-desc">' . sprintf( _x( 'For some requests, the email address differs from the original stored within the order. Make sure these requests are listed under <a href="%1$s">unverified requests</a> and are not automatically set to the pending withdrawal request status.', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ), esc_url( get_admin_url( null, 'admin.php?page=wc-orders&unverified_withdrawals=yes' ) ) ) . '</div>',
+				'desc'     => _x( 'Do not adjust order status for unverified requests.', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ) . '<div class="eu-owb-settings-additional-desc">' . _x( 'For some requests, the email address differs from the original stored within the order. Make sure these requests do not automatically set the pending withdrawal order status.', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ) . '</div>',
 				'id'       => 'eu_owb_woocommerce_separately_store_unverified_withdrawal_requests',
 				'type'     => Package::is_integration() ? 'gzd_toggle' : 'checkbox',
 				'default'  => 'yes',

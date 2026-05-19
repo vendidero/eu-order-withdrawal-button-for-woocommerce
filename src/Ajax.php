@@ -24,9 +24,11 @@ class Ajax {
 			'order_withdrawal_request',
 			'order_withdrawal_request_select_order',
 			'order_withdrawal_request_supports_partial',
-			'confirm_withdrawal_request',
-			'reject_withdrawal_request',
-			'delete_withdrawal_request',
+			'confirm_withdrawal',
+			'reject_withdrawal',
+			'delete_withdrawal',
+			'json_search_orders',
+			'save_withdrawal_order',
 		);
 
 		$ajax_nopriv_events = array(
@@ -47,6 +49,104 @@ class Ajax {
 		add_action( 'admin_post_eu_owb_woocommerce_delete_withdrawal', array( __CLASS__, 'delete_withdrawal' ) );
 	}
 
+	public static function save_withdrawal_order() {
+		check_ajax_referer( 'eu_owb_woocommerce_save_order', 'security' );
+
+		if ( ! current_user_can( 'edit_shop_orders' ) ) {
+			wp_die( -1 );
+		}
+
+		$order_id = absint( isset( $_POST['order_id'] ) ? wp_unslash( $_POST['order_id'] ) : 0 );
+		$props    = (array) wc_clean( isset( $_POST['props'] ) ? wp_unslash( $_POST['props'] ) : array() );
+		$action   = wc_clean( isset( $_POST['inline_action'] ) ? wp_unslash( $_POST['inline_action'] ) : 'edit' );
+
+		if ( ! empty( $order_id ) ) {
+			$order = eu_owb_get_withdrawal( $order_id );
+
+			if ( ! $order ) {
+				wp_die();
+			}
+
+			if ( 'reject' === $action ) {
+				$props = wp_parse_args(
+					$props,
+					array(
+						'rejection_reason' => '',
+					)
+				);
+
+				eu_owb_order_reject_withdrawal_request( $order, $props['rejection_reason'] );
+			} elseif ( ! empty( $props ) ) {
+				$order->set_props( $props );
+				$order->save();
+			}
+
+			wp_send_json_success(
+				array(
+					'success' => true,
+				)
+			);
+		}
+
+		wp_send_json_error();
+	}
+
+	public static function json_search_orders() {
+		check_ajax_referer( 'eu_owb_woocommerce_search_orders', 'security' );
+
+		if ( ! current_user_can( 'edit_shop_orders' ) ) {
+			wp_die( -1 );
+		}
+
+		$term  = isset( $_GET['term'] ) ? (string) wc_clean( wp_unslash( $_GET['term'] ) ) : '';
+		$limit = 0;
+
+		if ( empty( $term ) ) {
+			wp_die();
+		}
+
+		if ( Package::is_hpos_enabled() ) {
+			$ids = wc_get_orders( array( 's' => $term ) );
+		} elseif ( ! is_numeric( $term ) ) {
+			$ids = wc_get_orders( array( 's' => $term ) );
+		} else {
+			global $wpdb;
+
+			$ids = $wpdb->get_col(
+				$wpdb->prepare(
+					"SELECT DISTINCT p1.ID FROM {$wpdb->posts} p1 WHERE p1.ID LIKE %s AND post_type = 'shop_order'", // @codingStandardsIgnoreLine
+					$wpdb->esc_like( wc_clean( $term ) ) . '%'
+				)
+			);
+		}
+
+		$excluded     = array();
+		$found_orders = array();
+
+		if ( ! empty( $_GET['exclude'] ) ) {
+			$excluded = array_map( 'absint', (array) wp_unslash( $_GET['exclude'] ) );
+		}
+
+		foreach ( $ids as $id ) {
+			if ( $order = wc_get_order( $id ) ) {
+				if ( in_array( absint( $order->get_id() ), $excluded, true ) ) {
+					continue;
+				}
+
+				if ( ! eu_owb_order_is_withdrawable( $order ) ) {
+					continue;
+				}
+
+				$found_orders[ $order->get_id() ] = sprintf(
+					esc_html_x( 'Order #%s', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ),
+					$order->get_order_number()
+				);
+			}
+		}
+
+		wp_send_json( $found_orders );
+	}
+
 	public static function delete_withdrawal() {
 		check_ajax_referer( 'eu_owb_woocommerce_delete_withdrawal' );
 
@@ -54,71 +154,11 @@ class Ajax {
 			wp_die();
 		}
 
-		$order_id      = isset( $_GET['order_id'] ) ? absint( wp_unslash( $_GET['order_id'] ) ) : 0;
-		$withdrawal_id = isset( $_GET['withdrawal_id'] ) ? wc_clean( wp_unslash( $_GET['withdrawal_id'] ) ) : '';
-
-		if ( $order = wc_get_order( $order_id ) ) {
-			if ( $withdrawal = eu_owb_get_order_withdrawal( $order_id, $withdrawal_id ) ) {
-				$withdrawals = eu_owb_get_order_withdrawals( $order_id );
-				$has_deleted = false;
-
-				foreach ( $withdrawals as $k => $org_withdrawal ) {
-					if ( $withdrawal_id === $org_withdrawal['id'] ) {
-						unset( $withdrawals[ $k ] );
-						$has_deleted = true;
-						break;
-					}
-				}
-
-				if ( $has_deleted ) {
-					foreach ( $withdrawal['items'] as $item_id => $quantity ) {
-						if ( $item = $order->get_item( $item_id ) ) {
-							$quantities = array_filter( (array) $item->get_meta( '_withdrawn_quantities', true ) );
-
-							if ( array_key_exists( $withdrawal_id, $quantities ) ) {
-								unset( $quantities[ $withdrawal_id ] );
-								$total_quantity = array_sum( $quantities );
-
-								if ( empty( $total_quantity ) ) {
-									$item->delete_meta_data( '_withdrawn_quantities' );
-									$item->delete_meta_data( '_withdrawn_quantity' );
-								} else {
-									$item->update_meta_data( '_withdrawn_quantities', $quantities );
-									$item->update_meta_data( '_withdrawn_quantity', $total_quantity );
-								}
-
-								$item->save();
-							}
-						}
-					}
-
-					$order->update_meta_data( '_is_full_withdrawal', 'no' );
-					$order->update_meta_data( '_withdrawals', $withdrawals );
-
-					wc_get_logger()->info( 'Withdrawal deleted.', array( 'source' => 'eu-owb-woocommerce' ) );
-					wc_get_logger()->info( wc_print_r( $withdrawal, true ), array( 'source' => 'eu-owb-woocommerce' ) );
-
-					$order->add_order_note( _x( 'A withdrawal has been deleted.', 'wbo', 'eu-order-withdrawal-button-for-woocommerce' ) );
-
-					$order->save();
-
-					do_action( 'eu_owb_woocommerce_deleted_withdrawal', $withdrawal, $order );
-				}
-			}
-
-			wp_safe_redirect( esc_url_raw( $order->get_edit_order_url() ) );
-			exit;
-		}
-	}
-
-	public static function confirm_withdrawal_request() {
-		check_ajax_referer( 'eu_owb_woocommerce_confirm_withdrawal_request' );
-
 		$order_id = isset( $_GET['order_id'] ) ? absint( wp_unslash( $_GET['order_id'] ) ) : 0;
 
 		if ( current_user_can( 'edit_shop_orders' ) ) {
-			if ( $order = wc_get_order( $order_id ) ) {
-				eu_owb_order_confirm_withdrawal_request( $order );
+			if ( $withdrawal = eu_owb_get_withdrawal( $order_id ) ) {
+				$withdrawal->delete();
 			}
 		}
 
@@ -126,14 +166,14 @@ class Ajax {
 		die();
 	}
 
-	public static function reject_withdrawal_request() {
-		check_ajax_referer( 'eu_owb_woocommerce_reject_withdrawal_request' );
+	public static function confirm_withdrawal() {
+		check_ajax_referer( 'eu_owb_woocommerce_confirm_withdrawal' );
 
 		$order_id = isset( $_GET['order_id'] ) ? absint( wp_unslash( $_GET['order_id'] ) ) : 0;
 
 		if ( current_user_can( 'edit_shop_orders' ) ) {
-			if ( $order = wc_get_order( $order_id ) ) {
-				eu_owb_order_reject_withdrawal_request( $order );
+			if ( $withdrawal = eu_owb_get_withdrawal( $order_id ) ) {
+				eu_owb_order_confirm_withdrawal_request( $withdrawal );
 			}
 		}
 
@@ -141,16 +181,15 @@ class Ajax {
 		die();
 	}
 
-	public static function delete_withdrawal_request() {
-		check_ajax_referer( 'eu_owb_woocommerce_delete_withdrawal_request' );
+	public static function reject_withdrawal() {
+		check_ajax_referer( 'eu_owb_woocommerce_reject_withdrawal' );
 
 		$order_id = isset( $_GET['order_id'] ) ? absint( wp_unslash( $_GET['order_id'] ) ) : 0;
+		$reason   = isset( $_GET['reason'] ) ? sanitize_textarea_field( wp_unslash( $_GET['reason'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Missing
 
 		if ( current_user_can( 'edit_shop_orders' ) ) {
-			if ( $order = wc_get_order( $order_id ) ) {
-				if ( eu_owb_get_withdrawal_request( $order ) ) {
-					eu_owb_order_delete_withdrawal_request( $order );
-				}
+			if ( $withdrawal = eu_owb_get_withdrawal( $order_id ) ) {
+				eu_owb_order_reject_withdrawal_request( $withdrawal, $reason );
 			}
 		}
 
@@ -269,8 +308,11 @@ class Ajax {
 		$email            = '';
 		$was_guest        = true;
 		$meta             = array();
+		$customer_id      = 0;
 		$order_key        = ! empty( $_POST['order_key'] ) ? wp_unslash( $_POST['order_key'] ) : ''; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
 		$email            = ! empty( $_POST['email'] ) ? sanitize_email( wp_unslash( $_POST['email'] ) ) : '';
+		$first_name       = ! empty( $_POST['first_name'] ) ? wc_clean( wp_unslash( $_POST['first_name'] ) ) : '';
+		$last_name        = ! empty( $_POST['last_name'] ) ? wc_clean( wp_unslash( $_POST['last_name'] ) ) : '';
 
 		if ( is_user_logged_in() || ! empty( $order_key ) ) {
 			$order_id          = ! empty( $_POST['order_id'] ) ? absint( wp_unslash( $_POST['order_id'] ) ) : false;
@@ -281,6 +323,7 @@ class Ajax {
 			$order             = wc_get_order( $order_id );
 			$original_order    = $original_order_id ? wc_get_order( $original_order_id ) : null;
 			$was_guest         = false;
+			$customer_id       = is_user_logged_in() ? get_current_user_id() : 0;
 
 			if ( $order ) {
 				$delete_original  = isset( $_POST['delete_original_request'] ) && $original_order->get_id() !== $order->get_id() ? true : false;
@@ -329,86 +372,79 @@ class Ajax {
 			}
 		} else {
 			$order_number = ! empty( $_POST['order_number'] ) ? wc_clean( wp_unslash( $_POST['order_number'] ) ) : '';
-			$first_name   = ! empty( $_POST['first_name'] ) ? wc_clean( wp_unslash( $_POST['first_name'] ) ) : '';
-			$last_name    = ! empty( $_POST['last_name'] ) ? wc_clean( wp_unslash( $_POST['last_name'] ) ) : '';
 			$select_items = isset( $_POST['manually_select_items'] ) ? true : false;
+
+			$meta['order_number'] = $order_number;
 
 			if ( empty( $email ) ) {
 				$error->add( 'missing_fields', _x( 'Please check your email address.', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ) );
 				wp_send_json_error( $error, 500 );
 			}
 
-			$orders   = eu_owb_find_orders(
+			$orders = eu_owb_find_orders(
 				array(
 					'email'    => $email,
 					'order_id' => $order_number,
 				)
 			);
-			$order_id = false;
 
-			if ( empty( $orders ) ) {
-				$error->add( 'not_found', sprintf( _x( 'Sorry, we were unable to find an order based on the information you provided. Please try again - if the issue persists, please <a href="%s">contact support</a> for help.', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ), esc_url( eu_owb_get_contact_support_url() ) ) );
-				wp_send_json_error( $error, 404 );
-			}
+			if ( ! empty( $orders ) ) {
+				if ( count( $orders ) > 1 ) {
+					$orders_withdrawable = eu_owb_get_withdrawable_orders( $orders, true );
 
-			if ( count( $orders ) > 1 ) {
-				$orders_withdrawable = eu_owb_get_withdrawable_orders( $orders, true );
+					if ( empty( $orders_withdrawable ) ) {
+						$error->add( 'not_found', sprintf( _x( 'Sorry, we were unable to find an order based on the information you provided. Please try again - if the issue persists, please <a href="%s">contact support</a> for help.', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ), esc_url( eu_owb_get_contact_support_url() ) ) );
+						wp_send_json_error( $error, 404 );
+					}
 
-				if ( empty( $orders_withdrawable ) ) {
+					if ( count( $orders_withdrawable ) > 1 ) {
+						$meta['has_multiple_matching_orders'] = 'yes';
+					}
+
+					$order_id = $orders_withdrawable[0];
+				} else {
+					$order_id = $orders[0];
+				}
+
+				$order = wc_get_order( $order_id );
+
+				if ( ! $order ) {
 					$error->add( 'not_found', sprintf( _x( 'Sorry, we were unable to find an order based on the information you provided. Please try again - if the issue persists, please <a href="%s">contact support</a> for help.', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ), esc_url( eu_owb_get_contact_support_url() ) ) );
 					wp_send_json_error( $error, 404 );
 				}
 
-				if ( count( $orders_withdrawable ) > 1 ) {
-					$meta['has_multiple_matching_orders'] = 'yes';
-				}
+				/**
+				 * Prevent non-authorized users from overriding pending withdrawals.
+				 */
+				if ( $original_request = eu_owb_get_withdrawal_request( $order ) ) {
+					$original_request_mail = $original_request->get_email();
 
-				$order_id = $orders_withdrawable[0];
-			} else {
-				$order_id = $orders[0];
-			}
-
-			if ( ! $order_id ) {
-				$error->add( 'not_found', sprintf( _x( 'Sorry, we were unable to find an order based on the information you provided. Please try again - if the issue persists, please <a href="%s">contact support</a> for help.', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ), esc_url( eu_owb_get_contact_support_url() ) ) );
-				wp_send_json_error( $error, 404 );
-			}
-
-			$order = wc_get_order( $order_id );
-
-			if ( ! $order ) {
-				$error->add( 'not_found', sprintf( _x( 'Sorry, we were unable to find an order based on the information you provided. Please try again - if the issue persists, please <a href="%s">contact support</a> for help.', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ), esc_url( eu_owb_get_contact_support_url() ) ) );
-				wp_send_json_error( $error, 404 );
-			}
-
-			/**
-			 * Prevent non-authorized users from overriding pending withdrawals.
-			 */
-			if ( $original_request = eu_owb_get_withdrawal_request( $order ) ) {
-				$original_request_mail = eu_owb_get_order_withdrawal_email( $order, $original_request );
-
-				if ( $original_request_mail !== $email ) {
-					$error->add( 'not_withdrawable', sprintf( _x( 'Sorry, but this order cannot be withdrawn. <a href="%s">Contact support</a> for help.', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ), esc_url( eu_owb_get_contact_support_url() ) ) );
-					wp_send_json_error( $error, 400 );
+					if ( $original_request_mail !== $email ) {
+						$error->add( 'not_withdrawable', sprintf( _x( 'Sorry, but this order cannot be withdrawn. <a href="%s">Contact support</a> for help.', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ), esc_url( eu_owb_get_contact_support_url() ) ) );
+						wp_send_json_error( $error, 400 );
+					}
 				}
 			}
 
 			$is_valid_request = true;
 
-			if ( ! empty( $first_name ) ) {
-				$meta['first_name'] = $first_name;
-			}
-
-			if ( ! empty( $last_name ) ) {
-				$meta['last_name'] = $last_name;
-			}
-
 			$meta['requested_partial'] = wc_bool_to_string( true === $select_items );
 
 			do_action( 'eu_owb_woocommerce_process_order_withdrawal_guest_request', $order, $error, $select_items );
+		}
 
-			if ( eu_owb_wp_error_has_errors( $error ) ) {
-				wp_send_json_error( $error, 400 );
-			}
+		if ( ! empty( $first_name ) ) {
+			$meta['first_name'] = $first_name;
+		}
+
+		if ( ! empty( $last_name ) ) {
+			$meta['last_name'] = $last_name;
+		}
+
+		$meta['customer_id'] = $customer_id;
+
+		if ( eu_owb_wp_error_has_errors( $error ) ) {
+			wp_send_json_error( $error, 400 );
 		}
 
 		if ( ! $is_valid_request ) {
@@ -416,17 +452,17 @@ class Ajax {
 			wp_send_json_error( $error, 404 );
 		}
 
-		if ( ! eu_owb_order_is_withdrawable( $order ) ) {
+		if ( $order && ! eu_owb_order_is_withdrawable( $order ) ) {
 			$error->add( 'not_withdrawable', sprintf( _x( 'Sorry, but this order cannot be withdrawn. <a href="%s">Contact support</a> for help.', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ), esc_url( eu_owb_get_contact_support_url() ) ) );
 			wp_send_json_error( $error, 400 );
 		}
 
-		if ( empty( $email ) ) {
+		if ( $order && empty( $email ) ) {
 			$email = $order->get_billing_email();
 		}
 
 		$meta   = apply_filters( 'eu_owb_woocommerce_order_withdrawal_request_additional_meta', $meta, $order, $email, $items, $was_guest );
-		$result = eu_owb_create_order_withdrawal_request( $order, $email, $items, $was_guest, $meta );
+		$result = eu_owb_create_order_withdrawal_request( $email, $order, $items, $was_guest, $meta );
 
 		if ( is_wp_error( $result ) ) {
 			wp_send_json_error( $error, 500 );

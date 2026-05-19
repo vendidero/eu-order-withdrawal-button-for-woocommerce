@@ -11,7 +11,7 @@
  * the readme will list any important changes.
  *
  * @package Vendidero/OrderWithdrawalButton/Templates
- * @version 1.0.0
+ * @version 2.2.0
  */
 defined( 'ABSPATH' ) || exit;
 
@@ -21,10 +21,12 @@ $email_improvements_enabled = \Vendidero\OrderWithdrawalButton\Package::has_emai
 $price_text_align           = $email_improvements_enabled ? 'right' : 'left';
 
 foreach ( $items as $item_id => $item_data ) :
-	$item     = $item_data['item'];
-	$quantity = $item_data['quantity'];
-	$product  = $item->get_product();
-	$sku      = '';
+	$item        = $item_data['item'];
+	$quantity    = $item_data['quantity'];
+	$product     = $item->get_product();
+	$org_item    = $item->get_parent() ? $item->get_parent() : $item;
+	$org_item_id = $item->get_parent_id() > 0 ? $item->get_parent_id() : $item_id;
+	$sku         = '';
 
 	if ( is_object( $product ) ) {
 		$sku = $product->get_sku();
@@ -40,7 +42,7 @@ foreach ( $items as $item_id => $item_data ) :
 		 * @param WC_Order_Item $item Order item object.
 		 * @param bool          $is_visible Is item visible.
 		 */
-		$product_name = apply_filters( 'woocommerce_order_item_name', $item->get_name(), $item, false );
+		$product_name = $withdrawal->has_parent() ? apply_filters( 'woocommerce_order_item_name', $item->get_name(), $org_item, false ) : $item->get_name();
 		/**
 		 * Email Order Item Quantity hook.
 		 *
@@ -64,7 +66,7 @@ foreach ( $items as $item_id => $item_data ) :
 		 * @param WC_Order_Item $item Order item object.
 		 * @param bool          $is_visible Is item visible.
 		 */
-		echo wp_kses_post( apply_filters( 'woocommerce_order_item_name', $item->get_name(), $item, false ) );
+		echo wp_kses_post( $withdrawal->has_parent() ? apply_filters( 'woocommerce_order_item_name', $item->get_name(), $item, false ) : $item->get_name() );
 		if ( $show_sku && $sku ) {
 			echo esc_html( ' (#' . $sku . ')' );
 		}
@@ -78,25 +80,27 @@ foreach ( $items as $item_id => $item_data ) :
 		echo ' X ' . wp_kses_post( apply_filters( 'eu_owb_woocommerce_withdrawal_item_quantity', $quantity, $item ) );
 	}
 
-	// allow other plugins to add additional product information here.
-	do_action( 'woocommerce_order_item_meta_start', $item_id, $item, $order, $plain_text );
-	echo wp_kses_post(
-		wp_strip_all_tags(
-			wc_display_item_meta(
-				$item,
-				array(
-					'before'    => "\n- ",
-					'separator' => "\n- ",
-					'after'     => '',
-					'echo'      => false,
-					'autop'     => false,
+	if ( $withdrawal->has_parent() ) {
+		// allow other plugins to add additional product information here.
+		do_action( 'woocommerce_order_item_meta_start', $item_id, $item, $order, $plain_text );
+		echo wp_kses_post(
+			wp_strip_all_tags(
+				wc_display_item_meta(
+					$item,
+					array(
+						'before'    => "\n- ",
+						'separator' => "\n- ",
+						'after'     => '',
+						'echo'      => false,
+						'autop'     => false,
+					)
 				)
 			)
-		)
-	);
+		);
 
-	// allow other plugins to add additional product information here.
-	do_action( 'woocommerce_order_item_meta_end', $item_id, $item, $order, $plain_text );
+		// allow other plugins to add additional product information here.
+		do_action( 'woocommerce_order_item_meta_end', $item_id, $item, $order, $plain_text );
+	}
 
 	echo "\n\n";
 	?>

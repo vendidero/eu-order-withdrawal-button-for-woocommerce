@@ -28,14 +28,10 @@ if ( ! class_exists( 'EU_OWB_Email_Customer_Withdrawal_Request_Rejected', false 
 		 */
 		public $partial_withdrawal;
 
-		public $withdrawal;
-
 		/**
-		 * The reason for rejection.
-		 *
-		 * @var string
+		 * @var \Vendidero\OrderWithdrawalButton\WithdrawalOrder
 		 */
-		public $reason = '';
+		public $withdrawal;
 
 		/**
 		 * Constructor.
@@ -82,29 +78,26 @@ if ( ! class_exists( 'EU_OWB_Email_Customer_Withdrawal_Request_Rejected', false 
 		/**
 		 * Trigger.
 		 *
-		 * @param int $order_id Order ID.
-		 * @param WC_Order|false $order
-		 * @param string|array $id
+		 * @param int $withdrawal_id Withdrawal order ID.
+		 * @param \Vendidero\OrderWithdrawalButton\WithdrawalOrder|false $withdrawal
 		 * @param string $reason
 		 */
-		public function trigger( $order_id, $order = false, $id = '', $reason = '' ) {
+		public function trigger( $withdrawal_id, $withdrawal = false ) {
 			$this->setup_locale();
 
-			$this->reason = $reason;
-
-			if ( $order_id && ! is_a( $order, 'WC_Order' ) ) {
-				$order = wc_get_order( $order_id );
+			if ( $withdrawal_id && ! is_a( $withdrawal, '\Vendidero\OrderWithdrawalButton\WithdrawalOrder' ) ) {
+				$withdrawal = wc_get_order( $withdrawal_id );
 			}
 
-			if ( $order ) {
-				$this->object             = $order;
-				$this->withdrawal         = eu_owb_get_order_withdrawal( $this->object, $id );
-				$this->recipient          = eu_owb_get_order_withdrawal_email( $this->object, $this->withdrawal );
-				$this->partial_withdrawal = wc_string_to_bool( $this->withdrawal['is_partial'] );
+			if ( $withdrawal ) {
+				$this->withdrawal         = $withdrawal;
+				$this->object             = $this->withdrawal->get_parent() ? $this->withdrawal->get_parent() : $withdrawal;
+				$this->recipient          = $this->withdrawal->get_email();
+				$this->partial_withdrawal = $this->withdrawal->is_partial();
 
 				$this->placeholders['{order_number}']    = $this->object->get_order_number();
 				$this->placeholders['{order_date}']      = wc_format_datetime( $this->object->get_date_created() );
-				$this->placeholders['{withdrawal_date}'] = eu_owb_get_order_withdrawal_date_received( $this->object, $this->withdrawal ) ? wc_format_datetime( eu_owb_get_order_withdrawal_date_received( $this->object, $this->withdrawal ) ) : '';
+				$this->placeholders['{withdrawal_date}'] = wc_format_datetime( $this->withdrawal->get_date_received() );
 			}
 
 			if ( $this->is_enabled() && $this->get_recipient() ) {
@@ -141,7 +134,7 @@ if ( ! class_exists( 'EU_OWB_Email_Customer_Withdrawal_Request_Rejected', false 
 					'order'              => $this->object,
 					'partial_withdrawal' => $this->partial_withdrawal,
 					'withdrawal'         => $this->withdrawal,
-					'reason'             => $this->reason,
+					'reason'             => $this->withdrawal->get_rejection_reason(),
 					'email_heading'      => $this->get_heading(),
 					'additional_content' => $this->get_additional_content(),
 					'sent_to_admin'      => false,
@@ -163,7 +156,7 @@ if ( ! class_exists( 'EU_OWB_Email_Customer_Withdrawal_Request_Rejected', false 
 					'order'              => $this->object,
 					'partial_withdrawal' => $this->partial_withdrawal,
 					'withdrawal'         => $this->withdrawal,
-					'reason'             => $this->reason,
+					'reason'             => $this->withdrawal->get_rejection_reason(),
 					'email_heading'      => $this->get_heading(),
 					'additional_content' => $this->get_additional_content(),
 					'sent_to_admin'      => false,
