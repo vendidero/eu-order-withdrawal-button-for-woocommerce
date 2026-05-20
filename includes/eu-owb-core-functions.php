@@ -850,31 +850,6 @@ function eu_owb_create_order_withdrawal_request( $email, $order = false, $items 
 		$withdrawal->set_customer_user_agent( wc_get_user_agent() );
 	}
 
-	if ( ! $withdrawal->has_verified_email() ) {
-		$max_tries_per_day = apply_filters( 'eu_owb_woocommerce_max_unverified_requests', current_user_can( 'manage_woocommerce' ) ? -1 : 5 );
-
-		if ( -1 !== (int) $max_tries_per_day ) {
-			$ip_address = WC_Geolocation::get_ip_address();
-
-			if ( ! empty( $ip_address ) && '::1' !== $ip_address && '127.0.0.1' !== $ip_address ) {
-				$transient_key = 'eu_owb_unverified_requests_' . md5( $ip_address );
-				$current_tries = get_transient( $transient_key );
-
-				if ( false === $current_tries ) {
-					$current_tries = 0;
-				}
-
-				$current_tries = absint( $current_tries ) + 1;
-
-				if ( $current_tries > $max_tries_per_day ) {
-					return new WP_Error( 'unverified-request-error', sprintf( _x( 'You\'ve submitted too many different unverified withdrawal requests. <a href="%s">Contact support</a> for help.', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ), esc_url( eu_owb_get_contact_support_url() ) ) );
-				} else {
-					set_transient( $transient_key, $current_tries, apply_filters( 'eu_owb_woocommerce_max_unverified_requests_interval', DAY_IN_SECONDS ) );
-				}
-			}
-		}
-	}
-
 	/**
 	 * Withdrawal update
 	 */

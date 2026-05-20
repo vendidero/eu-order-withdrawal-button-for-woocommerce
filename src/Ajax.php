@@ -314,6 +314,12 @@ class Ajax {
 		$first_name       = ! empty( $_POST['first_name'] ) ? wc_clean( wp_unslash( $_POST['first_name'] ) ) : '';
 		$last_name        = ! empty( $_POST['last_name'] ) ? wc_clean( wp_unslash( $_POST['last_name'] ) ) : '';
 
+		do_action( 'eu_owb_woocommerce_before_process_order_withdrawal_request' );
+
+		if ( eu_owb_wp_error_has_errors( $error ) ) {
+			wp_send_json_error( $error, 400 );
+		}
+
 		if ( is_user_logged_in() || ! empty( $order_key ) ) {
 			$order_id          = ! empty( $_POST['order_id'] ) ? absint( wp_unslash( $_POST['order_id'] ) ) : false;
 			$original_order_id = ! empty( $_POST['original_order_id'] ) ? absint( wp_unslash( $_POST['original_order_id'] ) ) : false;
@@ -443,6 +449,8 @@ class Ajax {
 
 		$meta['customer_id'] = $customer_id;
 
+		do_action( 'eu_owb_woocommerce_process_order_withdrawal_request', $order, $error, $items, $meta, $was_guest );
+
 		if ( eu_owb_wp_error_has_errors( $error ) ) {
 			wp_send_json_error( $error, 400 );
 		}
@@ -459,6 +467,38 @@ class Ajax {
 
 		if ( $order && empty( $email ) ) {
 			$email = $order->get_billing_email();
+		}
+
+		/**
+		 * By default, allow max 5 unverified requests per IP/day.
+		 */
+		if ( ! eu_owb_custom_email_matches_order_email( $order, $email ) ) {
+			$max_tries_per_day = apply_filters( 'eu_owb_woocommerce_max_unverified_requests', current_user_can( 'manage_woocommerce' ) ? -1 : 5 );
+
+			if ( -1 !== (int) $max_tries_per_day ) {
+				$ip_address = \WC_Geolocation::get_ip_address();
+
+				if ( ! empty( $ip_address ) && '::1' !== $ip_address && '127.0.0.1' !== $ip_address ) {
+					$transient_key = 'eu_owb_unverified_requests_' . md5( $ip_address );
+					$current_tries = get_transient( $transient_key );
+
+					if ( false === $current_tries ) {
+						$current_tries = 0;
+					}
+
+					$current_tries = absint( $current_tries ) + 1;
+
+					if ( $current_tries > $max_tries_per_day ) {
+						$error->add( 'unverified-request-error', sprintf( _x( 'You\'ve submitted too many different unverified withdrawal requests. <a href="%s">Contact support</a> for help.', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ), esc_url( eu_owb_get_contact_support_url() ) ) );
+					} else {
+						set_transient( $transient_key, $current_tries, apply_filters( 'eu_owb_woocommerce_max_unverified_requests_interval', DAY_IN_SECONDS ) );
+					}
+				}
+			}
+		}
+
+		if ( eu_owb_wp_error_has_errors( $error ) ) {
+			wp_send_json_error( $error, 400 );
 		}
 
 		$meta   = apply_filters( 'eu_owb_woocommerce_order_withdrawal_request_additional_meta', $meta, $order, $email, $items, $was_guest );
