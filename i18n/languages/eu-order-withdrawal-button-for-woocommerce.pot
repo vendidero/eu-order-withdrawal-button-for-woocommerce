@@ -2,7 +2,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: EU Order Withdrawal Button for WooCommerce\n"
-"POT-Creation-Date: 2026-05-19 11:04+0200\n"
+"POT-Creation-Date: 2026-05-20 08:44+0200\n"
 "PO-Revision-Date: 2021-05-10 09:48+0200\n"
 "Last-Translator: \n"
 "Language-Team: \n"
@@ -672,32 +672,32 @@ msgctxt "owb-email-preview"
 msgid "An example rejection reason."
 msgstr ""
 
-#: src/Package.php:256 src/Package.php:652
+#: src/Package.php:256 src/Package.php:656
 msgctxt "owb"
 msgid "Requested"
 msgstr ""
 
-#: src/Package.php:257 src/Package.php:664
+#: src/Package.php:257 src/Package.php:668
 msgctxt "owb"
 msgid "Confirmed"
 msgstr ""
 
-#: src/Package.php:258 src/Package.php:676
+#: src/Package.php:258 src/Package.php:680
 msgctxt "owb"
 msgid "Rejected"
 msgstr ""
 
-#: src/Package.php:447
+#: src/Package.php:451
 msgctxt "owb"
 msgid "Settings"
 msgstr ""
 
-#: src/Package.php:628 src/Package.php:690
+#: src/Package.php:632 src/Package.php:694
 msgctxt "owb"
 msgid "Pending withdrawal"
 msgstr ""
 
-#: src/Package.php:633
+#: src/Package.php:637
 #, php-format
 msgctxt "owb"
 msgid "Pending withdrawal (%s)"
@@ -705,12 +705,12 @@ msgid_plural "Pending withdrawals (%s)"
 msgstr[0] ""
 msgstr[1] ""
 
-#: src/Package.php:640 src/Package.php:691
+#: src/Package.php:644 src/Package.php:695
 msgctxt "owb"
 msgid "Withdrawn"
 msgstr ""
 
-#: src/Package.php:645
+#: src/Package.php:649
 #, php-format
 msgctxt "owb"
 msgid "Withdrawn (%s)"
@@ -718,7 +718,7 @@ msgid_plural "Withdrawn (%s)"
 msgstr[0] ""
 msgstr[1] ""
 
-#: src/Package.php:657
+#: src/Package.php:661
 #, php-format
 msgctxt "owb"
 msgid "Requested (%s)"
@@ -726,7 +726,7 @@ msgid_plural "Requested (%s)"
 msgstr[0] ""
 msgstr[1] ""
 
-#: src/Package.php:669
+#: src/Package.php:673
 #, php-format
 msgctxt "owb"
 msgid "Confirmed (%s)"
@@ -734,7 +734,7 @@ msgid_plural "Confirmed (%s)"
 msgstr[0] ""
 msgstr[1] ""
 
-#: src/Package.php:681
+#: src/Package.php:685
 #, php-format
 msgctxt "owb"
 msgid "Rejected (%s)"
