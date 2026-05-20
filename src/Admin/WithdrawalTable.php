@@ -794,7 +794,7 @@ class WithdrawalTable extends \WP_List_Table {
 	public function render_order_number_column( $order ) {
 		$buyer = $order->get_formatted_full_name( $order->get_email() ) . Admin::get_withdrawal_email_verified_html( $order );
 
-		echo '<a class="order-preview eu-owb-order-toggle-order-search" href="#"></a>';
+		echo $order->has_status( 'requested' ) ? '<a class="order-preview eu-owb-order-toggle-order-search" href="#"></a>' : '';
 
 		if ( $order->has_parent() ) {
 			echo '<a href="' . esc_url( OrderUtil::get_order_admin_edit_url( $order->get_parent_id() ) ) . '" class="order-view"><strong>#' . esc_attr( $order->get_order_number() ) . ' ' . wp_kses_post( $buyer ) . '</strong></a>';
@@ -802,21 +802,22 @@ class WithdrawalTable extends \WP_List_Table {
 			echo '<strong>' . esc_attr( $order->get_order_number( 'admin' ) ? ( '#' . $order->get_order_number() . ' ' ) : '' ) . wp_kses_post( $buyer ) . '</strong>';
 		}
 		?>
-		<div class="eu-owb-order-search-container eu-owb-order-inline-edit-wrapper inline-single-row hidden">
-			<select class="eu-owb-order-search" name="inline_form_parent" id="parent_id_<?php echo esc_attr( $order->get_id() ); ?>" data-placeholder="<?php echo esc_attr_x( 'Search for an order', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ); ?>" data-allow_clear="true">
-				<?php
-				if ( $order->get_parent() ) :
-					$order_string = sprintf(
-						esc_html_x( 'Order #%s', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ),
-						$order->get_order_number()
-					);
-					?>
-					<option value="<?php echo esc_attr( $order->get_parent_id() ); ?>" selected="selected"><?php echo htmlspecialchars( wp_kses_post( $order_string ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></option>
-				<?php endif; ?>
-			</select>
-			<button class="button button-primary eu-owb-order-withdrawal-order-save" href="#" data-save="parent_id" data-id="<?php echo esc_attr( $order->get_id() ); ?>"><span class="btn-text"><span class="dashicons dashicons-saved"></span></span></button>
-		</div>
-		<?php
+        <?php if ( $order->has_status( 'requested' ) ) : ?>
+            <div class="eu-owb-order-search-container eu-owb-order-inline-edit-wrapper inline-single-row hidden">
+                <select class="eu-owb-order-search" name="inline_form_parent" id="parent_id_<?php echo esc_attr( $order->get_id() ); ?>" data-placeholder="<?php echo esc_attr_x( 'Search for an order', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ); ?>" data-allow_clear="true">
+                    <?php
+                    if ( $order->get_parent() ) :
+                        $order_string = sprintf(
+                            esc_html_x( 'Order #%s', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ),
+                            $order->get_order_number()
+                        );
+                        ?>
+                        <option value="<?php echo esc_attr( $order->get_parent_id() ); ?>" selected="selected"><?php echo htmlspecialchars( wp_kses_post( $order_string ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></option>
+                    <?php endif; ?>
+                </select>
+                <button class="button button-primary eu-owb-order-withdrawal-order-save" href="#" data-save="parent_id" data-id="<?php echo esc_attr( $order->get_id() ); ?>"><span class="btn-text"><span class="dashicons dashicons-saved"></span></span></button>
+            </div>
+		<?php endif;
 
 		// Used for showing date & status next to order number/buyer name on small screens.
 		echo '<div class="order_date small-screen-only">';
