@@ -241,7 +241,13 @@ a.wc-action-button.wc-action-button-delete:after {
         margin-top: 10px;
         display: inline-flex !important;
         justify-content: center;
+        line-height: 1;
+        vertical-align: middle;
         align-items: center;
+
+        .dashicons, .dashicons::before {
+          line-height: 1;
+        }
 
         &.eu-owb-woocommerce-success {
           background: #008a20;
