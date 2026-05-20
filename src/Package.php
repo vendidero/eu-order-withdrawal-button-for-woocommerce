@@ -63,8 +63,9 @@ class Package {
 		add_action( 'eu_owb_migrate_withdrawals', array( __CLASS__, 'migrate_withdrawals' ) );
 	}
 
-	public static function migrate_withdrawals( $offset ) {
-		$orders = Install::legacy_withdrawal_query( $offset );
+	public static function migrate_withdrawals( $date_created_after ) {
+		$orders    = Install::legacy_withdrawal_query( $date_created_after );
+		$last_date = 0;
 
 		if ( ! empty( $orders ) ) {
 			foreach ( $orders as $order ) {
@@ -73,8 +74,18 @@ class Package {
 
 				if ( ! empty( $request ) ) {
 					$withdrawal = self::get_withdrawal_from_legacy_order_meta( $order, $request, true );
+					$existing   = array();
+					$result     = false;
 
-					if ( $withdrawal->save() ) {
+					if ( $withdrawal->get_withdrawal_number() ) {
+						$existing = eu_owb_get_order_withdrawals( $order, array( 'withdrawal_number' => $withdrawal->get_withdrawal_number() ) );
+					}
+
+					if ( empty( $existing ) ) {
+						$result = $withdrawal->save();
+					}
+
+					if ( $result || ! empty( $existing ) ) {
 						$order->delete_meta_data( '_withdrawal_request' );
 						$order->update_meta_data( '_imported_withdrawal_request', $request );
 						$order->save();
@@ -86,6 +97,15 @@ class Package {
 
 					foreach ( $withdrawals as $order_withdrawal ) {
 						$withdrawal = self::get_withdrawal_from_legacy_order_meta( $order, $order_withdrawal );
+
+						if ( $withdrawal->get_withdrawal_number() ) {
+							$existing = eu_owb_get_order_withdrawals( $order, array( 'withdrawal_number' => $withdrawal->get_withdrawal_number() ) );
+
+							if ( ! empty( $existing ) ) {
+								continue;
+							}
+						}
+
 						$withdrawal->save();
 					}
 
@@ -93,14 +113,18 @@ class Package {
 					$order->update_meta_data( '_imported_withdrawals', $withdrawals );
 					$order->save();
 				}
+
+				if ( $order->get_date_created() ) {
+					$last_date = $order->get_date_created()->getTimestamp();
+				}
 			}
 
-			if ( count( $orders ) >= 10 ) {
+			if ( count( $orders ) >= 10 && $last_date > 0 ) {
 				if ( $queue = WC()->queue() ) {
 					$queue->schedule_single(
 						time() + 50,
 						'eu_owb_migrate_withdrawals',
-						array( 'offset' => $offset + 10 ),
+						array( 'date_created_after' => $last_date ),
 						'eu_order_withdrawal_button'
 					);
 				}

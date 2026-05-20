@@ -35,7 +35,7 @@ class Install {
 		update_option( 'eu_owb_woocommerce_db_version', Package::get_version() );
 	}
 
-	public static function legacy_withdrawal_query( $offset ) {
+	public static function legacy_withdrawal_query( $date_created_after = 0 ) {
 		$custom_query_cpt_cb = function ( $query, $query_vars ) {
 			if ( ! empty( $query_vars['has_withdrawal'] ) ) {
 				$query['meta_query'] = array( // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query
@@ -81,11 +81,15 @@ class Install {
 
 		$query_args = array(
 			'limit'          => 10,
-			'offset'         => absint( $offset ),
 			'has_withdrawal' => true,
 			'type'           => 'shop_order',
 			'order'          => 'ASC',
+			'orderby'        => 'date_created',
 		);
+
+		if ( ! empty( $date_created_after ) ) {
+			$query_args['date_created'] = '>=' . $date_created_after;
+		}
 
 		$orders = wc_get_orders( $query_args );
 
@@ -100,7 +104,7 @@ class Install {
 				$queue->schedule_single(
 					time() + 10,
 					'eu_owb_migrate_withdrawals',
-					array( 'offset' => 0 ),
+					array( 'date_created_after' => 0 ),
 					'eu_order_withdrawal_button'
 				);
 			}

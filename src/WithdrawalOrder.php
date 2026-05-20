@@ -139,7 +139,7 @@ class WithdrawalOrder extends \WC_Abstract_Order implements \ArrayAccess {
 	public function get_first_name( $context = 'view' ) {
 		$value = $this->get_prop( 'first_name', $context );
 
-		if ( 'view' === $context && empty( $value ) && ! $this->has_first_or_last_name() ) {
+		if ( 'view' === $context && empty( $value ) && ! $this->has_first_or_last_name() && $this->has_verified_email() ) {
 			if ( $parent = $this->get_parent() ) {
 				$value = $parent->get_billing_first_name();
 			}
@@ -155,7 +155,7 @@ class WithdrawalOrder extends \WC_Abstract_Order implements \ArrayAccess {
 	public function get_last_name( $context = 'view' ) {
 		$value = $this->get_prop( 'last_name', $context );
 
-		if ( 'view' === $context && empty( $value ) && ! $this->has_first_or_last_name() ) {
+		if ( 'view' === $context && empty( $value ) && ! $this->has_first_or_last_name() && $this->has_verified_email() ) {
 			if ( $parent = $this->get_parent() ) {
 				$value = $parent->get_billing_last_name();
 			}
