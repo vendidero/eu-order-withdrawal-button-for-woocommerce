@@ -68,14 +68,21 @@ class Package {
 		$last_date = 0;
 
 		if ( ! empty( $orders ) ) {
+			/**
+			 * Make sure to check whether we actually found legacy withdrawal meta
+			 * in case the custom query parameter was not working as expected (e.g. in older Woo HPOS instances)
+			 */
+			$has_found_withdrawals = false;
+
 			foreach ( $orders as $order ) {
 				$request     = $order->get_meta( '_withdrawal_request', true );
 				$withdrawals = $order->get_meta( '_withdrawals', true );
 
 				if ( ! empty( $request ) ) {
-					$withdrawal = self::get_withdrawal_from_legacy_order_meta( $order, $request, true );
-					$existing   = array();
-					$result     = false;
+					$has_found_withdrawals = true;
+					$withdrawal            = self::get_withdrawal_from_legacy_order_meta( $order, $request, true );
+					$existing              = array();
+					$result                = false;
 
 					if ( $withdrawal->get_withdrawal_number() ) {
 						$existing = eu_owb_get_order_withdrawals( $order, array( 'withdrawal_number' => $withdrawal->get_withdrawal_number() ) );
@@ -93,7 +100,8 @@ class Package {
 				}
 
 				if ( ! empty( $withdrawals ) ) {
-					$withdrawals = (array) $withdrawals;
+					$has_found_withdrawals = true;
+					$withdrawals           = (array) $withdrawals;
 
 					foreach ( $withdrawals as $order_withdrawal ) {
 						$withdrawal = self::get_withdrawal_from_legacy_order_meta( $order, $order_withdrawal );
@@ -119,7 +127,7 @@ class Package {
 				}
 			}
 
-			if ( count( $orders ) >= 10 && $last_date > 0 ) {
+			if ( count( $orders ) >= 10 && $last_date > 0 && $has_found_withdrawals ) {
 				if ( $queue = WC()->queue() ) {
 					$queue->schedule_single(
 						time() + 50,

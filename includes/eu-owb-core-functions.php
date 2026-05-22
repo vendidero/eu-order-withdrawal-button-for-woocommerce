@@ -1339,11 +1339,16 @@ function eu_owb_find_orders( $args ) {
 
 	$orders          = array();
 	$order_id_parsed = eu_owb_get_order_id_from_string( $args['order_id'] );
+
+	/**
+	 * Need to find all possible orders here (no matter which status) to prevent
+	 * withdrawal requests for orders that have already been processed (confirmed, rejected).
+	 */
 	$main_query_args = array(
 		'limit'   => 10,
 		'return'  => $args['return'],
 		'orderby' => 'date_created',
-		'status'  => eu_owb_get_withdrawable_order_statuses(),
+		'status'  => array_keys( wc_get_order_statuses() ),
 	);
 
 	if ( empty( $order_id_parsed ) && empty( $args['email'] ) && empty( $args['customer_id'] ) ) {
@@ -1381,7 +1386,7 @@ function eu_owb_find_orders( $args ) {
 			'limit'       => 10,
 			'return'      => $args['return'],
 			'customer_id' => $args['customer_id'],
-			'status'      => eu_owb_get_withdrawable_order_statuses(),
+			'status'      => array_keys( wc_get_order_statuses() ),
 		);
 
 		$orders = array_unique( array_merge( $orders, wc_get_orders( apply_filters( 'eu_owb_woocommerce_find_order_customer_query_args', $user_query_args ) ) ) );

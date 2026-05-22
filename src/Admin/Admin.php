@@ -309,7 +309,7 @@ class Admin {
 
 					if ( $theorder ) {
 						$order       = $theorder;
-						$withdrawals = eu_owb_get_order_withdrawals( $order );
+						$withdrawals = eu_owb_get_order_withdrawals( $order, array( 'status' => array( 'confirmed', 'rejected' ) ) );
 
 						if ( ! empty( $withdrawals ) ) :
 							?>
