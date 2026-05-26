@@ -770,6 +770,60 @@ function eu_owb_get_order_withdrawal_default_args() {
 	);
 }
 
+function eu_owb_get_withdrawal_request_by_order_number( $order_number ) {
+	$custom_query_cpt_cb = function ( $query, $query_vars ) {
+		if ( ! empty( $query_vars['order_number'] ) ) {
+			$query['meta_query'][] = array(
+				'key'     => '_order_number',
+				'value'   => wc_clean( $query_vars['order_number'] ),
+				'compare' => '=',
+			);
+		}
+
+		return $query;
+	};
+
+	add_filter( 'woocommerce_order_data_store_cpt_get_orders_query', $custom_query_cpt_cb, 10, 2 );
+
+	$args = array(
+		'type'         => 'shop_order_withdraw',
+		'status'       => array( 'wc-owb-requested' ),
+		'limit'        => 1,
+		'orderby'      => 'date_created',
+		'order_number' => $order_number,
+	);
+
+	/**
+	 * HPOS supports meta query
+	 */
+	if ( \Vendidero\OrderWithdrawalButton\Package::is_hpos_enabled() ) {
+		unset( $args['order_number'] );
+
+		$args['meta_query'] = array( // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query
+			array(
+				'key'     => '_order_number',
+				'value'   => wc_clean( $order_number ),
+				'compare' => '=',
+			),
+		);
+	}
+
+	$requests     = wc_get_orders( $args );
+	$last_request = false;
+
+	if ( ! empty( $requests ) ) {
+		$last_request = $requests[ count( $requests ) - 1 ];
+
+		if ( $last_request->get_order_number() !== $order_number ) {
+			$last_request = false;
+		}
+	}
+
+	remove_filter( 'woocommerce_order_data_store_cpt_get_orders_query', $custom_query_cpt_cb, 10, 2 );
+
+	return $last_request;
+}
+
 /**
  * @param WC_Order|integer $order
  *
@@ -1255,10 +1309,9 @@ function eu_owb_find_orders_by_custom_order_number( $args ) {
 	$args['email']       = sanitize_email( $args['email'] );
 	$args['customer_id'] = absint( $args['customer_id'] );
 	$args['order_id']    = sanitize_text_field( $args['order_id'] );
+	$meta_field_name     = apply_filters( 'eu_owb_woocommerce_customer_order_number_meta_key', '_order_number' );
 
-	$custom_query_cpt_cb = function ( $query, $query_vars ) {
-		$meta_field_name = apply_filters( 'eu_owb_woocommerce_customer_order_number_meta_key', '_order_number' );
-
+	$custom_query_cpt_cb = function ( $query, $query_vars ) use ( $meta_field_name ) {
 		if ( ! empty( $query_vars['order_number'] ) ) {
 			$query['meta_query'][] = array(
 				'key'     => $meta_field_name,
@@ -1270,24 +1323,7 @@ function eu_owb_find_orders_by_custom_order_number( $args ) {
 		return $query;
 	};
 
-	$custom_query_hpos_cb = function ( $query_vars ) {
-		$meta_field_name = apply_filters( 'eu_owb_woocommerce_customer_order_number_meta_key', '_order_number' );
-
-		if ( ! empty( $query_vars['order_number'] ) ) {
-			$query_vars['meta_query'][] = array(
-				'key'     => $meta_field_name,
-				'value'   => wc_clean( $query_vars['order_number'] ),
-				'compare' => '=',
-			);
-
-			unset( $query_vars['order_number'] );
-		}
-
-		return $query_vars;
-	};
-
 	add_filter( 'woocommerce_order_data_store_cpt_get_orders_query', $custom_query_cpt_cb, 10, 2 );
-	add_filter( 'woocommerce_orders_table_datastore_get_orders_query', $custom_query_hpos_cb, 10 );
 
 	$query_args_custom = array(
 		'order_number' => $args['order_id'],
@@ -1295,6 +1331,21 @@ function eu_owb_find_orders_by_custom_order_number( $args ) {
 		'return'       => $args['return'],
 		'status'       => eu_owb_get_withdrawable_order_statuses(),
 	);
+
+	/**
+	 * HPOS supports meta query
+	 */
+	if ( \Vendidero\OrderWithdrawalButton\Package::is_hpos_enabled() ) {
+		unset( $query_args_custom['order_number'] );
+
+		$query_args_custom['meta_query'] = array( // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query
+			array(
+				'key'     => $meta_field_name,
+				'value'   => $args['order_id'],
+				'compare' => '=',
+			),
+		);
+	}
 
 	if ( ! empty( $args['email'] ) ) {
 		$query_args_custom['billing_email'] = $args['email'];
@@ -1305,7 +1356,6 @@ function eu_owb_find_orders_by_custom_order_number( $args ) {
 	$orders = wc_get_orders( apply_filters( 'eu_owb_woocommerce_find_order_alternate_order_query_args', $query_args_custom ) );
 
 	remove_filter( 'woocommerce_order_data_store_cpt_get_orders_query', $custom_query_cpt_cb, 10 );
-	remove_filter( 'woocommerce_orders_table_datastore_get_orders_query', $custom_query_hpos_cb, 10 );
 
 	return apply_filters( 'eu_owb_woocommerce_find_orders_by_custom_order_number', $orders, $args );
 }

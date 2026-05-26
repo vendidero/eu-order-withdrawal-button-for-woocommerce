@@ -15,7 +15,7 @@ class Package {
 	 *
 	 * @var string
 	 */
-	const VERSION = '2.1.0';
+	const VERSION = '2.1.1';
 
 	protected static $localized_scripts = array();
 
@@ -69,8 +69,7 @@ class Package {
 
 		if ( ! empty( $orders ) ) {
 			/**
-			 * Make sure to check whether we actually found legacy withdrawal meta
-			 * in case the custom query parameter was not working as expected (e.g. in older Woo HPOS instances)
+			 * Make sure to check whether we actually found legacy withdrawal data
 			 */
 			$has_found_withdrawals = false;
 
@@ -130,7 +129,7 @@ class Package {
 			if ( count( $orders ) >= 10 && $last_date > 0 && $has_found_withdrawals ) {
 				if ( $queue = WC()->queue() ) {
 					$queue->schedule_single(
-						time() + 50,
+						time() + 120,
 						'eu_owb_migrate_withdrawals',
 						array( 'date_created_after' => $last_date ),
 						'eu_order_withdrawal_button'

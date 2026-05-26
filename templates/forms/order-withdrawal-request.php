@@ -11,7 +11,7 @@
  * the readme will list any important changes.
  *
  * @package Vendidero/OrderWithdrawalButton/Templates
- * @version 2.1.0
+ * @version 2.1.1
  */
 if ( ! defined( 'ABSPATH' ) ) {
 	exit; // Exit if accessed directly.
@@ -27,22 +27,27 @@ $show_submit             = true;
 
 	<div class="eu-owb-form-fields">
 		<?php if ( ! is_user_logged_in() && ! $order ) : ?>
-			<div class="form-row form-row-first">
+			<div class="form-row form-row-first form-row-order-number">
 				<label for="order-withdrawal-request-order-number"><?php echo esc_html_x( 'Order number', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ); ?></label>
 				<input type="text" class="input-text" name="order_number" id="order-withdrawal-request-order-number" autocomplete="off" />
 			</div>
 
-			<div class="form-row form-row-last">
+			<div class="form-row form-row-last form-row-email">
 				<label for="order-withdrawal-request-email"><?php echo esc_html_x( 'Email', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ); ?>&nbsp;<span class="required">*</span></label>
 				<input type="text" class="input-text" name="email" id="order-withdrawal-request-email" autocomplete="email" />
 			</div>
 
-			<div class="form-row form-row-first">
+			<div class="form-row form-row-full form-row-email-repeat">
+				<label for="order-withdrawal-request-email-repeat"><?php echo esc_html_x( 'Email (repeat)', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ); ?>&nbsp;<span class="required">*</span></label>
+				<input type="text" class="input-text" name="email_repeat" id="order-withdrawal-request-email-repeat" autocomplete="email" />
+			</div>
+
+			<div class="form-row form-row-first form-row-first-name">
 				<label for="order-withdrawal-request-first-name"><?php echo esc_html_x( 'First name', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ); ?></label>
 				<input type="text" class="input-text" name="first_name" id="order-withdrawal-request-first-name" autocomplete="off" />
 			</div>
 
-			<div class="form-row form-row-last">
+			<div class="form-row form-row-last form-row-last-name">
 				<label for="order-withdrawal-request-last-name"><?php echo esc_html_x( 'Last name', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ); ?></label>
 				<input type="text" class="input-text" name="last_name" id="order-withdrawal-request-last-name" autocomplete="off" />
 			</div>
@@ -88,7 +93,7 @@ $show_submit             = true;
 			}
 			?>
 			<?php if ( ! empty( $orders ) ) : ?>
-				<div class="form-row form-row-full">
+				<div class="form-row form-row-full form-row-order">
 					<label for="order-withdrawal-request-order"><?php echo esc_html_x( 'Order', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ); ?>&nbsp;<span class="required">*</span></label>
 					<select name="order_id" id="order-withdrawal-request-order">
 						<option value=""><?php echo esc_html_x( 'Please select an order', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ); ?></option>
@@ -112,19 +117,24 @@ $show_submit             = true;
 					?>
 				</div>
 
-				<div class="form-row form-row-full">
+				<div class="form-row form-row-full form-row-email">
 					<label for="order-withdrawal-request-email"><?php echo esc_html_x( 'Email', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ); ?></label>
 					<input type="text" class="input-text" name="email" id="order-withdrawal-request-email" autocomplete="email" value="<?php echo esc_attr( $default_email_address ); ?>" />
 				</div>
 
+				<div class="form-row form-row-full form-row-email-repeat">
+					<label for="order-withdrawal-request-email-repeat"><?php echo esc_html_x( 'Email (repeat)', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ); ?>&nbsp;<span class="required">*</span></label>
+					<input type="text" class="input-text" name="email_repeat" id="order-withdrawal-request-email-repeat" autocomplete="email" />
+				</div>
+
 				<div class="clear"></div>
 
-				<div class="form-row form-row-first">
+				<div class="form-row form-row-first form-row-first-name">
 					<label for="order-withdrawal-request-first-name"><?php echo esc_html_x( 'First name', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ); ?></label>
 					<input type="text" class="input-text" name="first_name" id="order-withdrawal-request-first-name" autocomplete="off" value="<?php echo esc_attr( $default_first_name ); ?>" />
 				</div>
 
-				<div class="form-row form-row-last">
+				<div class="form-row form-row-last form-row-last-name">
 					<label for="order-withdrawal-request-last-name"><?php echo esc_html_x( 'Last name', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ); ?></label>
 					<input type="text" class="input-text" name="last_name" id="order-withdrawal-request-last-name" autocomplete="off" value="<?php echo esc_attr( $default_last_name ); ?>" />
 				</div>

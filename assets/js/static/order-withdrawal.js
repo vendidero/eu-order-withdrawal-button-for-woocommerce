@@ -7,10 +7,12 @@ window.eu_owb.order_withdrawal = window.eu_owb.order_withdrawal || {};
      */
     eu_owb.order_withdrawal = {
         params: {},
+        startTime: 0,
 
         init: function () {
             var self  = eu_owb.order_withdrawal;
             self.params  = eu_owb_woocommerce_order_withdrawal_params;
+            self.startTime = self.getTimestampSec();
 
             $( document ).on( 'submit', '.order-withdrawal-request', self.onSubmitOrderRequest );
             $( document ).on( 'change', '.order-withdrawal-request #order-withdrawal-request-order', self.onChangeOrder );
@@ -141,12 +143,17 @@ window.eu_owb.order_withdrawal = window.eu_owb.order_withdrawal || {};
             return false;
         },
 
+        getTimestampSec: function() {
+            return Math.floor(Date.now() / 1000 );
+        },
+
         onSubmitOrderRequest: function() {
             var self = eu_owb.order_withdrawal,
                 $form = $( this ),
                 $noticeWrapper = $form.find( '.eu-owb-notice-wrapper' ),
                 $mainButton = $form.find( '.button[type=submit]' ),
-                data = $form.serialize();
+                data = $form.serialize(),
+                endTime = self.getTimestampSec();
 
             $noticeWrapper.find( ".notice" ).remove();
             $form.addClass( 'loading' );
@@ -156,7 +163,7 @@ window.eu_owb.order_withdrawal = window.eu_owb.order_withdrawal || {};
             $.ajax( {
                 type: 'POST',
                 url: self.params.wc_ajax_url.toString().replace('%%endpoint%%', 'eu_owb_woocommerce_order_withdrawal_request'),
-                data: data,
+                data: data + '&start_timestamp=' + self.startTime + '&end_timestamp=' + endTime,
                 dataType: 'json',
             }).done( function ( response ) {
                 $form.removeClass( 'loading' );
@@ -170,6 +177,8 @@ window.eu_owb.order_withdrawal = window.eu_owb.order_withdrawal || {};
                     behavior: "smooth",
                     block: "start"
                 });
+
+                self.startTime = self.getTimestampSec();
             }).fail( function ( xhr ) {
                 $form.removeClass( 'loading' );
                 $form.find( ':input:not(.disabled):not([type=hidden])' ).prop( 'disabled', false );
@@ -189,6 +198,8 @@ window.eu_owb.order_withdrawal = window.eu_owb.order_withdrawal || {};
                     behavior: "smooth",
                     block: "start"
                 });
+
+                self.startTime = self.getTimestampSec();
             });
 
             return false;

@@ -305,16 +305,38 @@ class Ajax {
 		$items            = array();
 		$error            = new \WP_Error();
 		$is_valid_request = false;
-		$email            = '';
 		$was_guest        = true;
 		$meta             = array();
 		$customer_id      = 0;
+		$start            = ! empty( $_POST['start_timestamp'] ) ? absint( $_POST['start_timestamp'] ) : 0;
+		$end              = ! empty( $_POST['end_timestamp'] ) ? absint( $_POST['end_timestamp'] ) : 0;
 		$order_key        = ! empty( $_POST['order_key'] ) ? wp_unslash( $_POST['order_key'] ) : ''; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
 		$email            = ! empty( $_POST['email'] ) ? sanitize_email( wp_unslash( $_POST['email'] ) ) : '';
+		$email_repeat     = ! empty( $_POST['email_repeat'] ) ? wp_unslash( $_POST['email_repeat'] ) : ''; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
 		$first_name       = ! empty( $_POST['first_name'] ) ? wc_clean( wp_unslash( $_POST['first_name'] ) ) : '';
 		$last_name        = ! empty( $_POST['last_name'] ) ? wc_clean( wp_unslash( $_POST['last_name'] ) ) : '';
 
 		do_action( 'eu_owb_woocommerce_before_process_order_withdrawal_request' );
+
+		if ( eu_owb_wp_error_has_errors( $error ) ) {
+			wp_send_json_error( $error, 400 );
+		}
+
+		$is_direct_post = ! isset( $_SERVER['REQUEST_METHOD'] ) || 'POST' !== $_SERVER['REQUEST_METHOD'];
+
+		/**
+		 * Show a success message as spam protection in case honeypot field or non-direct post was submitted.
+		 */
+		if ( ! empty( $email_repeat ) || $is_direct_post ) {
+			wp_send_json_success( _x( 'Thank you. We\'ve received your withdrawal request. You\'ll receive a confirmation of your request by email.', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ) );
+		}
+
+		$duration = apply_filters( 'eu_owb_woocommerce_form_submit_spam_min_duration_in_secs', 2 );
+
+		// If the form was submitted too quickly, add an error.
+		if ( ( $end - $start ) < $duration || 0 === $start ) {
+			$error->add( 'too_quick', _x( 'Please wait a little longer before submitting. We’re running a quick security check.', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ) );
+		}
 
 		if ( eu_owb_wp_error_has_errors( $error ) ) {
 			wp_send_json_error( $error, 400 );
@@ -429,6 +451,15 @@ class Ajax {
 						$error->add( 'not_withdrawable', sprintf( _x( 'Sorry, but this order cannot be withdrawn. <a href="%s">Contact support</a> for help.', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ), esc_url( eu_owb_get_contact_support_url() ) ) );
 						wp_send_json_error( $error, 400 );
 					}
+				}
+			}
+
+			if ( ! $order ) {
+				$existing_request = eu_owb_get_withdrawal_request_by_order_number( $order_number );
+
+				if ( $existing_request ) {
+					$error->add( 'not_withdrawable', sprintf( _x( 'Sorry, but this order cannot be withdrawn. <a href="%s">Contact support</a> for help.', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ), esc_url( eu_owb_get_contact_support_url() ) ) );
+					wp_send_json_error( $error, 400 );
 				}
 			}
 

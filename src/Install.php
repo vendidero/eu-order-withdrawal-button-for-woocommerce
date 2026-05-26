@@ -35,79 +35,114 @@ class Install {
 		update_option( 'eu_owb_woocommerce_db_version', Package::get_version() );
 	}
 
-	public static function legacy_withdrawal_query( $date_created_after = 0 ) {
-		$custom_query_cpt_cb = function ( $query, $query_vars ) {
-			if ( ! empty( $query_vars['has_withdrawal'] ) ) {
-				$query['meta_query'] = array( // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query
-					'relation' => 'OR',
-					array(
-						'key'     => '_withdrawal_request',
-						'compare' => 'EXISTS',
-					),
-					array(
-						'key'     => '_withdrawals',
-						'compare' => 'EXISTS',
-					),
-				);
+	private static function generate_in_query_sql( $values ) {
+		global $wpdb;
 
-				unset( $query_vars['has_withdrawal'] );
-			}
+		$in_query = array();
 
-			return $query;
-		};
-
-		$custom_query_hpos_cb = function ( $query_vars ) {
-			if ( ! empty( $query_vars['has_withdrawal'] ) ) {
-				$query_vars['meta_query'] = array( // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query
-					'relation' => 'OR',
-					array(
-						'key'     => '_withdrawal_request',
-						'compare' => 'EXISTS',
-					),
-					array(
-						'key'     => '_withdrawals',
-						'compare' => 'EXISTS',
-					),
-				);
-
-				unset( $query_vars['has_withdrawal'] );
-			}
-
-			return $query_vars;
-		};
-
-		add_filter( 'woocommerce_order_data_store_cpt_get_orders_query', $custom_query_cpt_cb, 10, 2 );
-		add_filter( 'woocommerce_orders_table_datastore_get_orders_query', $custom_query_hpos_cb, 10 );
-
-		$query_args = array(
-			'limit'          => 10,
-			'has_withdrawal' => true,
-			'type'           => 'shop_order',
-			'order'          => 'ASC',
-			'orderby'        => 'date_created',
-		);
-
-		if ( ! empty( $date_created_after ) ) {
-			$query_args['date_created'] = '>=' . $date_created_after;
+		foreach ( $values as $value ) {
+			$in_query[] = $wpdb->prepare( "'%s'", $value ); // phpcs:ignore WordPress.DB.PreparedSQLPlaceholders.QuotedSimplePlaceholder
 		}
 
-		$orders = wc_get_orders( $query_args );
+		return '(' . implode( ',', $in_query ) . ')';
+	}
+
+	private static function build_legacy_query( $date_created_after = 0 ) {
+		global $wpdb;
+
+		$sql = '';
+
+		if ( Package::is_hpos_enabled() ) {
+			$orders_table_name = \Automattic\WooCommerce\Internal\DataStores\Orders\OrdersTableDataStore::get_orders_table_name();
+			$meta_table_name   = \Automattic\WooCommerce\Internal\DataStores\Orders\OrdersTableDataStore::get_meta_table_name();
+			$order_status_in   = self::generate_in_query_sql( array_keys( wc_get_order_statuses() ) );
+
+			$joins = array(
+				"INNER JOIN {$meta_table_name} AS mt0 ON {$orders_table_name}.id = mt0.order_id AND (mt0.meta_key = '_withdrawals' OR mt0.meta_key = '_withdrawal_request')",
+			);
+
+			$join_sql       = implode( ' ', $joins );
+			$where_date_sql = '';
+
+			if ( ! empty( $date_created_after ) ) {
+				$datetime       = new \WC_DateTime( "@{$date_created_after}", new \DateTimeZone( 'UTC' ) );
+				$where_date_sql = $wpdb->prepare( " AND ({$orders_table_name}.date_created_gmt >= %s)", $datetime->date( 'Y-m-d H:i:s' ) ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+			}
+
+			// @codingStandardsIgnoreStart
+			$sql = $wpdb->prepare(
+				"
+			SELECT {$orders_table_name}.id as order_id FROM {$orders_table_name}  
+			$join_sql
+			WHERE 1=1 
+				AND ( {$orders_table_name}.type = 'shop_order' ) AND ( {$orders_table_name}.status IN {$order_status_in} ) {$where_date_sql}
+			GROUP BY {$orders_table_name}.id 
+			ORDER BY {$orders_table_name}.date_created_gmt ASC 
+			LIMIT %d, %d",
+				0,
+				10
+			);
+			// @codingStandardsIgnoreEnd
+		} else {
+			$joins = array(
+				"INNER JOIN {$wpdb->postmeta} AS mt0 ON {$wpdb->posts}.ID = mt0.post_id AND (mt0.meta_key = '_withdrawals' OR mt0.meta_key = '_withdrawal_request')",
+			);
+
+			$join_sql       = implode( ' ', $joins );
+			$post_status_in = self::generate_in_query_sql( array_keys( wc_get_order_statuses() ) );
+			$where_date_sql = '';
+
+			if ( ! empty( $date_created_after ) ) {
+				$datetime       = new \WC_DateTime( "@{$date_created_after}", new \DateTimeZone( 'UTC' ) );
+				$where_date_sql = $wpdb->prepare( " AND ({$wpdb->posts}.post_date_gmt >= %s)", $datetime->date( 'Y-m-d H:i:s' ) ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+			}
+
+			// @codingStandardsIgnoreStart
+			$sql = $wpdb->prepare(
+				"
+			SELECT {$wpdb->posts}.ID as order_id FROM {$wpdb->posts}  
+			$join_sql
+			WHERE 1=1 
+				AND ( {$wpdb->posts}.post_type = 'shop_order' ) AND ( {$wpdb->posts}.post_status IN {$post_status_in} ) {$where_date_sql}
+			GROUP BY {$wpdb->posts}.ID 
+			ORDER BY {$wpdb->posts}.post_date_gmt ASC 
+			LIMIT %d, %d",
+				0,
+				10
+			);
+			// @codingStandardsIgnoreEnd
+		}
+
+		return $sql;
+	}
+
+	public static function legacy_withdrawal_query( $date_created_after = 0 ) {
+		global $wpdb;
+
+		$wpdb->hide_errors();
+
+		$query = self::build_legacy_query( $date_created_after );
+
+		$results = $wpdb->get_results( $query ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+		$orders  = array();
+
+		foreach ( $results as $result ) {
+			if ( $order = wc_get_order( $result->order_id ) ) {
+				$orders[] = $order;
+			}
+		}
 
 		return $orders;
 	}
 
 	public static function migrate_withdrawals() {
-		$orders = self::legacy_withdrawal_query( 0 );
-
-		if ( ! empty( $orders ) ) {
-			if ( $queue = WC()->queue() ) {
-				$queue->schedule_single(
-					time() + 10,
-					'eu_owb_migrate_withdrawals',
-					array( 'date_created_after' => 0 ),
-					'eu_order_withdrawal_button'
-				);
-			}
+		if ( $queue = WC()->queue() ) {
+			$queue->schedule_single(
+				time() + 60,
+				'eu_owb_migrate_withdrawals',
+				array( 'date_created_after' => 0 ),
+				'eu_order_withdrawal_button'
+			);
 		}
 	}
 

@@ -5,7 +5,7 @@ Requires at least: 5.4
 Tested up to: 7.0
 WC requires at least: 3.9
 WC tested up to: 10.7
-Stable tag: 2.1.0
+Stable tag: 2.1.1
 Requires PHP: 7.4
 License: GPLv3
 License URI: http://www.gnu.org/licenses/gpl-3.0.html
@@ -62,6 +62,11 @@ Bug reports may be filed via our [GitHub repository](https://github.com/vendider
 2. Admin UI
 
 == Changelog ==
+= 2.1.1 =
+* Improvement: Basic spam protection via honeypot field + direct post check
+* Improvement: Prevent guests from submitting
+* Fix: Performance improvement for legacy withdrawal imports by using direct queries
+
 = 2.1.0 =
 * New: Accept withdrawal requests without matching order
 * New: Withdrawal admin UI
