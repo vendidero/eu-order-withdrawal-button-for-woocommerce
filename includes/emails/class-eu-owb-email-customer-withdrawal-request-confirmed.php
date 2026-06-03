@@ -157,7 +157,7 @@ if ( ! class_exists( 'EU_OWB_Email_Customer_Withdrawal_Request_Confirmed', false
 					'email_heading'      => $this->get_heading(),
 					'additional_content' => $this->get_additional_content(),
 					'sent_to_admin'      => false,
-					'plain_text'         => false,
+					'plain_text'         => true,
 					'email'              => $this,
 				)
 			);

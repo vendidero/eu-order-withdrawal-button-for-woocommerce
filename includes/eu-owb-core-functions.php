@@ -1199,7 +1199,7 @@ function eu_owb_get_orders_for_user( $user_id = 0, $as_id = false ) {
 		)
 	);
 
-	return $orders;
+	return apply_filters( 'eu_owb_woocommerce_get_orders_for_user', $orders, $user_id, $as_id );
 }
 
 /**

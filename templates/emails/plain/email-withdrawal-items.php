@@ -101,8 +101,5 @@ foreach ( $items as $item_id => $item_data ) :
 		// allow other plugins to add additional product information here.
 		do_action( 'woocommerce_order_item_meta_end', $item_id, $item, $order, $plain_text );
 	}
-
 	echo "\n\n";
-	?>
-	<?php
 endforeach;
