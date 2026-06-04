@@ -319,6 +319,11 @@ class Package {
 		$stores['order-withdrawal']      = 'Vendidero\OrderWithdrawalButton\DataStores\WithdrawalOrderCPT';
 		$stores['order-item-withdrawal'] = 'Vendidero\OrderWithdrawalButton\DataStores\WithdrawalItem';
 
+		/**
+		 * Backwards compatibility for Woo < 8.7
+		 */
+		$stores['shop_order_withdraw'] = 'Vendidero\OrderWithdrawalButton\DataStores\WithdrawalOrderCPT';
+
 		if ( self::is_hpos_enabled() ) {
 			try {
 				$meta    = wc_get_container()->get( \Automattic\WooCommerce\Internal\DataStores\Orders\OrdersTableDataStoreMeta::class );
@@ -328,7 +333,8 @@ class Package {
 				$data_store = new \Vendidero\OrderWithdrawalButton\DataStores\WithdrawalOrder();
 				$data_store->init( $meta, $db_util, $proxy );
 
-				$stores['order-withdrawal'] = $data_store;
+				$stores['order-withdrawal']    = $data_store;
+				$stores['shop_order_withdraw'] = $data_store;
 			} catch ( \Exception $e ) { // phpcs:ignore Generic.CodeAnalysis.EmptyStatement.DetectedCatch
 			}
 		}

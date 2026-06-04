@@ -31,4 +31,5 @@ $has_multiple = eu_owb_order_withdrawal_request_has_multiple_orders( $withdrawal
 	<?php echo sprintf( esc_html_x( 'Edit withdrawal request: %s', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ), esc_url( $edit_withdrawal_link ) ) . "\n\n"; ?>
 <?php else : ?>
 	<?php echo sprintf( esc_html_x( 'Choose items to withdraw now: %s', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ), esc_url( $edit_withdrawal_link ) ) . "\n\n"; ?>
-<?php endif;
+	<?php
+endif;

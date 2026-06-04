@@ -290,4 +290,16 @@ class WithdrawalOrderCPT extends \Abstract_WC_Order_Data_Store_CPT implements \W
 
 		return $status;
 	}
+
+	/**
+	 * Return count of orders with a specific status.
+	 *
+	 * @param  string $status Order status. Function wc_get_order_statuses() returns a list of valid statuses.
+	 * @return int
+	 */
+	public function get_order_count( $status ) {
+		global $wpdb;
+
+		return absint( $wpdb->get_var( $wpdb->prepare( "SELECT COUNT( * ) FROM {$wpdb->posts} WHERE post_type = 'shop_order_withdraw' AND post_status = %s", $status ) ) );
+	}
 }

@@ -2,8 +2,6 @@
 
 namespace Vendidero\OrderWithdrawalButton\Admin;
 
-use Automattic\WooCommerce\Caches\OrderCountCache;
-use Automattic\WooCommerce\Utilities\OrderUtil;
 use Vendidero\OrderWithdrawalButton\Package;
 use Vendidero\OrderWithdrawalButton\Settings;
 use Vendidero\OrderWithdrawalButton\WithdrawalOrder;
@@ -243,9 +241,35 @@ class Admin {
 	 */
 	public static function get_withdrawal_count( $target_status = '' ) {
 		$order_type    = 'shop_order_withdraw';
-		$counts        = OrderUtil::get_count_for_type( $order_type );
 		$core_statuses = array( 'wc-owb-requested', 'wc-owb-confirmed', 'wc-owb-rejected' );
 		$needs_reset   = false;
+		$counts        = array();
+
+		/**
+		 * Backwards compatibility for Woo < 8.7.
+		 */
+		if ( ! is_callable( array( '\Automattic\WooCommerce\Utilities\OrderUtil', 'get_count_for_type' ) ) ) {
+			foreach ( $core_statuses as $status ) {
+				$cache_key    = \WC_Cache_Helper::get_cache_prefix( 'orders' ) . $status . $order_type;
+				$cached_count = wp_cache_get( $cache_key, 'counts' );
+
+				if ( false !== $cached_count ) {
+					$counts[ $status ] = $cached_count;
+				} else {
+					$data_store = \WC_Data_Store::load( 'order-withdrawal' );
+
+					if ( $data_store ) {
+						$counts[ $status ] = $data_store->get_order_count( $status );
+
+						wp_cache_set( $cache_key, $counts[ $status ], 'counts' );
+					} else {
+						$counts[ $status ] = 0;
+					}
+				}
+			}
+		} else {
+			$counts = \Automattic\WooCommerce\Utilities\OrderUtil::get_count_for_type( $order_type );
+		}
 
 		foreach ( $core_statuses as $status ) {
 			if ( ! isset( $counts[ $status ] ) ) {
@@ -254,8 +278,8 @@ class Admin {
 			}
 		}
 
-		if ( $needs_reset ) {
-			$order_count_cache = new OrderCountCache();
+		if ( $needs_reset && class_exists( '\Automattic\WooCommerce\Caches\OrderCountCache' ) ) {
+			$order_count_cache = new \Automattic\WooCommerce\Caches\OrderCountCache();
 			$order_count_cache->set_multiple( $order_type, $counts );
 		}
 

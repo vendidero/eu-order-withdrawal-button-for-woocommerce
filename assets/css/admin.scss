@@ -277,6 +277,10 @@ a.wc-action-button.wc-action-button-delete:after {
 }
 
 .woocommerce_page_wc-owb-withdrawals {
+  .wp-list-table .column-order_number .small-screen-only {
+    display: none;
+  }
+
   table.wp-list-table {
     td.order_number {
       .eu-owb-woocommerce-verified-status {
