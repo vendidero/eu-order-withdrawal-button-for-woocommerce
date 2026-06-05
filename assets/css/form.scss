@@ -16,6 +16,12 @@ form.order-withdrawal-request {
     margin-top: 10px;
   }
 
+  .form-row {
+    .optional {
+      display: none;
+    }
+  }
+
   .form-row-email-repeat {
     position: absolute !important;
     overflow: hidden !important;

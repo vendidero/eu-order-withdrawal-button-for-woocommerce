@@ -102,6 +102,18 @@ if ( ! class_exists( 'EU_OWB_Email_New_Withdrawal_Request', false ) ) :
 			$this->restore_locale();
 		}
 
+		public function get_recipient() {
+			$recipients = parent::get_recipient();
+
+			if ( $email = \Vendidero\OrderWithdrawalButton\Package::get_additional_admin_notification_recipient() ) {
+				if ( ! empty( $email ) && ! strstr( $recipients, $email ) ) {
+					$recipients .= ', ' . $email;
+				}
+			}
+
+			return $recipients;
+		}
+
 		/**
 		 * Return content from the additional_content field.
 		 *

@@ -23,6 +23,7 @@ window.eu_owb.order_withdrawal = window.eu_owb.order_withdrawal || {};
 
         onChangeInputs: function() {
             var self = eu_owb.order_withdrawal,
+                $this = $( this ),
                 $form = $( this ).parents( 'form' ),
                 order = $form.find( '#order-withdrawal-request-order-number' ).val(),
                 email = $form.find( '#order-withdrawal-request-email' ).val(),
@@ -40,7 +41,9 @@ window.eu_owb.order_withdrawal = window.eu_owb.order_withdrawal || {};
                     data: data,
                     dataType: 'json',
                 }).done( function ( response ) {
-                    if ( true === response.data['supports_partial_withdrawal'] ) {
+                    $form = $this.parents( 'form' );
+
+                    if ( ! $form.hasClass( 'loading' ) && true === response.data['supports_partial_withdrawal'] ) {
                         $partial.removeClass( 'hidden' );
                     } else {
                         $partial.addClass( 'hidden' );

@@ -11,7 +11,7 @@
  * the readme will list any important changes.
  *
  * @package Vendidero/OrderWithdrawalButton/Templates
- * @version 2.1.1
+ * @version 2.2.0
  */
 if ( ! defined( 'ABSPATH' ) ) {
 	exit; // Exit if accessed directly.
@@ -27,42 +27,116 @@ $show_submit             = true;
 
 	<div class="eu-owb-form-fields">
 		<?php if ( ! is_user_logged_in() && ! $order ) : ?>
-			<div class="form-row form-row-first form-row-order-number">
-				<label for="order-withdrawal-request-order-number"><?php echo esc_html_x( 'Order number', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ); ?></label>
-				<input type="text" class="input-text" name="order_number" id="order-withdrawal-request-order-number" autocomplete="off" />
-			</div>
+			<?php
+				woocommerce_form_field(
+					'order_number',
+					apply_filters(
+						'eu_owb_woocommerce_form_field_order_number_args',
+						array(
+							'label'             => _x( 'Order number', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ),
+							'class'             => array( 'form-row-first', 'form-row-order-number' ),
+							'autocomplete'      => 'off',
+							'id'                => 'order-withdrawal-request-order-number',
+							'default'           => '',
+							'custom_attributes' => array(
+								'maxlength' => \Vendidero\OrderWithdrawalButton\Package::get_form_field_maxlength( 'order_number' ),
+							),
+						)
+					)
+				);
+			?>
 
-			<div class="form-row form-row-last form-row-email">
-				<label for="order-withdrawal-request-email"><?php echo esc_html_x( 'Email', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ); ?>&nbsp;<span class="required">*</span></label>
-				<input type="text" class="input-text" name="email" id="order-withdrawal-request-email" autocomplete="email" />
-			</div>
+			<?php
+				woocommerce_form_field(
+					'email',
+					apply_filters(
+						'eu_owb_woocommerce_form_field_email_args',
+						array(
+							'label'        => _x( 'Email', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ),
+							'class'        => array( 'form-row-last', 'form-row-email' ),
+							'autocomplete' => 'email',
+							'id'           => 'order-withdrawal-request-email',
+							'default'      => '',
+							'required'     => true,
+						)
+					)
+				);
+			?>
 
-			<div class="form-row form-row-full form-row-email-repeat">
-				<label for="order-withdrawal-request-email-repeat"><?php echo esc_html_x( 'Email (repeat)', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ); ?>&nbsp;<span class="required">*</span></label>
-				<input type="text" class="input-text" name="email_repeat" id="order-withdrawal-request-email-repeat" autocomplete="email" />
-			</div>
+			<?php
+			woocommerce_form_field(
+				'email_repeat',
+				array(
+					'label'        => _x( 'Email (repeat)', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ),
+					'class'        => array( 'form-row-full', 'form-row-email-repeat' ),
+					'autocomplete' => 'email',
+					'id'           => 'order-withdrawal-request-email-repeat',
+					'default'      => '',
+					'required'     => true,
+				)
+			);
+			?>
 
-			<div class="form-row form-row-first form-row-first-name">
-				<label for="order-withdrawal-request-first-name"><?php echo esc_html_x( 'First name', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ); ?></label>
-				<input type="text" class="input-text" name="first_name" id="order-withdrawal-request-first-name" autocomplete="off" />
-			</div>
+			<?php
+			woocommerce_form_field(
+				'first_name',
+				apply_filters(
+					'eu_owb_woocommerce_form_field_first_name_args',
+					array(
+						'label'             => _x( 'First name', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ),
+						'class'             => array( 'form-row-first', 'form-row-first-name' ),
+						'autocomplete'      => 'off',
+						'id'                => 'order-withdrawal-request-first-name',
+						'default'           => '',
+						'custom_attributes' => array(
+							'maxlength' => \Vendidero\OrderWithdrawalButton\Package::get_form_field_maxlength( 'first_name' ),
+						),
+					)
+				)
+			);
+			?>
 
-			<div class="form-row form-row-last form-row-last-name">
-				<label for="order-withdrawal-request-last-name"><?php echo esc_html_x( 'Last name', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ); ?></label>
-				<input type="text" class="input-text" name="last_name" id="order-withdrawal-request-last-name" autocomplete="off" />
-			</div>
+			<?php
+			woocommerce_form_field(
+				'last_name',
+				apply_filters(
+					'eu_owb_woocommerce_form_field_last_name_args',
+					array(
+						'label'             => _x( 'Last name', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ),
+						'class'             => array( 'form-row-last', 'form-row-last-name' ),
+						'autocomplete'      => 'off',
+						'id'                => 'order-withdrawal-request-last-name',
+						'default'           => '',
+						'custom_attributes' => array(
+							'maxlength' => \Vendidero\OrderWithdrawalButton\Package::get_form_field_maxlength( 'last_name' ),
+						),
+					)
+				)
+			);
+			?>
 
 			<div class="clear"></div>
 
 			<?php if ( \Vendidero\OrderWithdrawalButton\Package::enable_partial_withdrawals() ) : ?>
 				<div class="order-supports-partial-withdrawal hidden">
-					<div class="form-row form-row-full">
-						<label class="woocommerce-form__label woocommerce-form__label-for-checkbox checkbox" for="manually-select-items">
-							<input type="checkbox" class="woocommerce-form__input woocommerce-form__input-checkbox input-checkbox" name="manually_select_items" <?php checked( $manually_select_items, true ); // WPCS: input var ok, csrf ok. ?> id="manually-select-items" />
-							<span class="eu-owb-woocommerce-select-certain-items-text"><?php echo esc_html_x( 'I want to select the items to cancel manually.', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ); ?></span>
-							<span class="notice eu-owb-woocommerce-select-certain-items-desc"><?php echo esc_html_x( 'You will receive an email confirming receipt of your withdrawal request. In the email, you will find a link that allows you to select the items you wish to return.', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ); ?></span>
-						</label>
-					</div>
+					<?php
+					woocommerce_form_field(
+						'manually_select_items',
+						apply_filters(
+							'eu_owb_woocommerce_form_field_manually_select_items_args',
+							array(
+								'label'         => _x( 'I want to select the items to cancel manually.', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ),
+								'class'         => array( 'form-row-full', 'form-row-manually-select-items' ),
+								'id'            => 'manually-select-items',
+								'default'       => $manually_select_items,
+								'type'          => 'checkbox',
+								'checked_value' => true,
+							)
+						)
+					);
+					?>
+
+					<span class="notice eu-owb-woocommerce-select-certain-items-desc"><?php echo esc_html_x( 'You will receive an email confirming receipt of your withdrawal request. In the email, you will find a link that allows you to select the items you wish to return.', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ); ?></span>
 				</div>
 			<?php endif; ?>
 
@@ -82,6 +156,7 @@ $show_submit             = true;
 						'email'       => $order->get_billing_email(),
 						'customer_id' => $order->get_customer_id(),
 						'return'      => 'objects',
+						'status'      => eu_owb_get_withdrawable_order_statuses(),
 					)
 				);
 
@@ -92,16 +167,35 @@ $show_submit             = true;
 				}
 			}
 			?>
-			<?php if ( ! empty( $orders ) ) : ?>
-				<div class="form-row form-row-full form-row-order">
-					<label for="order-withdrawal-request-order"><?php echo esc_html_x( 'Order', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ); ?>&nbsp;<span class="required">*</span></label>
-					<select name="order_id" id="order-withdrawal-request-order">
-						<option value=""><?php echo esc_html_x( 'Please select an order', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ); ?></option>
-						<?php foreach ( $orders as $t_order ) : ?>
-							<option value="<?php echo esc_attr( $t_order->get_id() ); ?>" <?php selected( $default_order_id, $t_order->get_id() ); ?>><?php echo esc_html( sprintf( _x( 'Order %1$s', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ), $t_order->get_order_number() ) ); ?></option>
-						<?php endforeach; ?>
-					</select>
-				</div>
+			<?php
+			if ( ! empty( $orders ) ) :
+				$orders_select = array(
+					'' => _x( 'Please select an order', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ),
+				);
+
+				foreach ( $orders as $t_order ) {
+					$orders_select[ $t_order->get_id() ] = sprintf( _x( 'Order %1$s', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ), $t_order->get_order_number() );
+				}
+				?>
+				<?php
+				woocommerce_form_field(
+					'order_id',
+					apply_filters(
+						'eu_owb_woocommerce_form_field_order_select_args',
+						array(
+							'label'    => _x( 'Order', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ),
+							'class'    => array( 'form-row-full', 'form-row-order' ),
+							'id'       => 'order-withdrawal-request-order',
+							'default'  => $default_order_id,
+							'type'     => 'select',
+							'options'  => $orders_select,
+							'required' => true,
+						),
+						$default_order_id,
+						$orders
+					)
+				);
+				?>
 
 				<div class="eu-owb-order-item-select-wrapper">
 					<?php
@@ -117,39 +211,96 @@ $show_submit             = true;
 					?>
 				</div>
 
-				<div class="form-row form-row-full form-row-email">
-					<label for="order-withdrawal-request-email"><?php echo esc_html_x( 'Email', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ); ?></label>
-					<input type="text" class="input-text" name="email" id="order-withdrawal-request-email" autocomplete="email" value="<?php echo esc_attr( $default_email_address ); ?>" />
-				</div>
+				<?php
+				woocommerce_form_field(
+					'email',
+					apply_filters(
+						'eu_owb_woocommerce_form_field_email_args',
+						array(
+							'label'        => _x( 'Email', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ),
+							'class'        => array( 'form-row-full', 'form-row-email' ),
+							'autocomplete' => 'email',
+							'id'           => 'order-withdrawal-request-email',
+							'default'      => $default_email_address,
+							'required'     => true,
+						)
+					)
+				);
+				?>
 
-				<div class="form-row form-row-full form-row-email-repeat">
-					<label for="order-withdrawal-request-email-repeat"><?php echo esc_html_x( 'Email (repeat)', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ); ?>&nbsp;<span class="required">*</span></label>
-					<input type="text" class="input-text" name="email_repeat" id="order-withdrawal-request-email-repeat" autocomplete="email" />
-				</div>
+				<?php
+				woocommerce_form_field(
+					'email_repeat',
+					array(
+						'label'        => _x( 'Email (repeat)', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ),
+						'class'        => array( 'form-row-full', 'form-row-email-repeat' ),
+						'autocomplete' => 'email',
+						'id'           => 'order-withdrawal-request-email-repeat',
+						'default'      => '',
+						'required'     => true,
+					)
+				);
+				?>
 
-				<div class="clear"></div>
+				<?php
+				woocommerce_form_field(
+					'first_name',
+					apply_filters(
+						'eu_owb_woocommerce_form_field_first_name_args',
+						array(
+							'label'             => _x( 'First name', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ),
+							'class'             => array( 'form-row-first', 'form-row-first-name' ),
+							'autocomplete'      => 'off',
+							'id'                => 'order-withdrawal-request-first-name',
+							'default'           => $default_first_name,
+							'custom_attributes' => array(
+								'maxlength' => \Vendidero\OrderWithdrawalButton\Package::get_form_field_maxlength( 'first_name' ),
+							),
+						)
+					)
+				);
+				?>
 
-				<div class="form-row form-row-first form-row-first-name">
-					<label for="order-withdrawal-request-first-name"><?php echo esc_html_x( 'First name', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ); ?></label>
-					<input type="text" class="input-text" name="first_name" id="order-withdrawal-request-first-name" autocomplete="off" value="<?php echo esc_attr( $default_first_name ); ?>" />
-				</div>
-
-				<div class="form-row form-row-last form-row-last-name">
-					<label for="order-withdrawal-request-last-name"><?php echo esc_html_x( 'Last name', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ); ?></label>
-					<input type="text" class="input-text" name="last_name" id="order-withdrawal-request-last-name" autocomplete="off" value="<?php echo esc_attr( $default_last_name ); ?>" />
-				</div>
+				<?php
+				woocommerce_form_field(
+					'last_name',
+					apply_filters(
+						'eu_owb_woocommerce_form_field_last_name_args',
+						array(
+							'label'             => _x( 'Last name', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ),
+							'class'             => array( 'form-row-last', 'form-row-last-name' ),
+							'autocomplete'      => 'off',
+							'id'                => 'order-withdrawal-request-last-name',
+							'default'           => $default_last_name,
+							'custom_attributes' => array(
+								'maxlength' => \Vendidero\OrderWithdrawalButton\Package::get_form_field_maxlength( 'last_name' ),
+							),
+						)
+					)
+				);
+				?>
 
 				<div class="clear"></div>
 
 				<?php if ( $order ) : ?>
-					<?php if ( eu_owb_get_withdrawal_request( $order ) ) : ?>
-						<div class="form-row form-row-full hidden order-withdrawal-delete-original-request-checkbox">
-							<label class="woocommerce-form__label woocommerce-form__label-for-checkbox checkbox" for="delete-original-request">
-								<input type="checkbox" class="woocommerce-form__input woocommerce-form__input-checkbox input-checkbox" name="delete_original_request" <?php checked( $delete_original_request, true ); // WPCS: input var ok, csrf ok. ?> id="delete-original-request" />
-								<span class="eu-owb-woocommerce-select-certain-items-text"><?php printf( esc_html_x( 'Please delete my original withdrawal request to order %1$s.', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ), esc_html( $order->get_order_number() ) ); ?></span>
-							</label>
-						</div>
-					<?php endif; ?>
+					<?php
+					if ( eu_owb_get_withdrawal_request( $order ) ) :
+						woocommerce_form_field(
+							'delete_original_request',
+							apply_filters(
+								'eu_owb_woocommerce_form_field_delete_original_request_args',
+								array(
+									'label'         => sprintf( _x( 'Please delete my original withdrawal request to order %1$s.', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ), esc_html( $order->get_order_number() ) ),
+									'class'         => array( 'form-row-full', 'hidden', 'order-withdrawal-delete-original-request-checkbox' ),
+									'id'            => 'delete-original-request',
+									'default'       => $delete_original_request,
+									'type'          => 'checkbox',
+									'checked_value' => true,
+								)
+							)
+						);
+					endif;
+					?>
 
 					<input type="hidden" name="original_order_id" id="original-order-id" value="<?php echo esc_attr( $order->get_id() ); ?>" />
 
@@ -171,10 +322,10 @@ $show_submit             = true;
 	<?php do_action( 'eu_owb_woocommerce_return_request_form_before_submit', $order ); ?>
 
 	<?php if ( $show_submit ) : ?>
-		<div class="form-row form-row-submit">
+		<<?php echo esc_html( \Vendidero\OrderWithdrawalButton\Package::force_div_form_field() ? 'div' : 'p' ); ?> class="form-row form-row-submit" id="order-withdrawal-request-submit">
 			<?php wp_nonce_field( 'eu_owb_woocommerce_order_withdrawal_request' ); ?>
 			<button type="submit" class="woocommerce-button button woocommerce-form-return_request__submit<?php echo esc_attr( eu_owb_wp_theme_get_element_class_name( 'button' ) ? ' ' . eu_owb_wp_theme_get_element_class_name( 'button' ) : '' ); ?>" name="order_withdrawal_request" value="<?php echo esc_attr_x( 'Confirm withdrawal', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ); ?>"><?php echo esc_attr_x( 'Confirm withdrawal', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ); ?></button>
-		</div>
+		</<?php echo esc_html( \Vendidero\OrderWithdrawalButton\Package::force_div_form_field() ? 'div' : 'p' ); ?>>
 	<?php endif; ?>
 
 	<div class="clear"></div>

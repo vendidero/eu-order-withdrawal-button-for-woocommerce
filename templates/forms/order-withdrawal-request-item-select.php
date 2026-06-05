@@ -11,7 +11,7 @@
  * the readme will list any important changes.
  *
  * @package Vendidero/OrderWithdrawalButton/Templates
- * @version 2.1.0
+ * @version 2.2.0
  */
 if ( ! defined( 'ABSPATH' ) ) {
 	exit; // Exit if accessed directly.
@@ -37,12 +37,22 @@ echo wp_kses_post(
 ?>
 </p>
 <?php if ( eu_owb_order_supports_partial_withdrawal( $order, true ) ) : ?>
-	<div class="form-row form-row-full">
-		<label class="woocommerce-form__label woocommerce-form__label-for-checkbox checkbox" for="manually-select-items">
-			<input type="checkbox" class="woocommerce-form__input woocommerce-form__input-checkbox input-checkbox" name="manually_select_items" <?php checked( $manually_select_items, true ); // WPCS: input var ok, csrf ok. ?> id="manually-select-items" />
-			<span class="eu-owb-woocommerce-select-certain-items-text"><?php echo esc_html_x( 'I want to select the items to cancel manually.', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ); ?></span>
-		</label>
-	</div>
+	<?php
+	woocommerce_form_field(
+		'manually_select_items',
+		apply_filters(
+			'eu_owb_woocommerce_form_field_manually_select_items_args',
+			array(
+				'label'         => _x( 'I want to select the items to cancel manually.', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ),
+				'class'         => array( 'form-row-full', 'order-withdrawal-manually-select-items-checkbox' ),
+				'id'            => 'manually-select-items',
+				'default'       => $manually_select_items,
+				'type'          => 'checkbox',
+				'checked_value' => true,
+			)
+		)
+	);
+	?>
 
 	<table class="woocommerce-table woocommerce-table--order-withdrawal-request-items shop_table order-withdrawal-request-items-table <?php echo esc_attr( ! $manually_select_items ? 'hidden' : '' ); ?>">
 		<thead>

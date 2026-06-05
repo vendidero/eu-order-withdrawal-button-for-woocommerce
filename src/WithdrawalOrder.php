@@ -80,6 +80,19 @@ class WithdrawalOrder extends \WC_Abstract_Order implements \ArrayAccess {
 		return 'shop_order_withdraw';
 	}
 
+	public function has_changes() {
+		$has_changes = ! empty( $this->get_changes() );
+
+		foreach ( $this->get_items() as $item ) {
+			if ( ! empty( $item->get_changes() ) ) {
+				$has_changes = true;
+				break;
+			}
+		}
+
+		return $has_changes;
+	}
+
 	public function get_withdrawal_number( $context = 'view' ) {
 		return $this->get_prop( 'withdrawal_number', $context );
 	}
@@ -420,13 +433,15 @@ class WithdrawalOrder extends \WC_Abstract_Order implements \ArrayAccess {
 		}
 	}
 
-	public function update_items( $items = array() ) {
-		foreach ( $this->get_items() as $item ) {
-			if ( $item->get_parent_id() > 0 ) {
-				$this->remove_item( $item->get_id() );
-			}
+	public function remove_item( $item_id ) {
+		if ( ! is_numeric( $item_id ) && isset( $this->items['withdrawal_lines'][ $item_id ] ) ) {
+			unset( $this->items['withdrawal_lines'][ $item_id ] );
+		} else {
+			return parent::remove_item( $item_id );
 		}
+	}
 
+	public function update_items( $items = array() ) {
 		$is_full_withdrawal = true;
 
 		if ( $parent = $this->get_parent() ) {
@@ -466,19 +481,57 @@ class WithdrawalOrder extends \WC_Abstract_Order implements \ArrayAccess {
 						continue;
 					}
 
-					$withdrawal_item = new \Vendidero\OrderWithdrawalButton\WithdrawalItem();
+					$withdrawal_item = $this->get_item_by_parent_id( $item_id );
+					$is_new          = false;
+
+					if ( ! $withdrawal_item ) {
+						$withdrawal_item = new \Vendidero\OrderWithdrawalButton\WithdrawalItem();
+						$is_new          = true;
+					}
 
 					$withdrawal_item->from_order_item( $item );
 					$withdrawal_item->set_quantity( $item_data['quantity'] );
 
-					$this->add_item( $withdrawal_item );
+					if ( $is_new ) {
+						$this->add_item( $withdrawal_item );
+					}
+				}
+			}
+
+			/**
+			 * Remove non-existing items
+			 */
+			foreach ( $this->get_items() as $item_key => $item ) {
+				$parent_id = $item->get_parent_id();
+
+				if ( ! array_key_exists( $parent_id, $items ) ) {
+					$this->remove_item( $item->get_id() > 0 ? $item->get_id() : $item_key );
 				}
 			}
 		} else {
+			foreach ( $this->get_items() as $item_key => $item ) {
+				if ( $item->get_parent_id() > 0 ) {
+					$this->remove_item( $item->get_id() > 0 ? $item->get_id() : $item_key );
+				}
+			}
+
 			$is_full_withdrawal = empty( $this->get_items() ) ? true : false;
 		}
 
 		$this->set_is_partial( ! $is_full_withdrawal );
+	}
+
+	/**
+	 * @return WithdrawalItem|false
+	 */
+	public function get_item_by_parent_id( $item_parent_id ) {
+		foreach ( $this->get_items() as $item ) {
+			if ( $item->get_parent_id() === $item_parent_id ) {
+				return $item;
+			}
+		}
+
+		return false;
 	}
 
 	/**

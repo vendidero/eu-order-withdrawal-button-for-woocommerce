@@ -61,6 +61,74 @@ class Package {
 
 		add_action( 'woocommerce_prepare_email_for_preview', array( __CLASS__, 'prepare_email_for_preview' ) );
 		add_action( 'eu_owb_migrate_withdrawals', array( __CLASS__, 'migrate_withdrawals' ) );
+
+		add_action(
+			'eu_owb_woocommerce_return_request_form_start',
+			function () {
+				add_filter( 'woocommerce_form_field', array( __CLASS__, 'force_div_form_field_filter' ), 10, 1 );
+			}
+		);
+
+		add_action(
+			'eu_owb_woocommerce_return_request_form_end',
+			function () {
+				remove_filter( 'woocommerce_form_field', array( __CLASS__, 'force_div_form_field_filter' ), 10 );
+			}
+		);
+	}
+
+	public static function force_div_form_field() {
+		return apply_filters( 'eu_owb_woocommerce_force_div_form_field', true );
+	}
+
+	public static function force_div_form_field_filter( $field_html ) {
+		if ( self::force_div_form_field() ) {
+			$field_html = str_replace( array( '<p', '</p>' ), array( '<div', '</div>' ), $field_html );
+		}
+
+		return $field_html;
+	}
+
+	public static function get_additional_admin_notification_recipient() {
+		$recipient = '';
+
+		if ( $email = self::get_setting( 'contact_email_address' ) ) {
+			$email = apply_filters( 'eu_owb_get_contact_support_email', sanitize_email( $email ) );
+
+			if ( ! empty( $email ) ) {
+				$recipient = $email;
+			}
+		}
+
+		return apply_filters( 'eu_owb_woocommerce_additional_admin_notification_recipient', $recipient );
+	}
+
+	public static function substr( $str, $start, $length = null ) {
+		if ( is_array( $str ) ) {
+			return array_map( array( __CLASS__, 'substr' ), $str );
+		} elseif ( is_scalar( $str ) ) {
+			if ( function_exists( 'mb_substr' ) ) {
+				$str = mb_substr( $str, $start, $length );
+			} else {
+				$str = substr( $str, $start, $length );
+			}
+
+			return $str;
+		} else {
+			return $str;
+		}
+	}
+
+	public static function get_form_field_maxlength( $field_name ) {
+		$max_length = -1;
+
+		if ( 'order_number' === $field_name ) {
+			$max_length = 20;
+		} elseif ( 'first_name' === $field_name || 'last_name' === $field_name ) {
+			$max_length = 40;
+		}
+
+		return apply_filters( 'eu_owb_woocommerce_form_field_maxlength', $max_length, $field_name );
 	}
 
 	public static function migrate_withdrawals( $date_created_after ) {

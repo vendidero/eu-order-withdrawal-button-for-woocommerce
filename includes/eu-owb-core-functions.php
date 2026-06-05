@@ -356,6 +356,15 @@ function eu_owb_get_order_item_quantity_left_to_withdraw( $item, $order = null, 
 	$withdrawal_ids = array();
 
 	foreach ( $withdrawals as $withdrawal ) {
+		/**
+		 * In case a non-verified withdrawal request has been rejected do not
+		 * decrease the quantity available to withdraw to prevent legitimate requests from
+		 * being non-withdrawable.
+		 */
+		if ( $withdrawal->has_status( 'rejected' ) && ! $withdrawal->has_verified_email() ) {
+			continue;
+		}
+
 		if ( ! in_array( $withdrawal->get_id(), $withdrawal_ids, true ) ) {
 			$withdrawal_ids[] = $withdrawal->get_id();
 
@@ -1230,6 +1239,25 @@ function eu_owb_get_order_id_from_string( $order_id_str ) {
 	return apply_filters( 'eu_owb_woocommerce_get_order_id_from_string', $order_id, $order_id_str );
 }
 
+/**
+ * @param string $email
+ * @param \Vendidero\OrderWithdrawalButton\WithdrawalOrder $original_request
+ *
+ * @return boolean
+ */
+function eu_owb_email_can_override_withdrawal_request( $email, $original_request ) {
+	$original_request_mail = $original_request->get_email();
+	$email_matches_order   = false;
+
+	if ( $parent = $original_request->get_parent() ) {
+		$email_matches_order = eu_owb_custom_email_matches_order_email( $parent, $email );
+	}
+
+	$can_override = $original_request_mail === $email || $email_matches_order;
+
+	return apply_filters( 'eu_owb_woocommerce_email_can_override_withdrawal_request', $can_override, $email, $original_request );
+}
+
 function eu_owb_custom_email_matches_order_email( $order, $email ) {
 	if ( is_numeric( $order ) ) {
 		$order = wc_get_order( $order );
@@ -1303,6 +1331,7 @@ function eu_owb_find_orders_by_custom_order_number( $args ) {
 			'email'       => '',
 			'customer_id' => '',
 			'return'      => 'ids',
+			'status'      => array_keys( wc_get_order_statuses() ),
 		)
 	);
 
@@ -1329,7 +1358,7 @@ function eu_owb_find_orders_by_custom_order_number( $args ) {
 		'order_number' => $args['order_id'],
 		'limit'        => 10,
 		'return'       => $args['return'],
-		'status'       => eu_owb_get_withdrawable_order_statuses(),
+		'status'       => $args['status'],
 	);
 
 	/**
@@ -1374,6 +1403,7 @@ function eu_owb_find_orders( $args ) {
 			'email'       => '',
 			'customer_id' => '',
 			'return'      => 'ids',
+			'status'      => array_keys( wc_get_order_statuses() ),
 		)
 	);
 
@@ -1398,7 +1428,7 @@ function eu_owb_find_orders( $args ) {
 		'limit'   => 10,
 		'return'  => $args['return'],
 		'orderby' => 'date_created',
-		'status'  => array_keys( wc_get_order_statuses() ),
+		'status'  => $args['status'],
 	);
 
 	if ( empty( $order_id_parsed ) && empty( $args['email'] ) && empty( $args['customer_id'] ) ) {
@@ -1436,7 +1466,7 @@ function eu_owb_find_orders( $args ) {
 			'limit'       => 10,
 			'return'      => $args['return'],
 			'customer_id' => $args['customer_id'],
-			'status'      => array_keys( wc_get_order_statuses() ),
+			'status'      => $args['status'],
 		);
 
 		$orders = array_unique( array_merge( $orders, wc_get_orders( apply_filters( 'eu_owb_woocommerce_find_order_customer_query_args', $user_query_args ) ) ) );
@@ -1461,6 +1491,7 @@ function eu_owb_find_orders( $args ) {
 			array(
 				'order_id' => $args['order_id'],
 				'return'   => $args['return'],
+				'status'   => $args['status'],
 			)
 		);
 	}
