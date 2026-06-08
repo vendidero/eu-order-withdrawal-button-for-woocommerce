@@ -70,6 +70,7 @@ Bug reports may be filed via our [GitHub repository](https://github.com/vendider
 * Improvement: Introduce sane first name, order number and last name maxlength
 * Improvement: Check whether a new withdrawal request actually has any updates
 * Fix: Allow (guest) withdrawal requests to be overridden (in case verified) - thanks to Ilyess Ghalem from fraudless.tech
+* Fix: Plaintext email template usage
 
 = 2.1.1 =
 * Improvement: Basic spam protection via honeypot field + direct post check
