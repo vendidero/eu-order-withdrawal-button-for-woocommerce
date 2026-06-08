@@ -4,8 +4,8 @@ Tags: woocommerce, withdrawal, cancellation, EU, compliance
 Requires at least: 5.4
 Tested up to: 7.0
 WC requires at least: 3.9
-WC tested up to: 10.7
-Stable tag: 2.1.1
+WC tested up to: 10.8
+Stable tag: 2.2.0
 Requires PHP: 7.4
 License: GPLv3
 License URI: http://www.gnu.org/licenses/gpl-3.0.html
@@ -62,6 +62,15 @@ Bug reports may be filed via our [GitHub repository](https://github.com/vendider
 2. Admin UI
 
 == Changelog ==
+= 2.2.0 =
+* Improvement: Use additional content within withdrawal confirmation email to allow for a more customized message
+* Improvement: Backwards compatibility with Woo < 8.7
+* Improvement: Use woocommerce_form_field to output form fields within withdrawal form
+* Improvement: Prevent rejected unverified withdrawal requests from reducing the quantity available to withdraw
+* Improvement: Introduce sane first name, order number and last name maxlength
+* Improvement: Check whether a new withdrawal request actually has any updates
+* Fix: Allow (guest) withdrawal requests to be overridden (in case verified) - thanks to Ilyess Ghalem from fraudless.tech
+
 = 2.1.1 =
 * Improvement: Basic spam protection via honeypot field + direct post check
 * Improvement: Prevent guests from submitting
