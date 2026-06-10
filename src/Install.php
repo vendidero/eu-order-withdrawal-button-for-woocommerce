@@ -166,7 +166,7 @@ class Install {
 		}
 	}
 
-	protected static function update_page_content( $page_id, $content, $append = true ) {
+	public static function update_page_content( $page_id, $content, $append = true ) {
 		$page = get_post( $page_id );
 
 		if ( $page ) {

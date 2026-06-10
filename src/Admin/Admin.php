@@ -2,6 +2,7 @@
 
 namespace Vendidero\OrderWithdrawalButton\Admin;
 
+use Vendidero\OrderWithdrawalButton\Install;
 use Vendidero\OrderWithdrawalButton\Package;
 use Vendidero\OrderWithdrawalButton\Settings;
 use Vendidero\OrderWithdrawalButton\WithdrawalOrder;
@@ -30,6 +31,58 @@ class Admin {
 		add_action( 'add_meta_boxes', array( __CLASS__, 'add_order_meta_box' ), 35 );
 
 		add_action( 'woocommerce_system_status_report', array( __CLASS__, 'status_report' ) );
+
+		add_action( 'admin_post_eu_owb_woocommerce_create_withdrawal_page', array( __CLASS__, 'create_withdrawal_page' ) );
+	}
+
+	public static function create_withdrawal_page() {
+		if ( ! current_user_can( 'manage_woocommerce' ) || ! isset( $_GET['_wpnonce'] ) || ! wp_verify_nonce( wc_clean( wp_unslash( $_GET['_wpnonce'] ) ), 'eu_owb_woocommerce_create_withdrawal_page' ) ) {
+			wp_die( '', 400 );
+		}
+
+		$page_id     = eu_owb_get_withdrawal_page_id();
+		$page_exists = ( -1 !== $page_id && ! empty( $page_id ) ) ? get_post( $page_id ) : false;
+
+		if ( $page_exists && ! Package::page_has_shortcode( 'eu_owb_order_withdrawal_request_form', $page_id ) ) {
+			Install::update_page_content( $page_id, '[eu_owb_order_withdrawal_request_form]' );
+		} elseif ( ! $page_exists ) {
+			Install::maybe_create_page();
+		}
+
+		wp_safe_redirect( esc_url_raw( wp_get_referer() ? wp_get_referer() : Settings::get_settings_url() ) );
+	}
+
+	public static function get_current_withdrawal_page_status() {
+		$page_id            = eu_owb_get_withdrawal_page_id();
+		$page_exists        = ( -1 !== $page_id && ! empty( $page_id ) ) ? get_post( $page_id ) : false;
+		$page_status        = $page_exists ? get_post_status( $page_id ) : 'does-not-exist';
+		$page_has_shortcode = $page_exists && Package::page_has_shortcode( 'eu_owb_order_withdrawal_request_form', $page_id );
+		$page_is_valid      = 'publish' === $page_status && $page_has_shortcode;
+		$invalid_reason     = '';
+
+		if ( ! $page_is_valid ) {
+			if ( ! $page_exists ) {
+				$invalid_reason = _x( 'Page is missing', 'owb', 'eu-order-withdrawal-button-for-woocommerce' );
+				$edit_url       = wp_nonce_url( admin_url( 'admin-post.php?action=eu_owb_woocommerce_create_withdrawal_page' ), 'eu_owb_woocommerce_create_withdrawal_page' );
+			} elseif ( 'publish' !== $page_status ) {
+				$invalid_reason = _x( 'Invisible to visitors', 'owb', 'eu-order-withdrawal-button-for-woocommerce' );
+				$edit_url       = get_edit_post_link( $page_status['id'], 'admin' );
+			} elseif ( ! $page_has_shortcode ) {
+				$invalid_reason = _x( 'Shortcode is missing', 'owb', 'eu-order-withdrawal-button-for-woocommerce' );
+				$edit_url       = wp_nonce_url( admin_url( 'admin-post.php?action=eu_owb_woocommerce_create_withdrawal_page' ), 'eu_owb_woocommerce_create_withdrawal_page' );
+			}
+		} else {
+			$edit_url = get_edit_post_link( $page_id, 'admin' );
+		}
+
+		return array(
+			'id'             => $page_id,
+			'exists'         => $page_exists,
+			'has_shortcode'  => $page_has_shortcode,
+			'status'         => $page_is_valid ? 'valid' : 'invalid',
+			'invalid_reason' => $invalid_reason,
+			'edit_url'       => $edit_url,
+		);
 	}
 
 	public static function status_report() {

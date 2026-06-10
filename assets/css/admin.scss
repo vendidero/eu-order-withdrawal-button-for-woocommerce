@@ -59,6 +59,27 @@
   box-shadow: 0 1px 1px 0 rgba(0, 0, 0, 0.1);
 }
 
+.withdrawal-page-status {
+  line-height: normal;
+  border: 1px solid #3c434a;
+  color: #3c434a;
+  border-radius: 3px;
+  padding: 5px;
+  text-decoration: none;
+  position: relative;
+  top: 5px;
+
+  &.withdrawal-page-invalid {
+    border-color: #570000;
+    color: #570000;
+  }
+
+  &.withdrawal-page-valid {
+    border-color: #13550F;
+    color: #13550F;
+  }
+}
+
 .post-type-shop_order .wp-list-table .column-withdrawal_request .description,
 .woocommerce_page_wc-orders .wp-list-table .column-withdrawal_request .description {
   display: block;

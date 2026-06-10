@@ -718,15 +718,25 @@ class Package {
 		}
 	}
 
+	public static function page_has_shortcode( $tag, $the_post = null ) {
+		if ( ! is_null( $the_post ) ) {
+			$the_post = get_post( $the_post );
+		} else {
+			global $post;
+
+			$the_post = $post;
+		}
+
+		return is_a( $the_post, 'WP_Post' ) && has_shortcode( $the_post->post_content, $tag );
+	}
+
 	public static function register_scripts() {
 		self::register_script( 'eu-owb-woocommerce', 'static/order-withdrawal.js', array( 'jquery', 'woocommerce' ) );
 		wp_register_style( 'eu-owb-woocommerce-form', self::get_assets_url( 'static/form-styles.css' ), array(), self::get_version() );
 
-		if ( function_exists( 'wc_post_content_has_shortcode' ) ) {
-			if ( wc_post_content_has_shortcode( 'eu_owb_order_withdrawal_request_form' ) || apply_filters( 'eu_owb_woocommerce_page_has_form', false ) ) {
-				wp_enqueue_style( 'eu-owb-woocommerce-form' );
-				wp_enqueue_script( 'eu-owb-woocommerce' );
-			}
+		if ( self::page_has_shortcode( 'eu_owb_order_withdrawal_request_form' ) || apply_filters( 'eu_owb_woocommerce_page_has_form', false ) ) {
+			wp_enqueue_style( 'eu-owb-woocommerce-form' );
+			wp_enqueue_script( 'eu-owb-woocommerce' );
 		}
 	}
 
