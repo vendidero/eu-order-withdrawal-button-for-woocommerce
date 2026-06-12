@@ -11,7 +11,7 @@
  * the readme will list any important changes.
  *
  * @package Vendidero/OrderWithdrawalButton/Templates
- * @version 2.2.0
+ * @version 2.2.1
  */
 if ( ! defined( 'ABSPATH' ) ) {
 	exit; // Exit if accessed directly.
@@ -58,8 +58,8 @@ echo wp_kses_post(
 		<thead>
 		<tr>
 			<th class="woocommerce-table__product-select product-select">
-				<input class="woocommerce-form__input woocommerce-form__input-checkbox order-withdrawal-request-item-checkbox-select-all" id="select-all-items" type="checkbox" />
-				<label for="select-all-items">
+				<label for="select-all-items" class="woocommerce-form__label woocommerce-form__label-for-checkbox checkbox">
+					<input class="woocommerce-form__input woocommerce-form__input-checkbox order-withdrawal-request-item-checkbox-select-all" id="select-all-items" type="checkbox" />
 					<span class="screen-reader-text"><?php echo esc_html_x( 'Select all', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ); ?></span>
 				</label>
 			</th>

@@ -192,13 +192,15 @@ function eu_owb_get_withdrawal_page_id() {
 }
 
 function eu_owb_get_element_class_name( $element ) {
+	$classname = '';
+
 	if ( function_exists( 'wc_wp_theme_get_element_class_name' ) ) {
-		return wc_wp_theme_get_element_class_name( $element );
+		$classname = wc_wp_theme_get_element_class_name( $element );
 	} elseif ( function_exists( 'wp_theme_get_element_class_name' ) ) {
-		return wp_theme_get_element_class_name( $element );
+		$classname = wp_theme_get_element_class_name( $element );
 	}
 
-	return '';
+	return apply_filters( 'eu_owb_woocommerce_element_class_name', $classname, $element );
 }
 
 /**

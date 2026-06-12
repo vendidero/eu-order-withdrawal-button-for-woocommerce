@@ -11,7 +11,7 @@
  * the readme will list any important changes.
  *
  * @package Vendidero/OrderWithdrawalButton/Templates
- * @version 2.0.2
+ * @version 2.2.1
  */
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
@@ -21,7 +21,9 @@ $item_is_withdrawable = eu_owb_order_item_is_withdrawable( $item, $order );
 <tr class="<?php echo esc_attr( 'woocommerce-table__line-item order-withdrawal-request-item' ); ?>">
 	<td class="woocommerce-table__product-select product-select">
 		<?php if ( $item_is_withdrawable ) : ?>
-			<input class="woocommerce-form__input woocommerce-form__input-checkbox order-withdrawal-request-item-checkbox" name="items[]" type="checkbox" id="item-<?php echo esc_attr( $item->get_id() ); ?>" value="<?php echo esc_attr( $item->get_id() ); ?>" />
+			<label for="item-<?php echo esc_attr( $item->get_id() ); ?>" class="woocommerce-form__label woocommerce-form__label-for-checkbox checkbox">
+				<input class="woocommerce-form__input woocommerce-form__input-checkbox order-withdrawal-request-item-checkbox" name="items[]" type="checkbox" id="item-<?php echo esc_attr( $item->get_id() ); ?>" value="<?php echo esc_attr( $item->get_id() ); ?>" />
+			</label>
 		<?php endif; ?>
 	</td>
 
