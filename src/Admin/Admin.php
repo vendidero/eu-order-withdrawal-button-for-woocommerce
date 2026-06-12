@@ -43,7 +43,7 @@ class Admin {
 		$page_id     = eu_owb_get_withdrawal_page_id();
 		$page_exists = ( -1 !== $page_id && ! empty( $page_id ) ) ? get_post( $page_id ) : false;
 
-		if ( $page_exists && ! Package::page_has_shortcode( 'eu_owb_order_withdrawal_request_form', $page_id ) ) {
+		if ( $page_exists && ! Package::page_has_withdrawal_form( $page_id ) ) {
 			Install::update_page_content( $page_id, '[eu_owb_order_withdrawal_request_form]' );
 		} elseif ( ! $page_exists ) {
 			Install::maybe_create_page();
@@ -56,7 +56,7 @@ class Admin {
 		$page_id            = eu_owb_get_withdrawal_page_id();
 		$page_exists        = ( -1 !== $page_id && ! empty( $page_id ) ) ? get_post( $page_id ) : false;
 		$page_status        = $page_exists ? get_post_status( $page_id ) : 'does-not-exist';
-		$page_has_shortcode = $page_exists && Package::page_has_shortcode( 'eu_owb_order_withdrawal_request_form', $page_id );
+		$page_has_shortcode = $page_exists && Package::page_has_withdrawal_form( $page_id );
 		$page_is_valid      = 'publish' === $page_status && $page_has_shortcode;
 		$invalid_reason     = '';
 

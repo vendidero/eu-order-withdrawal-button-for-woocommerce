@@ -18,7 +18,7 @@ class Settings {
 	}
 
 	public static function get_description() {
-		return sprintf( _x( 'Configure your EU-compliant order withdrawal button. <a href="https://vendidero.com/implementing-legally-compliant-eu-order-withdrawal-button-in-woocommerce" target="_blank">Need help?</a>', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ) );
+		return _x( 'Configure your EU-compliant order withdrawal button. <a target="_blank" href="https://vendidero.com/implementing-legally-compliant-eu-order-withdrawal-button-in-woocommerce">Learn more</a>', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ) . ' <a class="page-title-action" href="' . esc_url( \Vendidero\OrderWithdrawalButton\Package::get_withdrawals_url() ) . '">' . _x( 'Withdrawals', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ) . '</a>';
 	}
 
 	public static function get_help_url() {
