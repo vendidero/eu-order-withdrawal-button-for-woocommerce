@@ -246,7 +246,7 @@ class Ajax {
 
 		if ( ! $is_valid_request ) {
 			$error->add( 'request_not_allowed', _x( 'Sorry, no permission to view that order.', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ) );
-			wp_send_json_error( $error, 500 );
+			wp_send_json_error( $error, 401 );
 		}
 
 		$html = wc_get_template_html(

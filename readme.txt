@@ -5,7 +5,7 @@ Requires at least: 5.4
 Tested up to: 7.0
 WC requires at least: 3.9
 WC tested up to: 10.8
-Stable tag: 2.2.0
+Stable tag: 2.2.1
 Requires PHP: 7.4
 License: GPLv3
 License URI: http://www.gnu.org/licenses/gpl-3.0.html
@@ -62,6 +62,11 @@ Bug reports may be filed via our [GitHub repository](https://github.com/vendider
 2. Admin UI
 
 == Changelog ==
+= 2.2.1 =
+* Improvement: Show withdrawal page valid/invalid status in settings
+* Improvement: Use a more consistent HTML markup for checkboxes
+* Improvement: Do not pass (parent) order object in case existent to emails for consistency
+
 = 2.2.0 =
 * Improvement: Use additional content within withdrawal confirmation email to allow for a more customized message
 * Improvement: Backwards compatibility with Woo < 8.7

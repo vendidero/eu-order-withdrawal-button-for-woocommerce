@@ -149,6 +149,10 @@ class WithdrawalOrder extends \WC_Abstract_Order implements \ArrayAccess {
 		return ! empty( $this->get_first_name( 'edit' ) ) || ! empty( $this->get_last_name( 'edit' ) );
 	}
 
+	public function get_billing_first_name( $context = 'view' ) {
+		return $this->get_first_name( $context );
+	}
+
 	public function get_first_name( $context = 'view' ) {
 		$value = $this->get_prop( 'first_name', $context );
 
@@ -175,6 +179,10 @@ class WithdrawalOrder extends \WC_Abstract_Order implements \ArrayAccess {
 		}
 
 		return $value;
+	}
+
+	public function get_billing_last_name( $context = 'view' ) {
+		return $this->get_last_name( $context );
 	}
 
 	public function set_last_name( $value ) {

@@ -88,7 +88,7 @@ if ( ! class_exists( 'EU_OWB_Email_Deleted_Withdrawal_Request', false ) ) :
 
 			if ( $withdrawal ) {
 				$this->withdrawal       = $withdrawal;
-				$this->object           = $this->withdrawal->get_parent() ? $this->withdrawal->get_parent() : $withdrawal;
+				$this->object           = $withdrawal;
 				$this->withdrawal_email = $this->withdrawal->get_email();
 
 				$this->placeholders['{order_number}']     = $this->withdrawal->get_order_number();
