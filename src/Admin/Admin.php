@@ -59,20 +59,22 @@ class Admin {
 		$page_has_shortcode = $page_exists && Package::page_has_withdrawal_form( $page_id );
 		$page_is_valid      = 'publish' === $page_status && $page_has_shortcode;
 		$invalid_reason     = '';
+		$edit_url           = admin_url( 'post.php?post=' . absint( $page_id ) ) . '&action=edit';
 
 		if ( ! $page_is_valid ) {
-			if ( ! $page_exists ) {
-				$invalid_reason = _x( 'Page is missing', 'owb', 'eu-order-withdrawal-button-for-woocommerce' );
-				$edit_url       = wp_nonce_url( admin_url( 'admin-post.php?action=eu_owb_woocommerce_create_withdrawal_page' ), 'eu_owb_woocommerce_create_withdrawal_page' );
-			} elseif ( 'publish' !== $page_status ) {
+			if ( 'publish' !== $page_status ) {
 				$invalid_reason = _x( 'Invisible to visitors', 'owb', 'eu-order-withdrawal-button-for-woocommerce' );
-				$edit_url       = get_edit_post_link( $page_status['id'], 'admin' );
 			} elseif ( ! $page_has_shortcode ) {
 				$invalid_reason = _x( 'Shortcode is missing', 'owb', 'eu-order-withdrawal-button-for-woocommerce' );
 				$edit_url       = wp_nonce_url( admin_url( 'admin-post.php?action=eu_owb_woocommerce_create_withdrawal_page' ), 'eu_owb_woocommerce_create_withdrawal_page' );
+			} else {
+				$invalid_reason = _x( 'Page is missing', 'owb', 'eu-order-withdrawal-button-for-woocommerce' );
+				$edit_url       = wp_nonce_url( admin_url( 'admin-post.php?action=eu_owb_woocommerce_create_withdrawal_page' ), 'eu_owb_woocommerce_create_withdrawal_page' );
 			}
-		} else {
-			$edit_url = get_edit_post_link( $page_id, 'admin' );
+		}
+
+		if ( is_null( $edit_url ) ) {
+			$edit_url = wp_nonce_url( admin_url( 'admin-post.php?action=eu_owb_woocommerce_create_withdrawal_page' ), 'eu_owb_woocommerce_create_withdrawal_page' );
 		}
 
 		return array(
