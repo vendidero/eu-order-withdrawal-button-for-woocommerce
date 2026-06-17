@@ -15,7 +15,7 @@ class Package {
 	 *
 	 * @var string
 	 */
-	const VERSION = '2.2.1';
+	const VERSION = '2.2.2';
 
 	protected static $localized_scripts = array();
 
@@ -29,6 +29,7 @@ class Package {
 
 		self::init_hooks();
 		self::includes();
+		self::load_compatibilities();
 
 		do_action( 'eu_owb_woocommerce_init' );
 	}
@@ -75,6 +76,23 @@ class Package {
 				remove_filter( 'woocommerce_form_field', array( __CLASS__, 'force_div_form_field_filter' ), 10 );
 			}
 		);
+	}
+
+	public static function load_compatibilities() {
+		$compatibilities = apply_filters(
+			'eu_owb_woocommerce_compatibilities',
+			array(
+				'wpml' => '\Vendidero\OrderWithdrawalButton\Compatibility\WPML',
+			)
+		);
+
+		foreach ( $compatibilities as $compatibility ) {
+			if ( is_a( $compatibility, '\Vendidero\OrderWithdrawalButton\Compatibility\Compatibility', true ) ) {
+				if ( $compatibility::is_active() ) {
+					$compatibility::init();
+				}
+			}
+		}
 	}
 
 	public static function force_div_form_field() {

@@ -21,6 +21,8 @@ if ( ! class_exists( 'EU_OWB_Email_Customer_Withdrawal_Request_Received', false 
 	 */
 	class EU_OWB_Email_Customer_Withdrawal_Request_Received extends WC_Email {
 
+		use \Vendidero\OrderWithdrawalButton\EmailTranslationHelper;
+
 		/**
 		 * Is this a partial withdrawal request?
 		 *
@@ -153,6 +155,8 @@ if ( ! class_exists( 'EU_OWB_Email_Customer_Withdrawal_Request_Received', false 
 				$this->partial_withdrawal = $this->withdrawal->is_partial();
 				$this->is_update          = $this->withdrawal->is_update();
 
+				$this->setup_email_locale();
+
 				$this->placeholders['{order_number}']    = $this->withdrawal->get_order_number();
 				$this->placeholders['{order_date}']      = wc_format_datetime( $this->object->get_date_created() );
 				$this->placeholders['{withdrawal_date}'] = wc_format_datetime( $this->withdrawal->get_date_received() );
@@ -164,6 +168,7 @@ if ( ! class_exists( 'EU_OWB_Email_Customer_Withdrawal_Request_Received', false 
 				$this->send( $this->get_recipient(), $this->get_subject(), $this->get_content(), $this->get_headers(), $this->get_attachments() );
 			}
 
+			$this->restore_email_locale();
 			$this->restore_locale();
 		}
 
