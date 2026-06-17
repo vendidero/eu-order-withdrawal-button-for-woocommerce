@@ -92,9 +92,10 @@ function eu_owb_order_is_withdrawable( $order ) {
 			$datetime->set_utc_offset( wc_timezone_offset() );
 		}
 
-		$diff = $date_delivered->diff( $datetime );
+		$diff             = $date_delivered->diff( $datetime );
+		$days_to_withdraw = eu_owb_get_number_of_days_to_withdraw();
 
-		if ( $diff->days > eu_owb_get_number_of_days_to_withdraw() ) {
+		if ( 0 !== $days_to_withdraw && $diff->days > $days_to_withdraw ) {
 			$is_withdrawable = false;
 		}
 	}
@@ -103,7 +104,7 @@ function eu_owb_order_is_withdrawable( $order ) {
 }
 
 function eu_owb_get_number_of_days_to_withdraw() {
-	return absint( \Vendidero\OrderWithdrawalButton\Package::get_setting( 'number_of_days_to_withdraw', 14 ) );
+	return apply_filters( 'eu_owb_woocommerce_number_of_days_to_withdraw', absint( \Vendidero\OrderWithdrawalButton\Package::get_setting( 'number_of_days_to_withdraw', 14 ) ) );
 }
 
 /**

@@ -112,7 +112,7 @@ class WPML implements Compatibility {
 
 		if ( ! $lang ) {
 			if ( ! $email->is_customer_email() ) {
-				// Lets check the recipients language
+				// Let's check the recipients language
 				$recipients = explode( ',', $email->get_recipient() );
 
 				foreach ( $recipients as $recipient ) {
@@ -126,7 +126,7 @@ class WPML implements Compatibility {
 				}
 			} elseif ( $object ) {
 				if ( is_a( $object, '\Vendidero\OrderWithdrawalButton\WithdrawalOrder' ) ) {
-					$lang = $object->get_meta( 'wpml_language' );
+					$lang = $object->get_meta( '_wpml_language' );
 
 					if ( $object->get_customer_id() > 0 ) {
 						if ( $user = get_user_by( 'id', $object->get_customer_id() ) ) {

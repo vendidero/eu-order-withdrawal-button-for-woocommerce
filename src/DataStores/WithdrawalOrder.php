@@ -301,6 +301,12 @@ class WithdrawalOrder extends OrdersTableDataStore {
 		);
 	}
 
+	public function read_multiple( &$orders ) {
+		add_filter( 'woocommerce_hpos_enable_sync_on_read', '__return_false', 9991 );
+		parent::read_multiple( $orders );
+		remove_filter( 'woocommerce_hpos_enable_sync_on_read', '__return_false', 9991 );
+	}
+
 	/**
 	 * Returns data store object to use backfilling.
 	 *
