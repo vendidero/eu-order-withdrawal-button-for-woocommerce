@@ -74,9 +74,9 @@ if ( ! class_exists( 'EU_OWB_Email_Customer_Withdrawal_Request_Received', false 
 		 */
 		public function get_default_subject( $partial = false ) {
 			if ( $partial ) {
-				return _x( 'Your partial withdrawal request for order #{order_number} has been received.', 'owb', 'eu-order-withdrawal-button-for-woocommerce' );
+				return _x( 'Your partial withdrawal request has been received.', 'owb', 'eu-order-withdrawal-button-for-woocommerce' );
 			} else {
-				return _x( 'Your withdrawal request for order #{order_number} has been received.', 'owb', 'eu-order-withdrawal-button-for-woocommerce' );
+				return _x( 'Your withdrawal request has been received.', 'owb', 'eu-order-withdrawal-button-for-woocommerce' );
 			}
 		}
 

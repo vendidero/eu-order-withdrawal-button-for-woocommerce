@@ -43,12 +43,15 @@ class WithdrawalOrder extends \WC_Abstract_Order implements \ArrayAccess {
 		'is_update'           => false,
 		'refund_id'           => 0,
 		'customer_id'         => 0,
+		'verification_code'   => '',
 		'email'               => '',
 		'first_name'          => '',
 		'last_name'           => '',
 		'order_key'           => '',
+		'customer_note'       => '',
 		'customer_ip_address' => '',
 		'customer_user_agent' => '',
+		'billing_email'       => '',
 	);
 
 	protected $legacy_datastore_props = array();
@@ -101,6 +104,22 @@ class WithdrawalOrder extends \WC_Abstract_Order implements \ArrayAccess {
 		$this->set_prop( 'withdrawal_number', $value );
 	}
 
+	public function get_customer_note( $context = 'view' ) {
+		return $this->get_prop( 'customer_note', $context );
+	}
+
+	public function set_customer_note( $value ) {
+		$this->set_prop( 'customer_note', $value );
+	}
+
+	public function get_additional_information( $context = 'view' ) {
+		return $this->get_customer_note( $context );
+	}
+
+	public function set_additional_information( $value ) {
+		$this->set_customer_note( $value );
+	}
+
 	public function get_email( $context = 'view' ) {
 		$value = $this->get_prop( 'email', $context );
 
@@ -115,6 +134,56 @@ class WithdrawalOrder extends \WC_Abstract_Order implements \ArrayAccess {
 
 	public function set_email( $value ) {
 		$this->set_prop( 'email', $value );
+		$this->set_billing_email( $value );
+	}
+
+	public function set_billing_email( $value ) {
+		$this->set_prop( 'billing_email', $value );
+	}
+
+	public function get_billing_email( $context = 'view' ) {
+		return $this->get_email( $context );
+	}
+
+	public function get_current_verification_code() {
+		if ( empty( $this->get_id() ) ) {
+			return '';
+		}
+
+		$item_ids = array();
+
+		foreach ( $this->get_items() as $item ) {
+			$item_ids[] = (string) $item->get_parent_id() > 0 ? $item->get_parent_id() : $item->get_id();
+		}
+
+		$to_hash = implode(
+			'|',
+			array(
+				(string) $this->get_id(),
+				$this->get_formatted_full_name( false, 'edit' ),
+				$this->get_email( 'edit' ),
+				$this->get_additional_information(),
+				$this->get_order_number(),
+				(string) $this->get_date_received() ? $this->get_date_received()->getTimestamp() : 0,
+				implode( '|', $item_ids ),
+			)
+		);
+
+		return hash( 'sha256', $to_hash );
+	}
+
+	public function get_verification_code( $context = 'view' ) {
+		$value = $this->get_prop( 'verification_code', $context );
+
+		if ( '' === $value && 'view' === $context ) {
+			$value = $this->get_current_verification_code();
+		}
+
+		return $value;
+	}
+
+	public function set_verification_code( $value ) {
+		$this->set_prop( 'verification_code', $value );
 	}
 
 	public function get_customer_ip_address( $context = 'view' ) {
@@ -599,7 +668,15 @@ class WithdrawalOrder extends \WC_Abstract_Order implements \ArrayAccess {
 	 * @param bool         $manual_update Is this a manual order status change?.
 	 * @return array
 	 */
-	public function set_status( $new_status, $manual_update = false ) {
+	public function set_status( $new_status, $note = '', $manual_update = false ) {
+		/**
+		 * Backwards compatibility when $manual was the 2. argument.
+		 */
+		if ( is_bool( $note ) ) {
+			$manual_update = $note;
+			$note          = '';
+		}
+
 		$new_status = 'trash' === $new_status ? $new_status : 'owb-' . Package::maybe_remove_withdrawal_order_status_prefix( $new_status );
 		$result     = parent::set_status( $new_status );
 
@@ -608,6 +685,7 @@ class WithdrawalOrder extends \WC_Abstract_Order implements \ArrayAccess {
 				'from'   => ! empty( $this->status_transition['from'] ) ? $this->status_transition['from'] : $result['from'],
 				'to'     => $result['to'],
 				'manual' => (bool) $manual_update,
+				'note'   => $note,
 			);
 
 			$this->maybe_set_date_rejected();
@@ -671,6 +749,117 @@ class WithdrawalOrder extends \WC_Abstract_Order implements \ArrayAccess {
 	}
 
 	/**
+	 * Adds a note (comment) to the order. Order must exist.
+	 *
+	 * @param  string $note              Note to add.
+	 * @param  int    $is_customer_note  Is this a note for the customer?.
+	 * @param  bool   $added_by_user     Was the note added by a user?.
+	 * @param  array  $meta_data         Optional meta data to add to the note. Key value pairs.
+	 * @return int                       Comment ID.
+	 */
+	public function add_order_note( $note, $is_customer_note = 0, $added_by_user = false, $meta_data = array() ) {
+		if ( ! $this->get_id() ) {
+			return 0;
+		}
+
+		if ( is_user_logged_in() && current_user_can( 'edit_shop_orders', $this->get_id() ) && $added_by_user ) {
+			$user                 = get_user_by( 'id', get_current_user_id() );
+			$comment_author       = $user->display_name;
+			$comment_author_email = $user->user_email;
+		} else {
+			$comment_author        = _x( 'WooCommerce', 'owb', 'eu-order-withdrawal-button-for-woocommerce' );
+			$comment_author_email  = strtolower( _x( 'WooCommerce', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ) ) . '@';
+			$comment_author_email .= isset( $_SERVER['HTTP_HOST'] ) ? str_replace( 'www.', '', sanitize_text_field( wp_unslash( $_SERVER['HTTP_HOST'] ) ) ) : 'noreply.com'; // WPCS: input var ok.
+			$comment_author_email  = sanitize_email( $comment_author_email );
+		}
+		$commentdata = apply_filters(
+			'eu_owb_woocommerce_new_order_note_data',
+			array(
+				'comment_post_ID'      => $this->get_id(),
+				'comment_author'       => $comment_author,
+				'comment_author_email' => $comment_author_email,
+				'comment_author_url'   => '',
+				'comment_content'      => $note,
+				'comment_agent'        => 'WooCommerce',
+				'comment_type'         => 'order_note',
+				'comment_parent'       => 0,
+				'comment_approved'     => 1,
+			),
+			array(
+				'order_id'         => $this->get_id(),
+				'is_customer_note' => $is_customer_note,
+			)
+		);
+
+		$comment_id = wp_insert_comment( $commentdata );
+
+		if ( $is_customer_note ) {
+			add_comment_meta( $comment_id, 'is_customer_note', 1 );
+
+			do_action(
+				'eu_owb_woocommerce_new_customer_note',
+				array(
+					'order_id'      => $this->get_id(),
+					'customer_note' => $commentdata['comment_content'],
+				)
+			);
+		}
+
+		if ( ! empty( $meta_data ) && is_array( $meta_data ) ) {
+			foreach ( $meta_data as $key => $value ) {
+				if ( is_scalar( $value ) ) {
+					update_comment_meta( $comment_id, sanitize_key( $key ), sanitize_text_field( $value ) );
+				}
+			}
+		}
+
+		do_action( 'eu_owb_woocommerce_order_note_added', $comment_id, $this );
+
+		return $comment_id;
+	}
+
+	/**
+	 * Add an order note for status transition
+	 *
+	 * @param string $note          Note to be added giving status transition from and to details.
+	 * @param array  $transition    Details of the status transition.
+	 * @return int                  Comment ID.
+	 */
+	private function add_status_transition_note( $note, $transition ) {
+		return $this->add_order_note( trim( $transition['note'] . ' ' . $note ), 0, $transition['manual'], array( 'note_group' => 'order_update' ) );
+	}
+
+	/**
+	 * List order notes (public) for the customer.
+	 *
+	 * @return array
+	 */
+	public function get_customer_order_notes() {
+		$notes = array();
+		$args  = array(
+			'post_id' => $this->get_id(),
+			'approve' => 'approve',
+			'type'    => '',
+		);
+
+		remove_filter( 'comments_clauses', array( 'WC_Comments', 'exclude_order_comments' ) );
+
+		$comments = get_comments( $args );
+
+		foreach ( $comments as $comment ) {
+			if ( ! get_comment_meta( $comment->comment_ID, 'is_customer_note', true ) ) {
+				continue;
+			}
+			$comment->comment_content = make_clickable( $comment->comment_content );
+			$notes[]                  = $comment;
+		}
+
+		add_filter( 'comments_clauses', array( 'WC_Comments', 'exclude_order_comments' ) );
+
+		return $notes;
+	}
+
+	/**
 	 * Updates status of order immediately.
 	 *
 	 * @uses self::set_status()
@@ -678,13 +867,21 @@ class WithdrawalOrder extends \WC_Abstract_Order implements \ArrayAccess {
 	 * @param bool   $manual        Is this a manual order status change?.
 	 * @return bool
 	 */
-	public function update_status( $new_status, $manual = false ) {
+	public function update_status( $new_status, $note = '', $manual = false ) {
 		if ( ! $this->get_id() ) { // Order must exist.
 			return false;
 		}
 
+		/**
+		 * Backwards compatibility when $manual was the 2. argument.
+		 */
+		if ( is_bool( $note ) ) {
+			$manual = $note;
+			$note   = '';
+		}
+
 		try {
-			$this->set_status( $new_status, $manual );
+			$this->set_status( $new_status, $note, $manual );
 			$this->save();
 		} catch ( \Exception $e ) {
 			Package::log( sprintf( 'Error updating status for withdrawal order #%d', $this->get_id() ), 'error' );
@@ -746,6 +943,16 @@ class WithdrawalOrder extends \WC_Abstract_Order implements \ArrayAccess {
 		if ( $status_transition ) {
 			try {
 				do_action( 'eu_owb_woocommerce_withdrawal_order_status_' . $status_transition['to'], $this->get_id(), $this, $status_transition );
+
+				// Add a status transition note unless `note` was explicitly set to false.
+				if ( false !== $status_transition['note'] ) {
+					if ( ! empty( $status_transition['from'] ) ) {
+						$this->add_status_transition_note( sprintf( _x( 'Withdrawal status changed from %1$s to %2$s.', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ), Package::get_withdrawal_status_name( $status_transition['from'] ), Package::get_withdrawal_status_name( $status_transition['to'] ) ), $status_transition );
+					} else {
+						/* translators: %s: new order status */
+						$this->add_status_transition_note( sprintf( _x( 'Withdrawal status set to %s.', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ), Package::get_withdrawal_status_name( $status_transition['to'] ) ), $status_transition );
+					}
+				}
 
 				if ( ! empty( $status_transition['from'] ) ) {
 					do_action( 'eu_owb_woocommerce_withdrawal_order_status_' . $status_transition['from'] . '_to_' . $status_transition['to'], $this->get_id(), $this );

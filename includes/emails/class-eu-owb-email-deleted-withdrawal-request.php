@@ -63,7 +63,7 @@ if ( ! class_exists( 'EU_OWB_Email_Deleted_Withdrawal_Request', false ) ) :
 		 * @return string
 		 */
 		public function get_default_subject() {
-			return _x( '[{site_title}]: Withdrawal request for #{order_number} deleted', 'owb', 'eu-order-withdrawal-button-for-woocommerce' );
+			return _x( '[{site_title}]: Withdrawal request to {order_number} deleted', 'owb', 'eu-order-withdrawal-button-for-woocommerce' );
 		}
 
 		/**
@@ -72,7 +72,7 @@ if ( ! class_exists( 'EU_OWB_Email_Deleted_Withdrawal_Request', false ) ) :
 		 * @return string
 		 */
 		public function get_default_heading() {
-			return _x( 'Withdrawal request deleted: #{order_number}', 'owb', 'eu-order-withdrawal-button-for-woocommerce' );
+			return _x( 'Withdrawal request deleted: {order_number}', 'owb', 'eu-order-withdrawal-button-for-woocommerce' );
 		}
 
 		/**

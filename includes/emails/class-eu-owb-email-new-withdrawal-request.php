@@ -62,7 +62,7 @@ if ( ! class_exists( 'EU_OWB_Email_New_Withdrawal_Request', false ) ) :
 		 * @return string
 		 */
 		public function get_default_subject() {
-			return _x( '[{site_title}]: New withdrawal request for #{order_number}', 'owb', 'eu-order-withdrawal-button-for-woocommerce' );
+			return _x( '[{site_title}]: New withdrawal request to {order_number}', 'owb', 'eu-order-withdrawal-button-for-woocommerce' );
 		}
 
 		/**
@@ -71,7 +71,7 @@ if ( ! class_exists( 'EU_OWB_Email_New_Withdrawal_Request', false ) ) :
 		 * @return string
 		 */
 		public function get_default_heading() {
-			return _x( 'New withdrawal request: #{order_number}', 'owb', 'eu-order-withdrawal-button-for-woocommerce' );
+			return _x( 'New withdrawal request: {order_number}', 'owb', 'eu-order-withdrawal-button-for-woocommerce' );
 		}
 
 		/**

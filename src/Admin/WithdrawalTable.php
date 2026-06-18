@@ -141,7 +141,7 @@ class WithdrawalTable extends \WP_List_Table {
 			} elseif ( 'rejected' === $new_status && $order->has_status( 'requested' ) ) {
 				$result = eu_owb_order_reject_withdrawal_request( $order );
 			} else {
-				$result = $order->update_status( $new_status, true );
+				$result = $order->update_status( $new_status, '', true );
 			}
 
 			if ( true === $result ) {
@@ -318,18 +318,21 @@ class WithdrawalTable extends \WP_List_Table {
 	}
 
 	public function get_columns() {
-		return apply_filters(
+		$columns = apply_filters(
 			'eu_owb_woocommerce_withdrawals_list_table_columns',
 			array(
 				'cb'            => '<input type="checkbox" />',
 				'withdrawal'    => esc_html_x( 'Withdrawal', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ),
-				'order_number'  => esc_html_x( 'Order', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ),
+				'order_number'  => esc_html_x( 'Order/Contract', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ),
 				'order_date'    => esc_html_x( 'Date', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ),
 				'order_address' => esc_html_x( 'Address', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ),
 				'order_status'  => esc_html_x( 'Status', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ),
+				'order_note'    => esc_html_x( 'Customer note', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ),
 				'wc_actions'    => esc_html_x( 'Actions', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ),
 			)
 		);
+
+		return $columns;
 	}
 
 	/**
@@ -799,7 +802,7 @@ class WithdrawalTable extends \WP_List_Table {
 		if ( $order->has_parent() ) {
 			echo '<a href="' . esc_url( OrderUtil::get_order_admin_edit_url( $order->get_parent_id() ) ) . '" class="order-view"><strong>#' . esc_attr( $order->get_order_number() ) . ' ' . wp_kses_post( $buyer ) . '</strong></a>';
 		} else {
-			echo '<strong>' . esc_attr( $order->get_order_number( 'admin' ) ? ( '#' . $order->get_order_number() . ' ' ) : '' ) . wp_kses_post( $buyer ) . '</strong>';
+			echo '<strong>' . esc_attr( $order->get_order_number( 'admin' ) ? ( $order->get_order_number() . ' ' ) : '' ) . wp_kses_post( $buyer ) . '</strong>';
 		}
 		?>
 		<?php if ( $order->has_status( 'requested' ) ) : ?>
@@ -827,6 +830,21 @@ class WithdrawalTable extends \WP_List_Table {
 		echo '<div class="order_status small-screen-only">';
 		$this->render_order_status_column( $order );
 		echo '</div>';
+	}
+
+	/**
+	 * Renders the order number, customer name and provides a preview link.
+	 *
+	 * @param WithdrawalOrder $order The order object for the current row.
+	 *
+	 * @return void
+	 */
+	public function render_order_note_column( $order ) {
+		if ( $order->get_customer_note() ) {
+			$customer_note = eu_owb_wptexturize_withdrawal_additional_information( $order->get_customer_note() );
+
+			echo wp_kses( nl2br( $customer_note ), array( 'br' => array() ) );
+		}
 	}
 
 	/**

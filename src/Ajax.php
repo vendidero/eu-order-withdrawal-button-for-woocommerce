@@ -325,7 +325,7 @@ class Ajax {
 		do_action( 'eu_owb_woocommerce_before_process_order_withdrawal_request' );
 
 		if ( eu_owb_wp_error_has_errors( $error ) ) {
-			wp_send_json_error( $error, 400 );
+			self::send_json_error( $error, 400 );
 		}
 
 		$is_direct_post = ! isset( $_SERVER['REQUEST_METHOD'] ) || 'POST' !== $_SERVER['REQUEST_METHOD'];
@@ -334,7 +334,7 @@ class Ajax {
 		 * Show a success message as spam protection in case honeypot field or non-direct post was submitted.
 		 */
 		if ( ! empty( $email_repeat ) || $is_direct_post ) {
-			wp_send_json_success( _x( 'Thank you. We\'ve received your withdrawal request. You\'ll receive a confirmation of your request by email.', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ) );
+			self::send_json_error( _x( 'Thank you. We\'ve received your withdrawal request. You\'ll receive a confirmation of your request by email.', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ) );
 		}
 
 		$duration = apply_filters( 'eu_owb_woocommerce_form_submit_spam_min_duration_in_secs', 2 );
@@ -342,10 +342,19 @@ class Ajax {
 		// If the form was submitted too quickly, add an error.
 		if ( ( $end - $start ) < $duration || 0 === $start ) {
 			$error->add( 'too_quick', _x( 'Please wait a little longer before submitting. We’re running a quick security check.', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ) );
+			self::send_json_error( $error, 400 );
 		}
 
-		if ( eu_owb_wp_error_has_errors( $error ) ) {
-			wp_send_json_error( $error, 400 );
+		if ( Package::get_form_field_required( 'first_name' ) && empty( $first_name ) ) {
+			$error->add( 'missing_field_first_name', _x( 'Please enter your first name.', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ), array( 'field' => 'first_name' ) );
+		}
+
+		if ( Package::get_form_field_required( 'last_name' ) && empty( $last_name ) ) {
+			$error->add( 'missing_field_last_name', _x( 'Please enter your last name.', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ), array( 'field' => 'last_name' ) );
+		}
+
+		if ( empty( $email ) ) {
+			$error->add( 'missing_field_email', _x( 'Please check your email address.', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ), array( 'field' => 'email' ) );
 		}
 
 		if ( is_user_logged_in() || ! empty( $order_key ) ) {
@@ -373,7 +382,7 @@ class Ajax {
 				if ( $is_valid_request && eu_owb_order_supports_partial_withdrawal( $order ) ) {
 					if ( $select_items && empty( $item_ids ) ) {
 						$error->add( 'invalid_items', _x( 'Please select one or more items to withdraw.', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ) );
-						wp_send_json_error( $error, 400 );
+						self::send_json_error( $error, 400 );
 					} elseif ( ! empty( $item_ids ) ) {
 						$items_available = eu_owb_get_withdrawable_order_items( $order );
 
@@ -386,7 +395,7 @@ class Ajax {
 
 							if ( ! array_key_exists( $item_id, $items_available ) ) {
 								$error->add( 'invalid_items', _x( 'One ore more of the item(s) you\'ve selected cannot be withdrawn. Please try again.', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ) );
-								wp_send_json_error( $error, 400 );
+								self::send_json_error( $error, 400 );
 							}
 
 							$quantity = min( $quantity, $items_available[ $item_id ]['quantity'] );
@@ -401,22 +410,38 @@ class Ajax {
 				do_action( 'eu_owb_woocommerce_process_order_withdrawal_customer_request', $order, $items, $error );
 
 				if ( eu_owb_wp_error_has_errors( $error ) ) {
-					wp_send_json_error( $error, 400 );
+					self::send_json_error( $error, 400 );
 				}
 			}
 		} else {
-			$order_number = ! empty( $_POST['order_number'] ) ? wc_clean( wp_unslash( $_POST['order_number'] ) ) : '';
-			$select_items = isset( $_POST['manually_select_items'] ) ? true : false;
+			$order_number           = ! empty( $_POST['order_number'] ) ? wc_clean( wp_unslash( $_POST['order_number'] ) ) : '';
+			$additional_information = eu_owb_enable_additional_information_field() && ! empty( $_POST['additional_information'] ) ? wc_sanitize_textarea( wp_unslash( $_POST['additional_information'] ) ) : '';
+			$select_items           = isset( $_POST['manually_select_items'] ) ? true : false;
 
 			if ( -1 !== Package::get_form_field_maxlength( 'order_number' ) ) {
 				$order_number = Package::substr( $order_number, 0, Package::get_form_field_maxlength( 'order_number' ) );
 			}
 
+			if ( -1 !== Package::get_form_field_maxlength( 'additional_information' ) ) {
+				$additional_information = Package::substr( $additional_information, 0, Package::get_form_field_maxlength( 'additional_information' ) );
+			}
+
+			if ( Package::get_form_field_required( 'order_number' ) && empty( $order_number ) ) {
+				$error->add( 'missing_field_order_number', _x( 'Please enter your order number.', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ), array( 'field' => 'order_number' ) );
+			}
+
+			if ( eu_owb_enable_additional_information_field() && Package::get_form_field_required( 'additional_information' ) && empty( $additional_information ) ) {
+				$error->add( 'missing_field_additional_information', _x( 'Please enter additional information.', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ), array( 'field' => 'additional_information' ) );
+			}
+
+			if ( eu_owb_wp_error_has_errors( $error ) ) {
+				self::send_json_error( $error, 400 );
+			}
+
 			$meta['order_number'] = $order_number;
 
-			if ( empty( $email ) ) {
-				$error->add( 'missing_fields', _x( 'Please check your email address.', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ) );
-				wp_send_json_error( $error, 500 );
+			if ( ! empty( $additional_information ) ) {
+				$meta['additional_information'] = $additional_information;
 			}
 
 			$orders = eu_owb_find_orders(
@@ -431,8 +456,8 @@ class Ajax {
 					$orders_withdrawable = eu_owb_get_withdrawable_orders( $orders, true );
 
 					if ( empty( $orders_withdrawable ) ) {
-						$error->add( 'not_found', sprintf( _x( 'Sorry, we were unable to find an order based on the information you provided. Please try again - if the issue persists, please <a href="%s">contact support</a> for help.', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ), esc_url( eu_owb_get_contact_support_url() ) ) );
-						wp_send_json_error( $error, 404 );
+						$error->add( 'not_found', sprintf( _x( 'Sorry, we were unable to find an order based on the information you provided. Please try again - if the issue persists, please <a href="%s">contact support</a> for help.', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ), esc_url( eu_owb_get_contact_support_url() ) ), array( 'field' => 'order_number' ) );
+						self::send_json_error( $error, 404 );
 					}
 
 					if ( count( $orders_withdrawable ) > 1 ) {
@@ -447,8 +472,8 @@ class Ajax {
 				$order = wc_get_order( $order_id );
 
 				if ( ! $order ) {
-					$error->add( 'not_found', sprintf( _x( 'Sorry, we were unable to find an order based on the information you provided. Please try again - if the issue persists, please <a href="%s">contact support</a> for help.', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ), esc_url( eu_owb_get_contact_support_url() ) ) );
-					wp_send_json_error( $error, 404 );
+					$error->add( 'not_found', sprintf( _x( 'Sorry, we were unable to find an order based on the information you provided. Please try again - if the issue persists, please <a href="%s">contact support</a> for help.', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ), esc_url( eu_owb_get_contact_support_url() ) ), array( 'field' => 'order_number' ) );
+					self::send_json_error( $error, 404 );
 				}
 
 				/**
@@ -481,21 +506,17 @@ class Ajax {
 		do_action( 'eu_owb_woocommerce_process_order_withdrawal_request', $order, $error, $items, $meta, $was_guest );
 
 		if ( eu_owb_wp_error_has_errors( $error ) ) {
-			wp_send_json_error( $error, 400 );
+			self::send_json_error( $error, 400 );
 		}
 
 		if ( ! $is_valid_request ) {
 			$error->add( 'not_found', sprintf( _x( 'Sorry, we were unable to find an order based on the information you provided. Please try again - if the issue persists, please <a href="%s">contact support</a> for help.', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ), esc_url( eu_owb_get_contact_support_url() ) ) );
-			wp_send_json_error( $error, 404 );
+			self::send_json_error( $error, 404 );
 		}
 
 		if ( $order && ! eu_owb_order_is_withdrawable( $order ) ) {
 			$error->add( 'not_withdrawable', sprintf( _x( 'Sorry, but this order cannot be withdrawn. <a href="%s">Contact support</a> for help.', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ), esc_url( eu_owb_get_contact_support_url() ) ) );
-			wp_send_json_error( $error, 400 );
-		}
-
-		if ( $order && empty( $email ) ) {
-			$email = $order->get_billing_email();
+			self::send_json_error( $error, 400 );
 		}
 
 		$existing_request = false;
@@ -515,11 +536,12 @@ class Ajax {
 			$tmp_request->set_email( $email );
 			$tmp_request->set_first_name( $first_name );
 			$tmp_request->set_last_name( $last_name );
+			$tmp_request->set_additional_information( $additional_information );
 			$tmp_request->update_items( $items );
 
 			if ( ! $tmp_request->has_changes() ) {
 				$error->add( 'not_withdrawable', _x( 'You\'ve already submitted an identical withdrawal request for this order.', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ) );
-				wp_send_json_error( $error, 400 );
+				self::send_json_error( $error, 400 );
 			}
 		}
 
@@ -552,16 +574,50 @@ class Ajax {
 		}
 
 		if ( eu_owb_wp_error_has_errors( $error ) ) {
-			wp_send_json_error( $error, 400 );
+			self::send_json_error( $error, 400 );
 		}
 
 		$meta   = apply_filters( 'eu_owb_woocommerce_order_withdrawal_request_additional_meta', $meta, $order, $email, $items, $was_guest );
 		$result = eu_owb_create_order_withdrawal_request( $email, $order, $items, $was_guest, $meta );
 
 		if ( is_wp_error( $result ) ) {
-			wp_send_json_error( $error, 500 );
+			self::send_json_error( $error, 500 );
 		} else {
 			wp_send_json_success( _x( 'Thank you. We\'ve received your withdrawal request. You\'ll receive a confirmation of your request by email.', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ) );
 		}
+	}
+
+	/**
+	 * @param \WP_Error $value
+	 * @param $status_code
+	 * @param $flags
+	 *
+	 * @return void
+	 */
+	protected static function send_json_error( $value = null, $status_code = null, $flags = 0 ) {
+		$response = array( 'success' => false );
+
+		if ( isset( $value ) ) {
+			if ( is_wp_error( $value ) ) {
+				$result = array();
+				foreach ( $value->errors as $code => $messages ) {
+					$error_data = (array) $value->get_error_data( $code );
+
+					foreach ( $messages as $k => $message ) {
+						$result[] = array(
+							'code'    => $code,
+							'message' => $message,
+							'field'   => isset( $error_data['field'] ) ? $error_data['field'] : '',
+						);
+					}
+				}
+
+				$response['data'] = $result;
+			} else {
+				$response['data'] = $value;
+			}
+		}
+
+		wp_send_json( $response, $status_code, $flags );
 	}
 }

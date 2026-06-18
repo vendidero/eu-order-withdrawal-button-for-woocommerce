@@ -11,7 +11,7 @@
  * the readme will list any important changes.
  *
  * @package Vendidero/OrderWithdrawalButton/Templates
- * @version 2.2.0
+ * @version 2.3.0
  */
 if ( ! defined( 'ABSPATH' ) ) {
 	exit; // Exit if accessed directly.
@@ -33,11 +33,12 @@ $show_submit             = true;
 					apply_filters(
 						'eu_owb_woocommerce_form_field_order_number_args',
 						array(
-							'label'             => _x( 'Order number', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ),
-							'class'             => array( 'form-row-first', 'form-row-order-number' ),
+							'label'             => _x( 'Contract Identification, e.g. order number', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ),
+							'class'             => array( 'form-row-full', 'form-row-order-number' ),
 							'autocomplete'      => 'off',
 							'id'                => 'order-withdrawal-request-order-number',
 							'default'           => '',
+							'required'          => \Vendidero\OrderWithdrawalButton\Package::get_form_field_required( 'order_number' ),
 							'custom_attributes' => array(
 								'maxlength' => \Vendidero\OrderWithdrawalButton\Package::get_form_field_maxlength( 'order_number' ),
 							),
@@ -53,7 +54,7 @@ $show_submit             = true;
 						'eu_owb_woocommerce_form_field_email_args',
 						array(
 							'label'        => _x( 'Email', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ),
-							'class'        => array( 'form-row-last', 'form-row-email' ),
+							'class'        => array( 'form-row-full', 'form-row-email', 'validate-email' ),
 							'autocomplete' => 'email',
 							'id'           => 'order-withdrawal-request-email',
 							'default'      => '',
@@ -88,6 +89,7 @@ $show_submit             = true;
 						'autocomplete'      => 'off',
 						'id'                => 'order-withdrawal-request-first-name',
 						'default'           => '',
+						'required'          => \Vendidero\OrderWithdrawalButton\Package::get_form_field_required( 'first_name' ),
 						'custom_attributes' => array(
 							'maxlength' => \Vendidero\OrderWithdrawalButton\Package::get_form_field_maxlength( 'first_name' ),
 						),
@@ -106,6 +108,7 @@ $show_submit             = true;
 						'class'             => array( 'form-row-last', 'form-row-last-name' ),
 						'autocomplete'      => 'off',
 						'id'                => 'order-withdrawal-request-last-name',
+						'required'          => \Vendidero\OrderWithdrawalButton\Package::get_form_field_required( 'last_name' ),
 						'default'           => '',
 						'custom_attributes' => array(
 							'maxlength' => \Vendidero\OrderWithdrawalButton\Package::get_form_field_maxlength( 'last_name' ),
@@ -116,6 +119,30 @@ $show_submit             = true;
 			?>
 
 			<div class="clear"></div>
+
+			<?php
+			if ( eu_owb_enable_additional_information_field() ) :
+				woocommerce_form_field(
+					'additional_information',
+					apply_filters(
+						'eu_owb_woocommerce_form_field_additional_information_args',
+						array(
+							'label'             => _x( 'Additional information', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ),
+							'class'             => array( 'form-row-full', 'form-row-additional-information' ),
+							'autocomplete'      => 'off',
+							'id'                => 'order-withdrawal-request-additional-information',
+							'default'           => '',
+							'required'          => \Vendidero\OrderWithdrawalButton\Package::get_form_field_required( 'additional_information' ),
+							'type'              => 'textarea',
+							'custom_attributes' => array(
+								'maxlength' => \Vendidero\OrderWithdrawalButton\Package::get_form_field_maxlength( 'additional_information' ),
+							),
+						)
+					)
+				);
+				?>
+				<div class="clear"></div>
+			<?php endif; ?>
 
 			<?php if ( \Vendidero\OrderWithdrawalButton\Package::enable_partial_withdrawals() ) : ?>
 				<div class="order-supports-partial-withdrawal hidden">
@@ -174,7 +201,7 @@ $show_submit             = true;
 				);
 
 				foreach ( $orders as $t_order ) {
-					$orders_select[ $t_order->get_id() ] = sprintf( _x( 'Order %1$s', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ), $t_order->get_order_number() );
+					$orders_select[ absint( $t_order->get_id() ) ] = sprintf( _x( 'Order %1$s', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ), $t_order->get_order_number() );
 				}
 				?>
 				<?php
@@ -218,7 +245,7 @@ $show_submit             = true;
 						'eu_owb_woocommerce_form_field_email_args',
 						array(
 							'label'        => _x( 'Email', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ),
-							'class'        => array( 'form-row-full', 'form-row-email' ),
+							'class'        => array( 'form-row-full', 'form-row-email', 'validate-email' ),
 							'autocomplete' => 'email',
 							'id'           => 'order-withdrawal-request-email',
 							'default'      => $default_email_address,
@@ -253,6 +280,7 @@ $show_submit             = true;
 							'autocomplete'      => 'off',
 							'id'                => 'order-withdrawal-request-first-name',
 							'default'           => $default_first_name,
+							'required'          => \Vendidero\OrderWithdrawalButton\Package::get_form_field_required( 'first_name' ),
 							'custom_attributes' => array(
 								'maxlength' => \Vendidero\OrderWithdrawalButton\Package::get_form_field_maxlength( 'first_name' ),
 							),
@@ -271,6 +299,7 @@ $show_submit             = true;
 							'class'             => array( 'form-row-last', 'form-row-last-name' ),
 							'autocomplete'      => 'off',
 							'id'                => 'order-withdrawal-request-last-name',
+							'required'          => \Vendidero\OrderWithdrawalButton\Package::get_form_field_required( 'last_name' ),
 							'default'           => $default_last_name,
 							'custom_attributes' => array(
 								'maxlength' => \Vendidero\OrderWithdrawalButton\Package::get_form_field_maxlength( 'last_name' ),

@@ -16,13 +16,15 @@ defined( 'ABSPATH' ) || exit;
  * @return string
  */
 function eu_owb_wp_theme_get_element_class_name( $element ) {
+	$class_name = '';
+
 	if ( function_exists( 'wc_wp_theme_get_element_class_name' ) ) {
-		return wc_wp_theme_get_element_class_name( $element );
+		$class_name = wc_wp_theme_get_element_class_name( $element );
 	} elseif ( function_exists( 'wp_theme_get_element_class_name' ) ) {
-		return wp_theme_get_element_class_name( $element );
+		$class_name = wp_theme_get_element_class_name( $element );
 	}
 
-	return '';
+	return apply_filters( 'eu_owb_woocommerce_element_class_name', $class_name, $element );
 }
 
 function eu_owb_get_withdrawable_order_statuses( $prefixed = true ) {
@@ -911,7 +913,7 @@ function eu_owb_create_order_withdrawal_request( $email, $order = false, $items 
 	$withdrawal->set_is_guest( $as_guest );
 	$withdrawal->update_parent( $order, $items );
 
-	if ( apply_filters( 'eu_owb_woocommerce_store_withdrawal_request_ip', false ) ) {
+	if ( apply_filters( 'eu_owb_woocommerce_store_withdrawal_request_ip', true ) ) {
 		$withdrawal->set_customer_ip_address( WC_Geolocation::get_ip_address() );
 		$withdrawal->set_customer_user_agent( wc_get_user_agent() );
 	}
@@ -1021,7 +1023,7 @@ function eu_owb_order_confirm_withdrawal_request( $request_or_order ) {
 		}
 	}
 
-	$request->update_status( 'confirmed', true );
+	$request->update_status( 'confirmed', '', true );
 
 	do_action( 'eu_owb_woocommerce_withdrawal_request_confirmed', $order, $request );
 
@@ -1122,7 +1124,7 @@ function eu_owb_order_reject_withdrawal_request( $request_or_order, $reason = ''
 		}
 	}
 
-	$request->update_status( 'rejected', true );
+	$request->update_status( 'rejected', '', true );
 
 	do_action( 'eu_owb_woocommerce_withdrawal_request_rejected', $order, $request, $reason );
 
@@ -1564,4 +1566,16 @@ function eu_owb_get_email_withdrawal_items( $withdrawal, $args = array() ) {
 	$html = ob_get_clean();
 
 	return apply_filters( 'eu_owb_woocommerce_email_withdrawal_items_table', $html, $withdrawal );
+}
+
+function eu_owb_enable_additional_information_field() {
+	return 'yes' === \Vendidero\OrderWithdrawalButton\Package::get_setting( 'enable_additional_information' );
+}
+
+function eu_owb_wptexturize_withdrawal_additional_information( $content ) {
+	if ( function_exists( 'wc_wptexturize_order_note' ) ) {
+		return wc_wptexturize_order_note( $content );
+	} else {
+		return wptexturize( $content );
+	}
 }

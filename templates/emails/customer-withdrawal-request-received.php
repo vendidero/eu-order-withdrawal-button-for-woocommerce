@@ -11,7 +11,7 @@
  * the readme will list any important changes.
  *
  * @package Vendidero/OrderWithdrawalButton/Templates
- * @version 2.1.0
+ * @version 2.3.0
  */
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
@@ -38,7 +38,7 @@ if ( ! empty( $withdrawal_name ) ) {
 ?>
 </p>
 
-<p><?php printf( esc_html_x( 'We’ve received your withdrawal request for order #%1$s on %2$s at %3$s and it is now being processed.', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ), esc_html( $order->get_order_number() ), esc_html( wc_format_datetime( $withdrawal_date ) ), esc_html( wc_format_datetime( $withdrawal_date, wc_time_format() ) ) ); ?></p>
+<p><?php printf( esc_html_x( 'We’ve received your withdrawal request on %1$s at %2$s and it is now being processed.', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ), esc_html( wc_format_datetime( $withdrawal_date ) ), esc_html( wc_format_datetime( $withdrawal_date, wc_time_format() ) ) ); ?></p>
 
 <?php echo $email_improvements_enabled ? '</div>' : ''; ?>
 

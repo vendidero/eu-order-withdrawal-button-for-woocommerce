@@ -62,6 +62,11 @@ Bug reports may be filed via our [GitHub repository](https://github.com/vendider
 2. Admin UI
 
 == Changelog ==
+= 2.2.2 =
+* Improvement: WPML compatibility
+* Improvement: Allow setting days to withdraw to 0 to keep order withdrawable indefinitely
+* Fix: Woo < 10.X HPOS compatibility mode backwards compatibility
+
 = 2.2.1 =
 * Improvement: Show withdrawal page valid/invalid status in settings
 * Improvement: Use a more consistent HTML markup for checkboxes

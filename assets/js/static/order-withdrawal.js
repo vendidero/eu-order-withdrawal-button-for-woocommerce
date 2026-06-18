@@ -19,6 +19,81 @@ window.eu_owb.order_withdrawal = window.eu_owb.order_withdrawal || {};
             $( document ).on( 'change', '.order-withdrawal-request #manually-select-items', self.onSelectItems );
             $( document ).on( 'change', '.order-withdrawal-request #select-all-items', self.selectAllItems );
             $( document ).on( 'change', '.order-withdrawal-request #order-withdrawal-request-order-number, .order-withdrawal-request #order-withdrawal-request-email', self.onChangeInputs );
+
+            // Inline validation
+            $( document ).on( 'input validate change focusout', '.order-withdrawal-request .input-text, .order-withdrawal-request select', self.validateField );
+        },
+
+        validateField: function ( e )  {
+            var $this = $( this ),
+                $parent = $this.closest( '.form-row' ),
+                validated = true,
+                validate_required = $parent.is( '.validate-required' ),
+                validate_email = $parent.is( '.validate-email' ),
+                pattern = '',
+                event_type = e.type;
+
+            if ( 'input' === event_type ) {
+                $this
+                    .removeAttr( 'aria-invalid' )
+                    .removeAttr( 'aria-describedby' );
+                $parent.find( '.withdrawal-inline-error-message' ).remove();
+                $parent.removeClass( 'woocommerce-invalid woocommerce-invalid-required-field woocommerce-invalid-email woocommerce-validated' );
+            }
+
+            if (
+                'validate' === event_type ||
+                'change' === event_type ||
+                'focusout' === event_type
+            ) {
+                if ( validate_required ) {
+                    if (
+                        ( 'checkbox' === $this.attr( 'type' ) &&
+                            ! $this.is( ':checked' ) ) ||
+                        $this.val() === ''
+                    ) {
+                        $this.attr( 'aria-invalid', 'true' );
+                        $parent
+                            .removeClass( 'woocommerce-validated' )
+                            .addClass(
+                                'woocommerce-invalid woocommerce-invalid-required-field'
+                            );
+                        validated = false;
+                    }
+                }
+
+                if ( validate_email ) {
+                    if ( $this.val() ) {
+                        /* https://stackoverflow.com/questions/2855865/jquery-validate-e-mail-address-regex */
+                        pattern = new RegExp(
+                            // eslint-disable-next-line max-len
+                            /^([a-z\d!#$%&'*+\-\/=?^_`{|}~\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF]+(\.[a-z\d!#$%&'*+\-\/=?^_`{|}~\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF]+)*|"((([ \t]*\r\n)?[ \t]+)?([\x01-\x08\x0b\x0c\x0e-\x1f\x7f\x21\x23-\x5b\x5d-\x7e\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF]|\\[\x01-\x09\x0b\x0c\x0d-\x7f\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF]))*(([ \t]*\r\n)?[ \t]+)?")@(([a-z\d\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF]|[a-z\d\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF][a-z\d\-._~\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF]*[a-z\d\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])\.)+([a-z\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF]|[a-z\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF][a-z\d\-._~\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF]*[0-9a-z\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])\.?$/i
+                        ); // eslint-disable-line max-len
+
+                        if ( ! pattern.test( $this.val() ) ) {
+                            $this.attr( 'aria-invalid', 'true' );
+                            $parent
+                                .removeClass( 'woocommerce-validated' )
+                                .addClass(
+                                    'woocommerce-invalid woocommerce-invalid-email'
+                                ); // eslint-disable-line max-len
+                            validated = false;
+                        }
+                    }
+                }
+
+                if ( validated ) {
+                    $this
+                        .removeAttr( 'aria-invalid' )
+                        .removeAttr( 'aria-describedby' );
+                    $parent.find( '.checkout-inline-error-message' ).remove();
+                    $parent
+                        .removeClass(
+                            'woocommerce-invalid woocommerce-invalid-required-field woocommerce-invalid-email'
+                        )
+                        .addClass( 'woocommerce-validated' ); // eslint-disable-line max-len
+                }
+            }
         },
 
         onChangeInputs: function() {
@@ -195,6 +270,15 @@ window.eu_owb.order_withdrawal = window.eu_owb.order_withdrawal || {};
 
                 $.each( response.data, function( i, error ) {
                     $noticeWrapper.append( '<p class="woocommerce-error notice">' + error.message + '</p>' );
+
+                    if ( error.hasOwnProperty( 'field' ) ) {
+                        const fieldName = error['field'].replace( '_', '-' );
+                        const $field = $form.find( '#order-withdrawal-request-' + fieldName + '_field' )
+
+                        if ( $field.length > 0 ) {
+                            $field.addClass( 'woocommerce-invalid woocommerce-invalid-required-field' );
+                        }
+                    }
                 });
 
                 $noticeWrapper[0].scrollIntoView({

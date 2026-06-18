@@ -11,7 +11,7 @@
  * the readme will list any important changes.
  *
  * @package Vendidero/OrderWithdrawalButton/Templates
- * @version 2.2.0
+ * @version 2.3.0
  */
 
 defined( 'ABSPATH' ) || exit;
@@ -27,10 +27,19 @@ do_action( 'eu_owb_woocommerce_withdrawal_before_order_table', $order, $sent_to_
 	echo "\n==========\n";
 ?>
 
-<?php echo wp_kses_post( _x( 'Order', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ) ); ?>: <?php echo wp_kses_post( $order->get_order_number() ) . "\n"; ?>
+<?php echo wp_kses_post( _x( 'Contract Identification', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ) ); ?>: <?php echo wp_kses_post( $order->get_order_number() ) . "\n"; ?>
 <?php echo wp_kses_post( _x( 'Received on', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ) ); ?>: <?php echo esc_html( sprintf( _x( '%1$s at %2$s', 'owb-datetime', 'eu-order-withdrawal-button-for-woocommerce' ), wc_format_datetime( $withdrawal->get_date_received() ), wc_format_datetime( $withdrawal->get_date_received(), wc_time_format() ) ) ) . "\n"; ?>
 <?php echo wp_kses_post( _x( 'E-Mail', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ) ); ?>: <?php echo wp_kses_post( $withdrawal->get_email() ) . ( $sent_to_admin ? ' (' . esc_html( $verified_notice ) . ')' : '' ) . "\n"; ?>
 <?php echo wp_kses_post( _x( 'Full name', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ) ); ?>: <?php echo wp_kses_post( $withdrawal->get_formatted_full_name( true, 'email' ) ) . "\n"; ?>
+<?php echo wp_kses_post( _x( 'Verification Code', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ) ); ?>: <?php echo wp_kses_post( $withdrawal->get_verification_code() ) . "\n"; ?>
+
+<?php if ( $withdrawal->get_additional_information() ) : ?>
+	<?php if ( $email_improvements_enabled ) : ?>
+		<?php echo "\n" . esc_html_x( 'Additional Information', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ) . "\n" . wp_kses( eu_owb_wptexturize_withdrawal_additional_information( $withdrawal->get_additional_information() ), array() ) . "\n"; ?>
+	<?php else : ?>
+		<?php echo esc_html_x( 'Additional Information', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ) . "\t " . wp_kses( eu_owb_wptexturize_withdrawal_additional_information( $withdrawal->get_additional_information() ), array() ) . "\n"; ?>
+	<?php endif; ?>
+<?php endif; ?>
 
 <?php if ( $show_deleted_original && ( $original_order_id = eu_owb_order_withdrawal_request_get_original_order_id( $withdrawal ) ) ) : ?>
 	<?php echo wp_kses_post( sprintf( _x( 'As you requested, we have deleted your original withdrawal request for order %1$s.', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ), esc_html( $original_order_id ) ) ) . "\n"; ?>

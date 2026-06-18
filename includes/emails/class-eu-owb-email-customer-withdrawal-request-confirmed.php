@@ -65,7 +65,7 @@ if ( ! class_exists( 'EU_OWB_Email_Customer_Withdrawal_Request_Confirmed', false
 		 * @return string
 		 */
 		public function get_default_subject() {
-			return _x( 'Your withdrawal request for order #{order_number} has been confirmed.', 'owb', 'eu-order-withdrawal-button-for-woocommerce' );
+			return _x( 'Your withdrawal request has been confirmed.', 'owb', 'eu-order-withdrawal-button-for-woocommerce' );
 		}
 
 		/**

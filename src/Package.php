@@ -3,6 +3,7 @@
 namespace Vendidero\OrderWithdrawalButton;
 
 use Vendidero\OrderWithdrawalButton\Admin\Admin;
+use Vendidero\OrderWithdrawalButton\Admin\Privacy;
 
 defined( 'ABSPATH' ) || exit;
 
@@ -144,9 +145,24 @@ class Package {
 			$max_length = 20;
 		} elseif ( 'first_name' === $field_name || 'last_name' === $field_name ) {
 			$max_length = 40;
+		} elseif ( 'additional_information' === $field_name ) {
+			$max_length = 150;
 		}
 
 		return apply_filters( 'eu_owb_woocommerce_form_field_maxlength', $max_length, $field_name );
+	}
+
+	public static function get_form_field_required( $form_field ) {
+		$required         = false;
+		$mandatory_fields = (array) self::get_setting( 'mandatory_fields', array() );
+
+		if ( 'email' === $form_field ) {
+			$required = true;
+		} elseif ( in_array( $form_field, $mandatory_fields, true ) ) {
+			$required = true;
+		}
+
+		return apply_filters( 'eu_owb_woocommerce_form_field_required', $required, $form_field );
 	}
 
 	public static function migrate_withdrawals( $date_created_after ) {
@@ -495,6 +511,7 @@ class Package {
 			'_last_name'          => 'last_name',
 			'_email'              => 'email',
 			'_order_number'       => 'order_number',
+			'_verification_code'  => 'verification_code',
 		);
 
 		if ( $cpt ) {
@@ -505,6 +522,7 @@ class Package {
 					'_customer_id'         => 'customer_id',
 					'_customer_ip_address' => 'customer_ip_address',
 					'_customer_user_agent' => 'customer_user_agent',
+					'_billing_email'       => 'billing_email',
 				)
 			);
 		}
@@ -986,6 +1004,7 @@ class Package {
 	private static function includes() {
 		Ajax::init();
 		Admin::init();
+		Privacy::init();
 
 		include_once self::get_path() . '/includes/eu-owb-core-functions.php';
 	}

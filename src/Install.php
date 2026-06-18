@@ -27,8 +27,10 @@ class Install {
 			}
 		}
 
-		if ( ! is_null( $current_version ) && version_compare( $current_version, '2.1.0', '<' ) ) {
-			self::migrate_withdrawals();
+		if ( ! is_null( $current_version ) ) {
+			if ( version_compare( $current_version, '2.1.0', '<' ) ) {
+				self::migrate_withdrawals();
+			}
 		}
 
 		update_option( 'eu_owb_woocommerce_version', Package::get_version() );

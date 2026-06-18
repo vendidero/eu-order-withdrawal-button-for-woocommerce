@@ -15,6 +15,7 @@ class WithdrawalOrderCPT extends \Abstract_WC_Order_Data_Store_CPT implements \W
 	 * @var array
 	 */
 	protected $internal_meta_keys = array(
+		'_customer_user',
 		'_order_currency',
 		'_cart_discount',
 		'_cart_discount_tax',
@@ -40,9 +41,11 @@ class WithdrawalOrderCPT extends \Abstract_WC_Order_Data_Store_CPT implements \W
 		'_customer_id',
 		'_email',
 		'_order_number',
+		'_verification_code',
 		'_order_key',
 		'_customer_ip_address',
 		'_customer_user_agent',
+		'_billing_email',
 	);
 
 	/**
@@ -83,8 +86,12 @@ class WithdrawalOrderCPT extends \Abstract_WC_Order_Data_Store_CPT implements \W
 		} else {
 			do_action( 'eu_owb_woocommerce_before_trash_withdrawal', $id, $withdrawal );
 
+			$status_from = $withdrawal->get_status( 'edit' );
+			$status_to   = 'trash';
+
 			wp_trash_post( $id );
 			$withdrawal->set_status( 'trash' );
+			$withdrawal->add_order_note( sprintf( _x( 'Withdrawal status changed from %1$s to %2$s.', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ), Package::get_withdrawal_status_name( $status_from ), Package::get_withdrawal_status_name( $status_to ) ), 0, true );
 
 			do_action( 'eu_owb_woocommerce_withdrawal_order_trashed', $id );
 		}
@@ -113,6 +120,8 @@ class WithdrawalOrderCPT extends \Abstract_WC_Order_Data_Store_CPT implements \W
 		$id        = $withdrawal->get_id();
 		$post_meta = get_post_meta( $id );
 		$props     = Package::get_withdrawal_order_props( true );
+
+		$withdrawal->set_customer_note( $post_object->post_excerpt );
 
 		foreach ( $props as $meta_key => $prop ) {
 			$setter = "set_{$prop}";
@@ -225,6 +234,10 @@ class WithdrawalOrderCPT extends \Abstract_WC_Order_Data_Store_CPT implements \W
 		$props_changed = $withdrawal->get_changes();
 		$search_props  = $withdrawal->get_search_props();
 
+		if ( '' === $withdrawal->get_verification_code( 'edit' ) || $withdrawal->has_changes() ) {
+			$withdrawal->set_verification_code( $withdrawal->get_current_verification_code() );
+		}
+
 		foreach ( $search_props as $prop => $search_value ) {
 			if ( array_key_exists( $prop, $props_changed ) ) {
 				$withdrawal->update_meta_data( '_billing_address_index', implode( ' ', array_filter( array_values( $search_props ) ) ) );
@@ -255,6 +268,14 @@ class WithdrawalOrderCPT extends \Abstract_WC_Order_Data_Store_CPT implements \W
 			}
 
 			update_post_meta( $withdrawal->get_id(), $meta_key, $value );
+
+			/**
+			 * Update _customer_user as used by Woo internally
+			 */
+			if ( '_customer_id' === $meta_key ) {
+				update_post_meta( $withdrawal->get_id(), '_customer_user', $value );
+			}
+
 			$updated_props[] = $prop;
 		}
 	}
@@ -289,6 +310,30 @@ class WithdrawalOrderCPT extends \Abstract_WC_Order_Data_Store_CPT implements \W
 		}
 
 		return $status;
+	}
+
+	/**
+	 * Excerpt for post.
+	 *
+	 * @param  \Vendidero\OrderWithdrawalButton\WithdrawalOrder $order Order object.
+	 * @return string
+	 */
+	protected function get_post_excerpt( $order ) {
+		return $order->get_customer_note();
+	}
+
+	/**
+	 * Get order key.
+	 *
+	 * @param \Vendidero\OrderWithdrawalButton\WithdrawalOrder $order Order object.
+	 * @return string
+	 */
+	protected function get_order_key( $order ) {
+		if ( '' !== $order->get_order_key() ) {
+			return $order->get_order_key();
+		}
+
+		return parent::get_order_key( $order );
 	}
 
 	/**
