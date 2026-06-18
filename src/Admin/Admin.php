@@ -335,7 +335,14 @@ class Admin {
 
 		if ( $needs_reset && class_exists( '\Automattic\WooCommerce\Caches\OrderCountCache' ) ) {
 			$order_count_cache = new \Automattic\WooCommerce\Caches\OrderCountCache();
-			$order_count_cache->set_multiple( $order_type, $counts );
+
+			if ( is_callable( array( $order_count_cache, 'set_multiple' ) ) ) {
+				$order_count_cache->set_multiple( $order_type, $counts );
+			} else {
+				foreach ( $counts as $status => $count ) {
+					$order_count_cache->set( $order_type, $status, $count );
+				}
+			}
 		}
 
 		if ( ! empty( $target_status ) ) {
