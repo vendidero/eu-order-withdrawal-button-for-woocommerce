@@ -594,7 +594,7 @@ class Package {
 	}
 
 	public static function register_plugin_links() {
-		if ( self::is_standalone() && ! self::is_integration() ) {
+		if ( self::is_standalone() ) {
 			add_filter( 'plugin_action_links_' . plugin_basename( trailingslashit( self::get_path() ) . 'eu-order-withdrawal-button-for-woocommerce.php' ), array( __CLASS__, 'plugin_action_links' ) );
 		}
 	}
@@ -602,7 +602,8 @@ class Package {
 	public static function plugin_action_links( $links ) {
 		return array_merge(
 			array(
-				'<a href="' . esc_url( admin_url( 'admin.php?page=wc-settings&tab=advanced&section=owb' ) ) . '">' . _x( 'Settings', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ) . '</a>',
+				'<a href="' . esc_url( self::is_integration() ? admin_url( 'admin.php?page=wc-settings&tab=germanized-general&section=withdrawal_button' ) : admin_url( 'admin.php?page=wc-settings&tab=advanced&section=owb' ) ) . '">' . _x( 'Settings', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ) . '</a>',
+				'<a href="' . esc_url( self::get_withdrawals_url() ) . '">' . _x( 'Withdrawals', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ) . '</a>',
 			),
 			$links
 		);

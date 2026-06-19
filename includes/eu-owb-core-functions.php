@@ -29,7 +29,7 @@ function eu_owb_wp_theme_get_element_class_name( $element ) {
 
 function eu_owb_get_withdrawable_order_statuses( $prefixed = true ) {
 	$order_statuses = array_diff_key(
-		wc_get_order_statuses(),
+		eu_owb_get_persisted_order_statuses(),
 		array(
 			'wc-cancelled' => '',
 			'wc-refunded'  => '',
@@ -1336,7 +1336,7 @@ function eu_owb_find_orders_by_custom_order_number( $args ) {
 			'email'       => '',
 			'customer_id' => '',
 			'return'      => 'ids',
-			'status'      => array_keys( wc_get_order_statuses() ),
+			'status'      => array_keys( eu_owb_get_persisted_order_statuses() ),
 		)
 	);
 
@@ -1395,6 +1395,18 @@ function eu_owb_find_orders_by_custom_order_number( $args ) {
 }
 
 /**
+ * Returns a list of persisted order statuses (explicitly excluding wc-checkout draft which is registered via the order status filter).
+ *
+ * @return array
+ */
+function eu_owb_get_persisted_order_statuses() {
+	$statuses = wc_get_order_statuses();
+	$statuses = array_diff_key( $statuses, array( 'wc-checkout-draft' => '' ) );
+
+	return apply_filters( 'eu_owb_woocommerce_get_persisted_order_statuses', $statuses );
+}
+
+/**
  * @param $order_id
  * @param $email
  *
@@ -1408,7 +1420,7 @@ function eu_owb_find_orders( $args ) {
 			'email'       => '',
 			'customer_id' => '',
 			'return'      => 'ids',
-			'status'      => array_keys( wc_get_order_statuses() ),
+			'status'      => array_keys( eu_owb_get_persisted_order_statuses() ),
 		)
 	);
 
