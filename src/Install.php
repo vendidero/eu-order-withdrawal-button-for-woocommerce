@@ -30,6 +30,12 @@ class Install {
 		if ( ! is_null( $current_version ) ) {
 			if ( version_compare( $current_version, '2.1.0', '<' ) ) {
 				self::migrate_withdrawals();
+			} elseif ( version_compare( $current_version, '2.3.0', '<' ) ) {
+				/**
+				 * Make sure that only order_number (not first_name + last_name, the new default) is a required field
+				 * after updating from earlier versions.
+				 */
+				update_option( 'eu_owb_woocommerce_mandatory_fields', array( 'order_number' ) );
 			}
 		}
 
