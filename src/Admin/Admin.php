@@ -547,7 +547,7 @@ class Admin {
 	 * @return string
 	 */
 	public static function get_withdrawal_email_verified_html( $withdrawal ) {
-		return ( $withdrawal->has_verified_email() ? '<span class="eu-owb-woocommerce-verified-status is-verified dashicons dashicons-yes-alt tips" data-tip="' . esc_attr( _x( 'E-mail address matches', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ) ) . '"></span>' : '<span class="eu-owb-woocommerce-verified-status is-unverified dashicons dashicons-warning tips" data-tip="' . esc_attr( _x( 'E-mail address unknown', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ) ) . '"></span>' );
+		return ( $withdrawal->has_verified_email() ? '<span class="eu-owb-woocommerce-verified-status is-verified dashicons dashicons-yes-alt tips" data-tip="' . esc_attr( _x( 'Email address matches', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ) ) . '"></span>' : '<span class="eu-owb-woocommerce-verified-status is-unverified dashicons dashicons-warning tips" data-tip="' . esc_attr( _x( 'E-mail address unknown', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ) ) . '"></span>' );
 	}
 
 	public static function register_order_bulk_actions( $actions ) {

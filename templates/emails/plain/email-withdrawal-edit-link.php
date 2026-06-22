@@ -1,6 +1,6 @@
 <?php
 /**
- * E-Mail withdrawal edit link
+ * Email withdrawal edit link
  *
  * This template can be overridden by copying it to yourtheme/woocommerce/emails/plain/email-withdrawal-edit-link.php.
  *

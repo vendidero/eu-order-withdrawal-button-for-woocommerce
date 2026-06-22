@@ -2,7 +2,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: EU Order Withdrawal Button for WooCommerce\n"
-"POT-Creation-Date: 2026-06-19 11:10+0200\n"
+"POT-Creation-Date: 2026-06-22 09:36+0200\n"
 "PO-Revision-Date: 2021-05-10 09:48+0200\n"
 "Last-Translator: \n"
 "Language-Team: \n"
@@ -339,7 +339,7 @@ msgid "Reason"
 msgstr ""
 
 #: src/Admin/Admin.php:378 src/Admin/Admin.php:734 src/Admin/Privacy.php:168
-#: src/Package.php:472 src/Settings.php:21
+#: src/Package.php:472 src/Package.php:606 src/Settings.php:21
 msgctxt "owb"
 msgid "Withdrawals"
 msgstr ""
@@ -397,7 +397,7 @@ msgstr ""
 
 #: src/Admin/Admin.php:550
 msgctxt "owb"
-msgid "E-mail address matches"
+msgid "Email address matches"
 msgstr ""
 
 #: src/Admin/Admin.php:550
@@ -510,7 +510,9 @@ msgctxt "owb"
 msgid "Last name"
 msgstr ""
 
-#: src/Admin/Privacy.php:124 templates/forms/order-withdrawal-request.php:56
+#: src/Admin/Privacy.php:124 templates/emails/email-withdrawal-details.php:44
+#: templates/emails/plain/email-withdrawal-details.php:32
+#: templates/forms/order-withdrawal-request.php:56
 #: templates/forms/order-withdrawal-request.php:247
 msgctxt "owb"
 msgid "Email"
@@ -828,17 +830,17 @@ msgctxt "owb-email-preview"
 msgid "An example rejection reason."
 msgstr ""
 
-#: src/Package.php:401 src/Package.php:824
+#: src/Package.php:401 src/Package.php:825
 msgctxt "owb"
 msgid "Requested"
 msgstr ""
 
-#: src/Package.php:402 src/Package.php:836
+#: src/Package.php:402 src/Package.php:837
 msgctxt "owb"
 msgid "Confirmed"
 msgstr ""
 
-#: src/Package.php:403 src/Package.php:848
+#: src/Package.php:403 src/Package.php:849
 msgctxt "owb"
 msgid "Rejected"
 msgstr ""
@@ -848,12 +850,12 @@ msgctxt "owb"
 msgid "Settings"
 msgstr ""
 
-#: src/Package.php:800 src/Package.php:862
+#: src/Package.php:801 src/Package.php:863
 msgctxt "owb"
 msgid "Pending withdrawal"
 msgstr ""
 
-#: src/Package.php:805
+#: src/Package.php:806
 #, php-format
 msgctxt "owb"
 msgid "Pending withdrawal (%s)"
@@ -861,12 +863,12 @@ msgid_plural "Pending withdrawals (%s)"
 msgstr[0] ""
 msgstr[1] ""
 
-#: src/Package.php:812 src/Package.php:863
+#: src/Package.php:813 src/Package.php:864
 msgctxt "owb"
 msgid "Withdrawn"
 msgstr ""
 
-#: src/Package.php:817
+#: src/Package.php:818
 #, php-format
 msgctxt "owb"
 msgid "Withdrawn (%s)"
@@ -874,7 +876,7 @@ msgid_plural "Withdrawn (%s)"
 msgstr[0] ""
 msgstr[1] ""
 
-#: src/Package.php:829
+#: src/Package.php:830
 #, php-format
 msgctxt "owb"
 msgid "Requested (%s)"
@@ -882,7 +884,7 @@ msgid_plural "Requested (%s)"
 msgstr[0] ""
 msgstr[1] ""
 
-#: src/Package.php:841
+#: src/Package.php:842
 #, php-format
 msgctxt "owb"
 msgid "Confirmed (%s)"
@@ -890,7 +892,7 @@ msgid_plural "Confirmed (%s)"
 msgstr[0] ""
 msgstr[1] ""
 
-#: src/Package.php:853
+#: src/Package.php:854
 #, php-format
 msgctxt "owb"
 msgid "Rejected (%s)"
@@ -1021,7 +1023,7 @@ msgctxt "owb"
 msgid ""
 "Keep in mind that the withdrawal period does not begin until the customer "
 "receives the order. If necessary add a buffer period depending on your "
-"shipping process."
+"shipping process. Use 0 to make withdrawals available at any time."
 msgstr ""
 
 #: src/Settings.php:145
@@ -1196,12 +1198,6 @@ msgstr ""
 #, php-format
 msgctxt "owb-datetime"
 msgid "%1$s at %2$s"
-msgstr ""
-
-#: templates/emails/email-withdrawal-details.php:44
-#: templates/emails/plain/email-withdrawal-details.php:32
-msgctxt "owb"
-msgid "E-Mail"
 msgstr ""
 
 #: templates/emails/email-withdrawal-details.php:45

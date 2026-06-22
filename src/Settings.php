@@ -132,7 +132,7 @@ class Settings {
 			array(
 				'title'     => _x( 'Withdrawal period', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ),
 				'desc_tip'  => _x( 'Choose the number of days, starting with the orders\' completed date, to accept withdrawals for orders.', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ),
-				'desc'      => _x( 'Days', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ) . '<div class="eu-owb-settings-additional-desc">' . sprintf( _x( 'Keep in mind that the withdrawal period does not begin until the customer receives the order. If necessary add a buffer period depending on your shipping process.', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ), esc_url( get_admin_url( null, 'admin.php?page=wc-orders&unverified_withdrawals=yes' ) ) ) . '</div>',
+				'desc'      => _x( 'Days', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ) . '<div class="eu-owb-settings-additional-desc">' . sprintf( _x( 'Keep in mind that the withdrawal period does not begin until the customer receives the order. If necessary add a buffer period depending on your shipping process. Use 0 to make withdrawals available at any time.', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ), esc_url( get_admin_url( null, 'admin.php?page=wc-orders&unverified_withdrawals=yes' ) ) ) . '</div>',
 				'css'       => 'max-width: 60px;',
 				'row_class' => 'withdrawal-period',
 				'type'      => 'number',

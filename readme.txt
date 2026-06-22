@@ -51,7 +51,7 @@ Use our plugin [Shiptastic for WooCommerce](https://wordpress.org/plugins/shipta
 
 We recommend installing EU Order Withdrawal Button for WooCommerce through the WordPress backend. Please install WooCommerce before installing the plugin.
 
-After the installation, go to WooCommerce > Settings > Advanced > Withdrawals to manage your settings. During installation, the plugin creates a withdrawal page containing the shortcode as a draft. After testing the withdrawal process, make sure to publish that page so that your customers can access it too.
+Follow the [initial setup steps](https://wordpress.org/plugins/eu-order-withdrawal-button-for-woocommerce/) to configure the plugin.
 
 == Frequently Asked Questions ==
 
@@ -79,10 +79,17 @@ Bug reports may be filed via our [GitHub repository](https://github.com/vendider
 2. Admin UI
 
 == Changelog ==
-= 2.2.2 =
-* Improvement: WPML compatibility
+= 2.3.0 =
+* New: WPML compatibility
+* New: Privacy additions (export, erase, policy suggestions)
+* New: Setting to select which fields to be mandatory
+* New: Setting to add an "additional information" textarea
+* New: Added sha256 verification code which reflects the data contained within the withdrawal request
 * Improvement: Allow setting days to withdraw to 0 to keep order withdrawable indefinitely
-* Fix: Woo < 10.X HPOS compatibility mode backwards compatibility
+* Improvement: Renamed order number field to "Contract identification" and make it mandatory by default
+* Improvement: Explicitly exclude checkout-draft status
+* Improvement: Add order notes to withdrawals, e.g. on status updates
+* Fix: Woo < 10.X backwards compatibility
 
 = 2.2.1 =
 * Improvement: Show withdrawal page valid/invalid status in settings

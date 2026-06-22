@@ -1,6 +1,6 @@
 <?php
 /**
- * E-Mail withdrawal details
+ * Email withdrawal details
  *
  * This template can be overridden by copying it to yourtheme/woocommerce/emails/email-withdrawal-details.php.
  *
@@ -41,7 +41,7 @@ do_action( 'eu_owb_woocommerce_withdrawal_before_order_table', $order, $sent_to_
 <ul style="margin-bottom: <?php echo $email_improvements_enabled ? '24px' : '40px'; ?>;">
 	<li><strong><?php echo wp_kses_post( _x( 'Contract Identification', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ) ); ?>:</strong> <span class="text"><?php echo wp_kses_post( $formatted_order_number ); ?></span></li>
 	<li><strong><?php echo wp_kses_post( _x( 'Received on', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ) ); ?>:</strong> <span class="text"><?php echo esc_html( sprintf( _x( '%1$s at %2$s', 'owb-datetime', 'eu-order-withdrawal-button-for-woocommerce' ), wc_format_datetime( $withdrawal->get_date_received() ), wc_format_datetime( $withdrawal->get_date_received(), wc_time_format() ) ) ); ?></span></li>
-	<li><strong><?php echo wp_kses_post( _x( 'E-Mail', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ) ); ?>:</strong> <span class="text"><?php echo wp_kses_post( $withdrawal->get_email() ) . ( $sent_to_admin ? ' (' . esc_html( $verified_notice ) . ')' : '' ); ?></span></li>
+	<li><strong><?php echo wp_kses_post( _x( 'Email', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ) ); ?>:</strong> <span class="text"><?php echo wp_kses_post( $withdrawal->get_email() ) . ( $sent_to_admin ? ' (' . esc_html( $verified_notice ) . ')' : '' ); ?></span></li>
 	<li><strong><?php echo wp_kses_post( _x( 'Full name', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ) ); ?>:</strong> <span class="text"><?php echo wp_kses_post( $withdrawal->get_formatted_full_name( true, 'email' ) ); ?></span></li>
 	<li><strong><?php echo wp_kses_post( _x( 'Verification code', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ) ); ?>:</strong> <span class="text"><?php echo wp_kses_post( $withdrawal->get_verification_code() ); ?></span></li>
 </ul>
