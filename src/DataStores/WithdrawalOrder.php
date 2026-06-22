@@ -232,6 +232,10 @@ class WithdrawalOrder extends OrdersTableDataStore {
 	 * @param \Vendidero\OrderWithdrawalButton\WithdrawalOrder $withdrawal Withdrawal object.
 	 */
 	public function update( &$withdrawal ) {
+		if ( ! $withdrawal->get_date_received( 'edit' ) ) {
+			$withdrawal->set_date_received( time() );
+		}
+
 		$this->persist_updates( $withdrawal, false );
 		$withdrawal->apply_changes();
 

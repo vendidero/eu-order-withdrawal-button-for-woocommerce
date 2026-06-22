@@ -904,6 +904,10 @@ function eu_owb_create_order_withdrawal_request( $email, $order = false, $items 
 		if ( $existing_withdrawal = eu_owb_get_withdrawal_request( $order ) ) {
 			$withdrawal      = $existing_withdrawal;
 			$original_status = $withdrawal->get_original_status();
+
+			if ( $withdrawal->get_id() > 0 ) {
+				$withdrawal->add_order_note( sprintf( _x( 'Customer requested an update to the original withdrawal: %1$s', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ), wp_kses_post( (string) $withdrawal ) ) );
+			}
 		}
 	}
 
@@ -923,6 +927,7 @@ function eu_owb_create_order_withdrawal_request( $email, $order = false, $items 
 	 */
 	if ( $withdrawal->get_id() > 0 ) {
 		$withdrawal->set_is_update( true );
+		$withdrawal->set_date_received( null );
 
 		if ( ! empty( $original_status ) ) {
 			$withdrawal->set_original_status( $original_status );

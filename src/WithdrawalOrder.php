@@ -973,7 +973,8 @@ class WithdrawalOrder extends \WC_Abstract_Order implements \ArrayAccess {
 	public function get_data() {
 		return array_merge(
 			array(
-				'id' => $this->get_id(),
+				'id'            => $this->get_id(),
+				'date_received' => $this->get_date_received(),
 			),
 			$this->data,
 			array(
@@ -1076,5 +1077,38 @@ class WithdrawalOrder extends \WC_Abstract_Order implements \ArrayAccess {
 		if ( is_callable( array( $this, $setter ) ) ) {
 			$this->$setter( null );
 		}
+	}
+
+	public function __toString() {
+		$data = $this->get_data();
+		$data = array_diff_key(
+			$data,
+			array(
+				'date_created'       => '',
+				'currency'           => '',
+				'discount_total'     => '',
+				'discount_tax'       => '',
+				'shipping_total'     => '',
+				'shipping_tax'       => '',
+				'cart_tax'           => '',
+				'total'              => '',
+				'total_tax'          => '',
+				'line_items'         => '',
+				'tax_lines'          => '',
+				'shipping_lines'     => '',
+				'fee_lines'          => '',
+				'coupon_lines'       => '',
+				'prices_include_tax' => '',
+			)
+		);
+
+		$data['withdrawal_lines'] = array_map(
+			function ( $item ) {
+				return $item->get_data();
+			},
+			$data['withdrawal_lines']
+		);
+
+		return wp_json_encode( $data );
 	}
 }
