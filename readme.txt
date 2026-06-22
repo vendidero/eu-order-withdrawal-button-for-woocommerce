@@ -76,7 +76,8 @@ Bug reports may be filed via our [GitHub repository](https://github.com/vendider
 == Screenshots ==
 
 1. Withdrawal form
-2. Admin UI
+2. Manage order
+3. Manage withdrawals
 
 == Changelog ==
 = 2.3.0 =
