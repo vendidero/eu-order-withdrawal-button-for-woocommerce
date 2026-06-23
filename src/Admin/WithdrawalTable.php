@@ -1016,14 +1016,14 @@ class WithdrawalTable extends \WP_List_Table {
 								<div class="wc-order-preview-address">
 									<h2><?php echo esc_html_x( 'Withdrawal Details', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ); ?></h2>
 
-									<# if ( data.data.contract_identification ) { #>
+									<# if ( data.contract_identification ) { #>
 									<strong><?php echo esc_html_x( 'Contract Identification', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ); ?></strong>
-									{{ data.data.contract_identification }}
+									{{ data.contract_identification }}
 									<# } #>
 
-									<# if ( data.data.verification_code ) { #>
+									<# if ( data.verification_code ) { #>
 									<strong><?php echo esc_html_x( 'Verification code', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ); ?></strong>
-									<code>{{ data.data.verification_code }}</code>
+									<code>{{ data.verification_code }}</code>
 									<# } #>
 
 									<# if ( data.data.customer_note ) { #>

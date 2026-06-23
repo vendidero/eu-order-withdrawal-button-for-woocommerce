@@ -72,14 +72,16 @@ class Ajax {
 			$order_details = apply_filters(
 				'eu_owb_woocommerce_withdrawal_preview_get_order_details',
 				array(
-					'data'                => $order->get_data(),
-					'order_number'        => $order->get_order_number(),
-					'status'              => $order->get_status(),
-					'status_name'         => Package::get_withdrawal_status_name( $order->get_status() ),
-					'item_html'           => WithdrawalTable::get_preview_item_html( $order ),
-					'comment_html'        => WithdrawalTable::get_preview_comment_html( $order ),
-					'formatted_full_name' => $order->get_formatted_full_name(),
-					'verified_html'       => Admin::get_withdrawal_email_verified_html( $order ),
+					'data'                    => $order->get_data(),
+					'order_number'            => $order->get_order_number(),
+					'status'                  => $order->get_status(),
+					'status_name'             => Package::get_withdrawal_status_name( $order->get_status() ),
+					'item_html'               => WithdrawalTable::get_preview_item_html( $order ),
+					'comment_html'            => WithdrawalTable::get_preview_comment_html( $order ),
+					'formatted_full_name'     => $order->get_formatted_full_name(),
+					'verified_html'           => Admin::get_withdrawal_email_verified_html( $order ),
+					'contract_identification' => $order->get_contract_identification(),
+					'verification_code'       => $order->get_verification_code(),
 				),
 				$order
 			);
@@ -252,7 +254,7 @@ class Ajax {
 
 		if ( is_user_logged_in() && current_user_can( 'view_order', $order->get_id() ) ) {
 			$is_valid_request = true;
-		} elseif ( ! is_user_logged_in() && $original_order_id && ! empty( $order_key ) ) {
+		} elseif ( $original_order_id && ! empty( $order_key ) ) {
 			if ( $original_order = wc_get_order( $original_order_id ) ) {
 				if ( $original_order->get_id() === $order->get_id() && ! empty( $order->get_order_key() ) && hash_equals( $order->get_order_key(), $order_key ) ) {
 					$is_valid_request = true;
