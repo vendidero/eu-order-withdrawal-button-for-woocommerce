@@ -257,13 +257,7 @@ class Ajax {
 				if ( $original_order->get_id() === $order->get_id() && ! empty( $order->get_order_key() ) && hash_equals( $order->get_order_key(), $order_key ) ) {
 					$is_valid_request = true;
 				} elseif ( $original_order->get_id() === $original_order_id && ! empty( $original_order->get_order_key() ) && hash_equals( $original_order->get_order_key(), $order_key ) ) {
-					$orders = eu_owb_find_orders(
-						array(
-							'email'       => $original_order->get_billing_email(),
-							'customer_id' => $original_order->get_customer_id(),
-							'status'      => eu_owb_get_withdrawable_order_statuses(),
-						)
-					);
+					$orders = eu_owb_get_orders_for_guest( $original_order, true );
 
 					if ( in_array( $order->get_id(), $orders, true ) ) {
 						$is_valid_request = true;
