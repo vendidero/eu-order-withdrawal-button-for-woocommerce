@@ -31,27 +31,28 @@ class WithdrawalOrder extends \WC_Abstract_Order implements \ArrayAccess {
 	 * @var array
 	 */
 	protected $extra_data = array(
-		'withdrawal_number'   => '',
-		'date_confirmed'      => null,
-		'date_rejected'       => null,
-		'original_status'     => '',
-		'rejection_reason'    => '',
-		'is_partial'          => false,
-		'is_guest'            => false,
-		'has_verified_email'  => false,
-		'order_number'        => '',
-		'is_update'           => false,
-		'refund_id'           => 0,
-		'customer_id'         => 0,
-		'verification_code'   => '',
-		'email'               => '',
-		'first_name'          => '',
-		'last_name'           => '',
-		'order_key'           => '',
-		'customer_note'       => '',
-		'customer_ip_address' => '',
-		'customer_user_agent' => '',
-		'billing_email'       => '',
+		'withdrawal_number'       => '',
+		'date_confirmed'          => null,
+		'date_rejected'           => null,
+		'original_status'         => '',
+		'rejection_reason'        => '',
+		'is_partial'              => false,
+		'is_guest'                => false,
+		'has_verified_email'      => false,
+		'order_number'            => '',
+		'is_update'               => false,
+		'refund_id'               => 0,
+		'customer_id'             => 0,
+		'verification_code'       => '',
+		'contract_identification' => '',
+		'email'                   => '',
+		'first_name'              => '',
+		'last_name'               => '',
+		'order_key'               => '',
+		'customer_note'           => '',
+		'customer_ip_address'     => '',
+		'customer_user_agent'     => '',
+		'billing_email'           => '',
 	);
 
 	protected $legacy_datastore_props = array();
@@ -102,6 +103,24 @@ class WithdrawalOrder extends \WC_Abstract_Order implements \ArrayAccess {
 
 	public function set_withdrawal_number( $value ) {
 		$this->set_prop( 'withdrawal_number', $value );
+	}
+
+	public function get_contract_identification( $context = 'view' ) {
+		$contract_identification = $this->get_prop( 'contract_identification', $context );
+
+		if ( 'view' === $context ) {
+			if ( '' === $contract_identification ) {
+				$contract_identification = $this->get_order_number();
+			} elseif ( $this->has_parent() && $this->get_order_number() !== $contract_identification ) {
+				$contract_identification = $contract_identification . ' (' . sprintf( _x( 'Order #%s', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ), $this->get_order_number() ) . ')';
+			}
+		}
+
+		return $contract_identification;
+	}
+
+	public function set_contract_identification( $value ) {
+		$this->set_prop( 'contract_identification', $value );
 	}
 
 	public function get_customer_note( $context = 'view' ) {
@@ -163,7 +182,7 @@ class WithdrawalOrder extends \WC_Abstract_Order implements \ArrayAccess {
 				$this->get_formatted_full_name( false, 'edit' ),
 				$this->get_email( 'edit' ),
 				$this->get_additional_information(),
-				$this->get_order_number(),
+				$this->get_contract_identification( 'edit' ) ? $this->get_contract_identification( 'edit' ) : $this->get_order_number(),
 				(string) $this->get_date_received() ? $this->get_date_received()->getTimestamp() : 0,
 				implode( '|', $item_ids ),
 			)
@@ -394,7 +413,11 @@ class WithdrawalOrder extends \WC_Abstract_Order implements \ArrayAccess {
 			if ( $parent = $this->get_parent() ) {
 				$value = $parent->get_order_number();
 			} else {
-				$value = _x( 'Not specified', 'owb-order-number', 'eu-order-withdrawal-button-for-woocommerce' );
+				$value = $this->get_contract_identification( 'edit' );
+
+				if ( empty( $value ) ) {
+					$value = _x( 'Not specified', 'owb-order-number', 'eu-order-withdrawal-button-for-woocommerce' );
+				}
 			}
 		}
 
@@ -919,8 +942,18 @@ class WithdrawalOrder extends \WC_Abstract_Order implements \ArrayAccess {
 	 * @return int order ID
 	 */
 	public function save() {
+		$changes       = $this->get_changes();
+		$is_new        = $this->get_id() <= 0;
+		$original_data = $this->data;
+
 		parent::save();
 		$this->status_transition();
+
+		if ( ! $is_new ) {
+			if ( array_key_exists( 'parent_id', $changes ) ) {
+				$this->add_order_note( sprintf( _x( 'Parent order changed from %1$s to %2$s.', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ), $original_data['parent_id'], $this->get_parent_id() ) );
+			}
+		}
 
 		return $this->get_id();
 	}
@@ -1109,6 +1142,6 @@ class WithdrawalOrder extends \WC_Abstract_Order implements \ArrayAccess {
 			$data['withdrawal_lines']
 		);
 
-		return wp_json_encode( $data );
+		return wp_json_encode( $data, JSON_PRETTY_PRINT );
 	}
 }

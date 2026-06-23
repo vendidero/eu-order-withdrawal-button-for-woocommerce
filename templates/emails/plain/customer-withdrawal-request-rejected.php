@@ -11,7 +11,7 @@
  * the readme will list any important changes.
  *
  * @package Vendidero/OrderWithdrawalButton/Templates
- * @version 2.2.0
+ * @version 2.3.1
  */
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
@@ -31,7 +31,7 @@ if ( ! empty( $withdrawal_name ) ) {
 	echo esc_html_x( 'Hi,', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ) . "\n\n";
 }
 
-echo sprintf( esc_html_x( 'We regret to inform you that your withdrawal request has been rejected.', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ), esc_html( $order->get_order_number() ) ) . "\n\n";
+echo esc_html_x( 'We regret to inform you that your withdrawal request has been rejected.', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ) . "\n\n";
 
 if ( ! empty( $reason ) ) {
 	echo "----------\n\n";

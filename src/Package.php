@@ -509,21 +509,22 @@ class Package {
 
 	public static function get_withdrawal_order_props( $cpt = false ) {
 		$props = array(
-			'_withdrawal_number'  => 'withdrawal_number',
-			'_date_confirmed'     => 'date_confirmed',
-			'_date_rejected'      => 'date_rejected',
-			'_original_status'    => 'original_status',
-			'_rejection_reason'   => 'rejection_reason',
-			'_is_partial'         => 'is_partial',
-			'_has_verified_email' => 'has_verified_email',
-			'_is_update'          => 'is_update',
-			'_is_guest'           => 'is_guest',
-			'_refund_id'          => 'refund_id',
-			'_first_name'         => 'first_name',
-			'_last_name'          => 'last_name',
-			'_email'              => 'email',
-			'_order_number'       => 'order_number',
-			'_verification_code'  => 'verification_code',
+			'_withdrawal_number'       => 'withdrawal_number',
+			'_date_confirmed'          => 'date_confirmed',
+			'_date_rejected'           => 'date_rejected',
+			'_original_status'         => 'original_status',
+			'_rejection_reason'        => 'rejection_reason',
+			'_is_partial'              => 'is_partial',
+			'_has_verified_email'      => 'has_verified_email',
+			'_is_update'               => 'is_update',
+			'_is_guest'                => 'is_guest',
+			'_refund_id'               => 'refund_id',
+			'_first_name'              => 'first_name',
+			'_last_name'               => 'last_name',
+			'_email'                   => 'email',
+			'_order_number'            => 'order_number',
+			'_verification_code'       => 'verification_code',
+			'_contract_identification' => 'contract_identification',
 		);
 
 		if ( $cpt ) {
@@ -749,7 +750,7 @@ class Package {
 					'email'                 => $email,
 					'withdrawal'            => $withdrawal,
 					'show_deleted_original' => is_a( $email, 'EU_OWB_Email_Customer_Withdrawal_Request_Received' ) ? true : false,
-					'hide_items'            => is_a( $email, 'EU_OWB_Email_Customer_Withdrawal_Request_Confirmed' ) ? false : ! $withdrawal->has_verified_email(),
+					'hide_items'            => is_a( $email, 'EU_OWB_Email_Customer_Withdrawal_Request_Confirmed' ) ? false : ( ! $withdrawal->has_verified_email() && ! $sent_to_admin ),
 				)
 			);
 		} else {
@@ -762,7 +763,7 @@ class Package {
 					'email'                 => $email,
 					'withdrawal'            => $withdrawal,
 					'show_deleted_original' => is_a( $email, 'EU_OWB_Email_Customer_Withdrawal_Request_Received' ) ? true : false,
-					'hide_items'            => is_a( $email, 'EU_OWB_Email_Customer_Withdrawal_Request_Confirmed' ) ? false : ! $withdrawal->has_verified_email(),
+					'hide_items'            => is_a( $email, 'EU_OWB_Email_Customer_Withdrawal_Request_Confirmed' ) ? false : ( ! $withdrawal->has_verified_email() && ! $sent_to_admin ),
 				)
 			);
 		}

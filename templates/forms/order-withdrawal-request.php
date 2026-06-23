@@ -11,7 +11,7 @@
  * the readme will list any important changes.
  *
  * @package Vendidero/OrderWithdrawalButton/Templates
- * @version 2.3.0
+ * @version 2.3.1
  */
 if ( ! defined( 'ABSPATH' ) ) {
 	exit; // Exit if accessed directly.
@@ -173,19 +173,11 @@ $show_submit             = true;
 			$default_email_address = $order ? $order->get_billing_email() : ( WC()->customer ? WC()->customer->get_billing_email() : '' );
 			$default_first_name    = $order ? $order->get_billing_first_name() : ( WC()->customer ? WC()->customer->get_billing_first_name() : '' );
 			$default_last_name     = $order ? $order->get_billing_last_name() : ( WC()->customer ? WC()->customer->get_billing_last_name() : '' );
-			$orders                = is_user_logged_in() ? eu_owb_get_orders_for_user() : array();
+			$orders                = ( $order || ! is_user_logged_in() ) ? eu_owb_get_orders_for_guest( $order ) : eu_owb_get_orders_for_user();
 			$default_order_id      = 0;
 
 			if ( $order ) {
 				$default_order_id = $order->get_id();
-				$orders           = eu_owb_find_orders(
-					array(
-						'email'       => $order->get_billing_email(),
-						'customer_id' => $order->get_customer_id(),
-						'return'      => 'objects',
-						'status'      => eu_owb_get_withdrawable_order_statuses(),
-					)
-				);
 
 				if ( $request = eu_owb_get_withdrawal_request( $order ) ) {
 					$default_email_address = $request->get_email();
@@ -202,6 +194,13 @@ $show_submit             = true;
 
 				foreach ( $orders as $t_order ) {
 					$orders_select[ absint( $t_order->get_id() ) ] = sprintf( _x( 'Order %1$s', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ), $t_order->get_order_number() );
+				}
+
+				/**
+				 * Force existence of the requested order.
+				 */
+				if ( $order && ! array_key_exists( $order->get_id(), $orders_select ) ) {
+					$orders_select[ absint( $order->get_id() ) ] = sprintf( _x( 'Order %1$s', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ), $order->get_order_number() );
 				}
 				?>
 				<?php

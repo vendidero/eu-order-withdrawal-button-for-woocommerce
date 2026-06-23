@@ -46,6 +46,7 @@ class WithdrawalOrderCPT extends \Abstract_WC_Order_Data_Store_CPT implements \W
 		'_customer_ip_address',
 		'_customer_user_agent',
 		'_billing_email',
+		'_contract_identification',
 	);
 
 	/**

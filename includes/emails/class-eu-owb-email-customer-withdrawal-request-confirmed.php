@@ -99,7 +99,7 @@ if ( ! class_exists( 'EU_OWB_Email_Customer_Withdrawal_Request_Confirmed', false
 				$this->setup_email_locale();
 
 				$this->placeholders['{order_number}']    = $this->withdrawal->get_order_number();
-				$this->placeholders['{order_date}']      = wc_format_datetime( $this->object->get_date_created() );
+				$this->placeholders['{order_date}']      = wc_format_datetime( $this->withdrawal->get_date_created() );
 				$this->placeholders['{withdrawal_date}'] = wc_format_datetime( $this->withdrawal->get_date_received() );
 			}
 

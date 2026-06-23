@@ -906,7 +906,7 @@ function eu_owb_create_order_withdrawal_request( $email, $order = false, $items 
 			$original_status = $withdrawal->get_original_status();
 
 			if ( $withdrawal->get_id() > 0 ) {
-				$withdrawal->add_order_note( sprintf( _x( 'Customer requested an update to the original withdrawal: %1$s', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ), wp_kses_post( (string) $withdrawal ) ) );
+				$withdrawal->add_order_note( sprintf( _x( 'Customer requested an update to the original withdrawal: %1$s', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ), wp_kses_post( '<pre><code>' . (string) $withdrawal ) . '</code></pre>' ) );
 			}
 		}
 	}
@@ -1199,9 +1199,44 @@ function eu_owb_get_withdrawable_orders_for_user( $user_id = 0 ) {
 	return eu_owb_get_withdrawable_orders( $orders );
 }
 
+function eu_owb_get_orders_for_guest( $order, $as_id = false ) {
+	if ( ! $order ) {
+		return array();
+	}
+
+	if ( ! is_a( $order, 'WC_Order' ) ) {
+		$order = wc_get_order( $order );
+	}
+
+	if ( ! $order ) {
+		return array();
+	}
+
+	$email            = $order->get_billing_email();
+	$customer_id      = $order->get_customer_id();
+	$min_date_created = apply_filters( 'eu_owb_woocommerce_guest_orders_min_date_created', strtotime( '-12 months' ) );
+
+	if ( $request = eu_owb_get_withdrawal_request( $order ) ) {
+		$email = $request->get_email();
+	}
+
+	$orders = eu_owb_find_orders(
+		array(
+			'email'        => $email,
+			'customer_id'  => $customer_id,
+			'return'       => $as_id ? 'ids' : 'objects',
+			'date_created' => '>' . $min_date_created,
+			'limit'        => -1,
+			'status'       => eu_owb_get_withdrawable_order_statuses(),
+		)
+	);
+
+	return apply_filters( 'eu_owb_woocommerce_get_orders_for_guest', $orders, $order, $as_id );
+}
+
 function eu_owb_get_orders_for_user( $user_id = 0, $as_id = false ) {
 	$user_id          = 0 === $user_id ? get_current_user_id() : $user_id;
-	$min_date_created = strtotime( '-12 months' );
+	$min_date_created = apply_filters( 'eu_owb_woocommerce_user_orders_min_date_created', strtotime( '-12 months' ) );
 
 	if ( empty( $user_id ) ) {
 		return array();
@@ -1337,11 +1372,13 @@ function eu_owb_find_orders_by_custom_order_number( $args ) {
 	$args = wp_parse_args(
 		$args,
 		array(
-			'order_id'    => '',
-			'email'       => '',
-			'customer_id' => '',
-			'return'      => 'ids',
-			'status'      => array_keys( eu_owb_get_persisted_order_statuses() ),
+			'order_id'     => '',
+			'email'        => '',
+			'customer_id'  => '',
+			'date_created' => '',
+			'return'       => 'ids',
+			'limit'        => 10,
+			'status'       => array_keys( eu_owb_get_persisted_order_statuses() ),
 		)
 	);
 
@@ -1366,10 +1403,14 @@ function eu_owb_find_orders_by_custom_order_number( $args ) {
 
 	$query_args_custom = array(
 		'order_number' => $args['order_id'],
-		'limit'        => 10,
+		'limit'        => $args['limit'],
 		'return'       => $args['return'],
 		'status'       => $args['status'],
 	);
+
+	if ( ! empty( $args['date_created'] ) ) {
+		$query_args_custom['date_created'] = $args['date_created'];
+	}
 
 	/**
 	 * HPOS supports meta query
@@ -1421,11 +1462,13 @@ function eu_owb_find_orders( $args ) {
 	$args = wp_parse_args(
 		$args,
 		array(
-			'order_id'    => '',
-			'email'       => '',
-			'customer_id' => '',
-			'return'      => 'ids',
-			'status'      => array_keys( eu_owb_get_persisted_order_statuses() ),
+			'order_id'     => '',
+			'email'        => '',
+			'customer_id'  => '',
+			'limit'        => 10,
+			'date_created' => '',
+			'return'       => 'ids',
+			'status'       => array_keys( eu_owb_get_persisted_order_statuses() ),
 		)
 	);
 
@@ -1447,11 +1490,15 @@ function eu_owb_find_orders( $args ) {
 	 * withdrawal requests for orders that have already been processed (confirmed, rejected).
 	 */
 	$main_query_args = array(
-		'limit'   => 10,
+		'limit'   => $args['limit'],
 		'return'  => $args['return'],
 		'orderby' => 'date_created',
 		'status'  => $args['status'],
 	);
+
+	if ( ! empty( $args['date_created'] ) ) {
+		$main_query_args['date_created'] = $args['date_created'];
+	}
 
 	if ( empty( $order_id_parsed ) && empty( $args['email'] ) && empty( $args['customer_id'] ) ) {
 		return $orders;
@@ -1481,15 +1528,19 @@ function eu_owb_find_orders( $args ) {
 	}
 
 	/**
-	 * If no order id has been set, query orders where billing email differs from customer email
+	 * If no order id has been set (or none were found yet), query orders where billing email differs from customer email
 	 */
 	if ( ( empty( $orders ) || empty( $args['order_id'] ) ) && ! empty( $args['customer_id'] ) ) {
 		$user_query_args = array(
-			'limit'       => 10,
+			'limit'       => $args['limit'],
 			'return'      => $args['return'],
 			'customer_id' => $args['customer_id'],
 			'status'      => $args['status'],
 		);
+
+		if ( ! empty( $args['date_created'] ) ) {
+			$user_query_args['date_created'] = $args['date_created'];
+		}
 
 		$orders = array_unique( array_merge( $orders, wc_get_orders( apply_filters( 'eu_owb_woocommerce_find_order_customer_query_args', $user_query_args ) ) ) );
 
@@ -1511,9 +1562,11 @@ function eu_owb_find_orders( $args ) {
 	if ( empty( $orders ) && ! empty( $args['order_id'] ) && ( ! empty( $args['email'] ) || ! empty( $args['customer_id'] ) ) ) {
 		return eu_owb_find_orders(
 			array(
-				'order_id' => $args['order_id'],
-				'return'   => $args['return'],
-				'status'   => $args['status'],
+				'order_id'     => $args['order_id'],
+				'return'       => $args['return'],
+				'status'       => $args['status'],
+				'limit'        => $args['limit'],
+				'date_created' => $args['date_created'],
 			)
 		);
 	}

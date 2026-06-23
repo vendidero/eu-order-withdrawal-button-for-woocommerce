@@ -35,6 +35,7 @@ class WithdrawalOrder extends OrdersTableDataStore {
 		'_email',
 		'_order_number',
 		'_verification_code',
+		'_contract_identification',
 	);
 
 	/**

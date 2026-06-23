@@ -11,7 +11,7 @@
  * the readme will list any important changes.
  *
  * @package Vendidero/OrderWithdrawalButton/Templates
- * @version 2.1.2
+ * @version 2.3.1
  */
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
@@ -31,7 +31,7 @@ if ( ! empty( $withdrawal_name ) ) {
 	echo esc_html_x( 'Hi,', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ) . "\n\n";
 }
 
-echo sprintf( esc_html_x( 'We’ve wanted to let you know that your withdrawal request has been reviewed and is hereby confirmed.', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ), esc_html( $order->get_order_number() ) ) . "\n\n";
+echo esc_html_x( 'We’ve wanted to let you know that your withdrawal request has been reviewed and is hereby confirmed.', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ) . "\n\n";
 
 /**
  * Show user-defined additional content - this is set in each email's settings.

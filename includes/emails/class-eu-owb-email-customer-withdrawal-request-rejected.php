@@ -49,10 +49,11 @@ if ( ! class_exists( 'EU_OWB_Email_Customer_Withdrawal_Request_Rejected', false 
 			$this->template_base  = \Vendidero\OrderWithdrawalButton\Package::get_path() . '/templates/';
 
 			$this->placeholders = array(
-				'{site_title}'      => $this->get_blogname(),
-				'{order_number}'    => '',
-				'{order_date}'      => '',
-				'{withdrawal_date}' => '',
+				'{site_title}'              => $this->get_blogname(),
+				'{order_number}'            => '',
+				'{contract_identification}' => '',
+				'{order_date}'              => '',
+				'{withdrawal_date}'         => '',
 			);
 
 			// Call parent constructor.
@@ -99,9 +100,10 @@ if ( ! class_exists( 'EU_OWB_Email_Customer_Withdrawal_Request_Rejected', false 
 
 				$this->setup_email_locale();
 
-				$this->placeholders['{order_number}']    = $this->object->get_order_number();
-				$this->placeholders['{order_date}']      = wc_format_datetime( $this->object->get_date_created() );
-				$this->placeholders['{withdrawal_date}'] = wc_format_datetime( $this->withdrawal->get_date_received() );
+				$this->placeholders['{order_number}']            = $this->withdrawal->get_order_number();
+				$this->placeholders['{contract_identification}'] = $this->withdrawal->get_contract_identification();
+				$this->placeholders['{order_date}']              = wc_format_datetime( $this->withdrawal->get_date_created() );
+				$this->placeholders['{withdrawal_date}']         = wc_format_datetime( $this->withdrawal->get_date_received() );
 			}
 
 			if ( $this->is_enabled() && $this->get_recipient() ) {

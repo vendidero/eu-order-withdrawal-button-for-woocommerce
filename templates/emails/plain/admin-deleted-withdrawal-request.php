@@ -11,7 +11,7 @@
  * the readme will list any important changes.
  *
  * @package Vendidero/OrderWithdrawalButton/Templates
- * @version 2.0.0
+ * @version 2.3.1
  */
 defined( 'ABSPATH' ) || exit;
 
@@ -21,7 +21,7 @@ echo "=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=\n";
 echo esc_html( wp_strip_all_tags( $email_heading ) );
 echo "\n=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=\n\n";
 
-echo sprintf( esc_html_x( 'A withdrawal request to order #%s has been deleted:', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ), esc_html( $order->get_order_number() ) ) . "\n\n";
+echo esc_html_x( 'A withdrawal request has been deleted:', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ) . "\n\n";
 
 do_action( 'eu_owb_woocommerce_withdrawal_request_details', $order, $sent_to_admin, $plain_text, $email, $withdrawal );
 

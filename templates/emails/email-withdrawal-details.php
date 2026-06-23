@@ -11,7 +11,7 @@
  * the readme will list any important changes.
  *
  * @package Vendidero/OrderWithdrawalButton/Templates
- * @version 2.3.0
+ * @version 2.3.1
  */
 
 defined( 'ABSPATH' ) || exit;
@@ -27,9 +27,9 @@ $order_quantity_text_align  = $email_improvements_enabled ? 'right' : 'left';
 $verified_notice            = $withdrawal->has_verified_email() ? esc_html_x( 'verified', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ) : esc_html_x( 'unknown', 'owb', 'eu-order-withdrawal-button-for-woocommerce' );
 
 if ( $sent_to_admin ) {
-	$formatted_order_number = '<a class="link" href="' . esc_url( $order->get_edit_order_url() ) . '">' . esc_html( $order->get_order_number() ) . '</a>';
+	$formatted_contract_identification = '<a class="link" href="' . esc_url( $withdrawal->get_edit_order_url() ) . '">' . esc_html( $withdrawal->get_contract_identification() ) . '</a>';
 } else {
-	$formatted_order_number = esc_html( $order->get_order_number() );
+	$formatted_contract_identification = esc_html( $withdrawal->get_contract_identification() );
 }
 
 do_action( 'eu_owb_woocommerce_withdrawal_before_order_table', $order, $sent_to_admin, $plain_text, $email, $withdrawal ); ?>
@@ -39,7 +39,7 @@ do_action( 'eu_owb_woocommerce_withdrawal_before_order_table', $order, $sent_to_
 </h2>
 
 <ul style="margin-bottom: <?php echo $email_improvements_enabled ? '24px' : '40px'; ?>;">
-	<li><strong><?php echo wp_kses_post( _x( 'Contract Identification', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ) ); ?>:</strong> <span class="text"><?php echo wp_kses_post( $formatted_order_number ); ?></span></li>
+	<li><strong><?php echo wp_kses_post( _x( 'Contract Identification', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ) ); ?>:</strong> <span class="text"><?php echo wp_kses_post( $formatted_contract_identification ); ?></span></li>
 	<li><strong><?php echo wp_kses_post( _x( 'Received on', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ) ); ?>:</strong> <span class="text"><?php echo esc_html( sprintf( _x( '%1$s at %2$s', 'owb-datetime', 'eu-order-withdrawal-button-for-woocommerce' ), wc_format_datetime( $withdrawal->get_date_received() ), wc_format_datetime( $withdrawal->get_date_received(), wc_time_format() ) ) ); ?></span></li>
 	<li><strong><?php echo wp_kses_post( _x( 'Email', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ) ); ?>:</strong> <span class="text"><?php echo wp_kses_post( $withdrawal->get_email() ) . ( $sent_to_admin ? ' (' . esc_html( $verified_notice ) . ')' : '' ); ?></span></li>
 	<li><strong><?php echo wp_kses_post( _x( 'Full name', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ) ); ?>:</strong> <span class="text"><?php echo wp_kses_post( $withdrawal->get_formatted_full_name( true, 'email' ) ); ?></span></li>

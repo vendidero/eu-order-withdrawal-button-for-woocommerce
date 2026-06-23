@@ -795,14 +795,18 @@ class WithdrawalTable extends \WP_List_Table {
 	 * @return void
 	 */
 	public function render_order_number_column( $order ) {
+		if ( 'trash' !== $order->get_status() ) {
+			echo '<a href="#" class="order-preview order-preview-trigger" data-order-id="' . absint( $order->get_id() ) . '" title="' . esc_attr( _x( 'Preview', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ) ) . '">' . esc_html( _x( 'Preview', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ) ) . '</a>';
+		}
+
 		$buyer = $order->get_formatted_full_name( $order->get_email() ) . Admin::get_withdrawal_email_verified_html( $order );
 
-		echo $order->has_status( 'requested' ) ? '<a class="order-preview eu-owb-order-toggle-order-search" href="#"></a>' : '';
+		echo $order->has_status( 'requested' ) ? '<a class="order-preview order-search eu-owb-order-toggle-order-search" href="#"></a>' : '';
 
 		if ( $order->has_parent() ) {
 			echo '<a href="' . esc_url( OrderUtil::get_order_admin_edit_url( $order->get_parent_id() ) ) . '" class="order-view"><strong>#' . esc_attr( $order->get_order_number() ) . ' ' . wp_kses_post( $buyer ) . '</strong></a>';
 		} else {
-			echo '<strong>' . esc_attr( $order->get_order_number( 'admin' ) ? ( $order->get_order_number() . ' ' ) : '' ) . wp_kses_post( $buyer ) . '</strong>';
+			echo '<strong>' . esc_attr( $order->get_contract_identification() ? ( $order->get_contract_identification() . ' ' ) : '' ) . wp_kses_post( $buyer ) . '</strong>';
 		}
 		?>
 		<?php if ( $order->has_status( 'requested' ) ) : ?>
@@ -978,6 +982,202 @@ class WithdrawalTable extends \WP_List_Table {
 	}
 
 	public function enqueue_scripts() {
+		wp_enqueue_script( 'eu-owb-woocommerce-admin-orders' );
+		?>
+		<script type="text/template" id="tmpl-wc-modal-view-order">
+			<div class="wc-backbone-modal wc-order-preview eu-owb-withdrawal-preview">
+				<div class="wc-backbone-modal-content">
+					<section class="wc-backbone-modal-main" role="main">
+						<header class="wc-backbone-modal-header">
+							<mark class="order-status status-{{ data.status }}"><span>{{ data.status_name }}</span></mark>
+							<?php /* translators: %s: withdrawal ID */ ?>
+							<h1><?php echo esc_html( sprintf( _x( 'Withdrawal %s', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ), '{{ data.data.id }}' ) ); ?></h1>
+							<button class="modal-close modal-close-link dashicons dashicons-no-alt">
+								<span class="screen-reader-text"><?php echo esc_html_x( 'Close modal panel', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ); ?></span>
+							</button>
+						</header>
+						<article>
+							<?php do_action( 'eu_owb_woocommerce_admin_withdrawal_preview_start' ); // phpcs:ignore WooCommerce.Commenting.CommentHooks.MissingHookComment ?>
+
+							<div class="wc-order-preview-addresses">
+								<div class="wc-order-preview-address">
+									<h2><?php echo esc_html_x( 'Contact Details', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ); ?></h2>
+
+									<# if ( data.formatted_full_name ) { #>
+									<strong><?php echo esc_html_x( 'Name', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ); ?></strong>
+									{{ data.formatted_full_name }} {{{ data.verified_html }}}
+									<# } #>
+
+									<# if ( data.data.email ) { #>
+									<strong><?php echo esc_html_x( 'Email', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ); ?></strong>
+									<a href="mailto:{{ data.data.email }}">{{ data.data.email }}</a>
+									<# } #>
+								</div>
+								<div class="wc-order-preview-address">
+									<h2><?php echo esc_html_x( 'Withdrawal Details', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ); ?></h2>
+
+									<# if ( data.data.contract_identification ) { #>
+									<strong><?php echo esc_html_x( 'Contract Identification', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ); ?></strong>
+									{{ data.data.contract_identification }}
+									<# } #>
+
+									<# if ( data.data.verification_code ) { #>
+									<strong><?php echo esc_html_x( 'Verification code', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ); ?></strong>
+									<code>{{ data.data.verification_code }}</code>
+									<# } #>
+
+									<# if ( data.data.customer_note ) { #>
+									<strong><?php echo esc_html_x( 'Additional Information', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ); ?></strong>
+									{{ data.data.customer_note }}
+									<# } #>
+								</div>
+							</div>
+
+							{{{ data.item_html }}}
+
+							<div class="eu-owb-withdrawal-preview-logs">
+								<h2><?php echo esc_html_x( 'Logs', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ); ?></h2>
+
+								{{{ data.comment_html }}}
+							</div>
+
+							<?php do_action( 'eu_owb_woocommerce_admin_withdrawal_preview_end' ); // phpcs:ignore WooCommerce.Commenting.CommentHooks.MissingHookComment ?>
+						</article>
+					</section>
+				</div>
+			</div>
+			<div class="wc-backbone-modal-backdrop modal-close"></div>
+		</script>
+		<?php
+	}
+
+	/**
+	 * Get items to display in the preview as HTML.
+	 *
+	 * @param  WithdrawalOrder $order Order object.
+	 * @return string
+	 */
+	public static function get_preview_comment_html( $order ) {
+		$args = array( 'order_id' => $order->get_id() );
+
+		$notes     = wc_get_order_notes( $args );
+		$note_html = '';
+
+		if ( ! empty( $notes ) ) {
+			$note_html .= '<ul class="order_notes withdrawal-notes">';
+
+			foreach ( $notes as $note ) {
+				$content = wp_kses_post( $note->content );
+				$content = eu_owb_wptexturize_withdrawal_additional_information( $content );
+
+				$note_html .= '<li class="note system-note" rel="' . absint( $note->id ) . '"><div class="note_content">' . wpautop( $content ) . '</div><p class="meta"> <abbr class="exact-date" title="' . esc_attr( $note->date_created->date( 'Y-m-d H:i:s' ) ) . '">' . esc_html( sprintf( _x( '%1$s at %2$s', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ), $note->date_created->date_i18n( wc_date_format() ), $note->date_created->date_i18n( wc_time_format() ) ) ) . '</abbr></p></li>';
+			}
+
+			$note_html .= '</ul>';
+		}
+
+		return $note_html;
+	}
+
+	/**
+	 * Get items to display in the preview as HTML.
+	 *
+	 * @param  WithdrawalOrder $order Order object.
+	 * @return string
+	 */
+	public static function get_preview_item_html( $order ) {
+		$hidden_order_itemmeta = apply_filters(
+			'woocommerce_hidden_order_itemmeta',
+			array(
+				'_qty',
+				'_tax_class',
+				'_product_id',
+				'_variation_id',
+				'_line_subtotal',
+				'_line_subtotal_tax',
+				'_line_total',
+				'_line_tax',
+				'method_id',
+				'cost',
+				'_reduced_stock',
+				'_restock_refunded_items',
+			)
+		);
+
+		$items   = apply_filters( 'eu_owb_woocommerce_admin_withdrawal_preview_items', $order->get_items(), $order );
+		$columns = apply_filters(
+			'eu_owb_woocommerce_admin_withdrawal_preview_item_columns',
+			array(
+				'product'  => _x( 'Product', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ),
+				'quantity' => _x( 'Quantity', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ),
+			),
+			$order
+		);
+
+		$html = '
+		<div class="wc-order-preview-table-wrapper">
+			<table cellspacing="0" class="wc-order-preview-table">
+				<thead>
+					<tr>';
+
+		foreach ( $columns as $column => $label ) {
+			$html .= '<th class="wc-order-preview-table__column--' . esc_attr( $column ) . '">' . esc_html( $label ) . '</th>';
+		}
+
+		$html .= '
+					</tr>
+				</thead>
+				<tbody>';
+
+		foreach ( $items as $item_id => $item ) {
+			$product_object = is_callable( array( $item, 'get_product' ) ) ? $item->get_product() : null;
+			$row_class      = apply_filters( 'woocommerce_admin_html_order_preview_item_class', '', $item, $order );
+
+			$html .= '<tr class="wc-order-preview-table__item wc-order-preview-table__item--' . esc_attr( $item_id ) . ( $row_class ? ' ' . esc_attr( $row_class ) : '' ) . '">';
+
+			foreach ( $columns as $column => $label ) {
+				$html .= '<td class="wc-order-preview-table__column--' . esc_attr( $column ) . '">';
+				switch ( $column ) {
+					case 'product':
+						$html .= wp_kses_post( $item->get_name() );
+
+						if ( $product_object ) {
+							$html .= '<div class="wc-order-item-sku">' . esc_html( $product_object->get_sku() ) . '</div>';
+						}
+
+						$meta_data = $item->get_all_formatted_meta_data( '' );
+
+						if ( $meta_data ) {
+							$html .= '<table cellspacing="0" class="wc-order-item-meta">';
+
+							foreach ( $meta_data as $meta_id => $meta ) {
+								if ( in_array( $meta->key, $hidden_order_itemmeta, true ) ) {
+									continue;
+								}
+								$html .= '<tr><th>' . wp_kses_post( $meta->display_key ) . ':</th><td>' . wp_kses_post( force_balance_tags( $meta->display_value ) ) . '</td></tr>';
+							}
+							$html .= '</table>';
+						}
+						break;
+					case 'quantity':
+						$html .= esc_html( $item->get_quantity() );
+						break;
+					default:
+						$html .= apply_filters( 'eu_owb_woocommerce_admin_withdrawal_preview_item_column_' . sanitize_key( $column ), '', $item, $item_id, $order );
+						break;
+				}
+				$html .= '</td>';
+			}
+
+			$html .= '</tr>';
+		}
+
+		$html .= '
+				</tbody>
+			</table>
+		</div>';
+
+		return $html;
 	}
 
 	/**

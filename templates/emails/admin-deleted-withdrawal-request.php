@@ -11,7 +11,7 @@
  * the readme will list any important changes.
  *
  * @package Vendidero/OrderWithdrawalButton/Templates
- * @version 2.0.0
+ * @version 2.3.1
  */
 defined( 'ABSPATH' ) || exit;
 
@@ -23,7 +23,7 @@ $email_improvements_enabled = \Vendidero\OrderWithdrawalButton\Package::has_emai
 do_action( 'woocommerce_email_header', $email_heading, $email ); ?>
 
 <?php echo $email_improvements_enabled ? '<div class="email-introduction">' : ''; ?>
-	<p><?php printf( esc_html_x( 'A withdrawal request to order #%s has been deleted:', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ), esc_html( $order->get_order_number() ) ); ?></p>
+	<p><?php echo esc_html_x( 'A withdrawal request has been deleted:', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ); ?></p>
 <?php echo $email_improvements_enabled ? '</div>' : ''; ?>
 
 <?php

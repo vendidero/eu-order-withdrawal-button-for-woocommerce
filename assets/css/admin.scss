@@ -225,9 +225,62 @@ a.wc-action-button.wc-action-button-delete:after {
   }
 }
 
+.eu-owb-withdrawal-preview {
+  .eu-owb-withdrawal-preview-logs {
+    overflow: hidden;
+    width: 100%;
+    float: left;
+    padding: 1.5em;
+    box-sizing: border-box;
+    padding-top: 0;
+
+    ul.withdrawal-notes {
+      .note_content {
+        background: #d7cad2;
+        padding: 10px;
+        position: relative;
+
+        p {
+          margin: 0;
+          padding: 0;
+          word-wrap: break-word;
+        }
+
+        pre {
+          overflow-x: auto;
+        }
+
+        &::after {
+          content: "";
+          display: block;
+          position: absolute;
+          bottom: -10px;
+          left: 20px;
+          width: 0;
+          height: 0;
+          border-width: 10px 10px 0 0;
+          border-style: solid;
+          border-color: #d7cad2 transparent;
+        }
+      }
+    }
+  }
+}
+
 .woocommerce_page_wc-orders,
 .post-type-shop_order {
   table.wp-list-table {
+    a.order-search {
+      float: right;
+      width: 16px;
+      padding: 20px 4px 4px 4px;
+      height: 0;
+      overflow: hidden;
+      position: relative;
+      border: 2px solid transparent;
+      border-radius: 4px;
+    }
+
     .eu-owb-order-inline-edit-wrapper {
       box-sizing: border-box;
       display: flex;

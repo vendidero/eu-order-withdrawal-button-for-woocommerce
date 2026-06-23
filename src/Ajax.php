@@ -2,6 +2,9 @@
 
 namespace Vendidero\OrderWithdrawalButton;
 
+use Vendidero\OrderWithdrawalButton\Admin\Admin;
+use Vendidero\OrderWithdrawalButton\Admin\WithdrawalTable;
+
 defined( 'ABSPATH' ) || exit;
 
 /**
@@ -29,6 +32,7 @@ class Ajax {
 			'delete_withdrawal',
 			'json_search_orders',
 			'save_withdrawal_order',
+			'get_withdrawal_details',
 		);
 
 		$ajax_nopriv_events = array(
@@ -47,6 +51,41 @@ class Ajax {
 		}
 
 		add_action( 'admin_post_eu_owb_woocommerce_delete_withdrawal', array( __CLASS__, 'delete_withdrawal' ) );
+	}
+
+	public static function get_withdrawal_details() {
+		check_ajax_referer( 'eu_owb_woocommerce_get_withdrawal_details', 'security' );
+
+		if ( ! current_user_can( 'edit_shop_orders' ) ) {
+			wp_die( -1 );
+		}
+
+		$order_id = absint( isset( $_GET['order_id'] ) ? wp_unslash( $_GET['order_id'] ) : 0 );
+
+		if ( ! empty( $order_id ) ) {
+			$order = eu_owb_get_withdrawal( $order_id );
+
+			if ( ! $order ) {
+				wp_die();
+			}
+
+			$order_details = apply_filters(
+				'eu_owb_woocommerce_withdrawal_preview_get_order_details',
+				array(
+					'data'                => $order->get_data(),
+					'order_number'        => $order->get_order_number(),
+					'status'              => $order->get_status(),
+					'status_name'         => Package::get_withdrawal_status_name( $order->get_status() ),
+					'item_html'           => WithdrawalTable::get_preview_item_html( $order ),
+					'comment_html'        => WithdrawalTable::get_preview_comment_html( $order ),
+					'formatted_full_name' => $order->get_formatted_full_name(),
+					'verified_html'       => Admin::get_withdrawal_email_verified_html( $order ),
+				),
+				$order
+			);
+
+			wp_send_json_success( $order_details );
+		}
 	}
 
 	public static function save_withdrawal_order() {
@@ -133,7 +172,7 @@ class Ajax {
 					continue;
 				}
 
-				if ( ! eu_owb_order_is_withdrawable( $order ) ) {
+				if ( ! eu_owb_order_is_withdrawable( $order ) || eu_owb_get_withdrawal_request( $order ) ) {
 					continue;
 				}
 
@@ -427,7 +466,7 @@ class Ajax {
 			}
 
 			if ( Package::get_form_field_required( 'order_number' ) && empty( $order_number ) ) {
-				$error->add( 'missing_field_order_number', _x( 'Please enter your order number.', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ), array( 'field' => 'order_number' ) );
+				$error->add( 'missing_field_order_number', _x( 'Please provide information to identify the contract.', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ), array( 'field' => 'order_number' ) );
 			}
 
 			if ( eu_owb_enable_additional_information_field() && Package::get_form_field_required( 'additional_information' ) && empty( $additional_information ) ) {
@@ -438,7 +477,8 @@ class Ajax {
 				self::send_json_error( $error, 400 );
 			}
 
-			$meta['order_number'] = $order_number;
+			$meta['contract_identification'] = $order_number;
+			$meta['order_number']            = $order_number;
 
 			if ( ! empty( $additional_information ) ) {
 				$meta['additional_information'] = $additional_information;

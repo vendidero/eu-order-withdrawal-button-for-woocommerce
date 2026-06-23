@@ -404,7 +404,7 @@ class Admin {
 								foreach ( $withdrawals as $withdrawal ) :
 									$item_list = array();
 									foreach ( $withdrawal->get_items() as $item ) {
-										$item_list[] = sprintf( _x( '%1$s x %2$s', 'item-quantity', 'eu-order-withdrawal-button-for-woocommerce' ), wp_kses_post( $item->get_name() ), esc_html( $item->get_quantity() ) );
+										$item_list[] = sprintf( _x( '%1$s x %2$s', 'owb-item-quantity', 'eu-order-withdrawal-button-for-woocommerce' ), wp_kses_post( $item->get_name() ), esc_html( $item->get_quantity() ) );
 									}
 									?>
 									<li class="withdrawal withdrawal-<?php echo esc_attr( Package::maybe_remove_withdrawal_order_status_prefix( $withdrawal->get_status() ) ); ?>">
@@ -453,6 +453,16 @@ class Admin {
 				'ajax_url'            => admin_url( 'admin-ajax.php' ),
 				'search_orders_nonce' => wp_create_nonce( 'eu_owb_woocommerce_search_orders' ),
 				'save_order_nonce'    => wp_create_nonce( 'eu_owb_woocommerce_save_order' ),
+			)
+		);
+
+		wp_register_script( 'eu-owb-woocommerce-admin-orders', Package::get_assets_url( 'static/admin-orders.js' ), array( 'jquery', 'wc-backbone-modal' ), Package::get_version(), array( 'in_footer' => false ) );
+		wp_localize_script(
+			'eu-owb-woocommerce-admin-orders',
+			'eu_owb_woocommerce_admin_orders_params',
+			array(
+				'ajax_url'      => admin_url( 'admin-ajax.php' ),
+				'preview_nonce' => wp_create_nonce( 'eu_owb_woocommerce_get_withdrawal_details' ),
 			)
 		);
 

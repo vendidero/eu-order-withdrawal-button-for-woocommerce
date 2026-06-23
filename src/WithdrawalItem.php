@@ -42,6 +42,10 @@ class WithdrawalItem extends \WC_Order_Item {
 		$this->set_variation_id( $item->get_variation_id() );
 	}
 
+	public function get_withdrawal() {
+		return eu_owb_get_withdrawal( $this->get_order_id() );
+	}
+
 	public function calculate_taxes( $calculate_tax_for = array() ) {
 		return true;
 	}
@@ -142,5 +146,31 @@ class WithdrawalItem extends \WC_Order_Item {
 	 */
 	public function set_quantity( $value ) {
 		$this->set_prop( 'quantity', wc_stock_amount( $value ) );
+	}
+
+	public function delete( $force_delete = false ) {
+		if ( ( $withdrawal = $this->get_withdrawal() ) ) {
+			$withdrawal->add_order_note( sprintf( _x( 'Deleted item %1$s.', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ), ( $this->get_name() . ' x ' . $this->get_quantity() ) ) );
+		}
+
+		return parent::delete( $force_delete );
+	}
+
+	public function save() {
+		$changes       = $this->get_changes();
+		$is_new        = $this->get_id() <= 0;
+		$original_data = $this->data;
+
+		parent::save();
+
+		if ( ( $withdrawal = $this->get_withdrawal() ) ) {
+			if ( ! $is_new && array_key_exists( 'quantity', $changes ) ) {
+				$withdrawal->add_order_note( sprintf( _x( 'Updated item from %1$s to %2$s.', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ), ( $this->get_name() . ' x ' . $original_data['quantity'] ), ( $this->get_name() . ' x ' . $this->get_quantity() ) ) );
+			} elseif ( $is_new ) {
+				$withdrawal->add_order_note( sprintf( _x( 'Added item %s.', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ), ( $this->get_name() . ' x ' . $this->get_quantity() ) ) );
+			}
+		}
+
+		return $this->get_id();
 	}
 }
