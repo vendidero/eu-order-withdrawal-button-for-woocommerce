@@ -318,7 +318,7 @@ $show_submit             = true;
 							apply_filters(
 								'eu_owb_woocommerce_form_field_delete_original_request_args',
 								array(
-									'label'         => sprintf( _x( 'Please delete my original withdrawal request to order %1$s.', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ), esc_html( $order->get_order_number() ) ),
+									'label'         => sprintf( _x( 'Please delete my original withdrawal request to order #%1$s.', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ), esc_html( $order->get_order_number() ) ),
 									'class'         => array( 'form-row-full', 'hidden', 'order-withdrawal-delete-original-request-checkbox' ),
 									'id'            => 'delete-original-request',
 									'default'       => $delete_original_request,
