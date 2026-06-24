@@ -13,10 +13,11 @@ class WithdrawalItem extends \WC_Order_Item {
 	 * @var array
 	 */
 	protected $extra_data = array(
-		'parent_id'    => 0,
-		'quantity'     => 1,
-		'product_id'   => 0,
-		'variation_id' => 0,
+		'parent_id'         => 0,
+		'quantity'          => 1,
+		'refunded_quantity' => 0,
+		'product_id'        => 0,
+		'variation_id'      => 0,
 	);
 
 	protected $parent = null;
@@ -146,6 +147,33 @@ class WithdrawalItem extends \WC_Order_Item {
 	 */
 	public function set_quantity( $value ) {
 		$this->set_prop( 'quantity', wc_stock_amount( $value ) );
+	}
+
+	/**
+	 * Get quantity.
+	 *
+	 * @param  string $context What the value is for. Valid values are 'view' and 'edit'.
+	 * @return int
+	 */
+	public function get_refunded_quantity( $context = 'view' ) {
+		return $this->get_prop( 'refunded_quantity', $context );
+	}
+
+	/**
+	 * Set quantity.
+	 *
+	 * @param int $value Quantity.
+	 */
+	public function set_refunded_quantity( $value ) {
+		$this->set_prop( 'refunded_quantity', wc_stock_amount( $value ) );
+	}
+
+	public function get_quantity_left_to_refund() {
+		return max( 0, ( $this->get_quantity() - $this->get_refunded_quantity() ) );
+	}
+
+	public function is_fully_refunded() {
+		return $this->get_quantity_left_to_refund() <= 0;
 	}
 
 	public function delete( $force_delete = false ) {

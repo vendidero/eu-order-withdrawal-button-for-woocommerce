@@ -2,7 +2,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: EU Order Withdrawal Button for WooCommerce\n"
-"POT-Creation-Date: 2026-06-23 14:58+0200\n"
+"POT-Creation-Date: 2026-06-24 13:03+0200\n"
 "PO-Revision-Date: 2021-05-10 09:48+0200\n"
 "Last-Translator: \n"
 "Language-Team: \n"
@@ -247,49 +247,49 @@ msgctxt "owb"
 msgid "Withdraw from contract"
 msgstr ""
 
-#: includes/eu-owb-core-functions.php:909
+#: includes/eu-owb-core-functions.php:914
 #, php-format
 msgctxt "owb"
 msgid "Customer requested an update to the original withdrawal: %1$s"
 msgstr ""
 
-#: includes/eu-owb-core-functions.php:954
+#: includes/eu-owb-core-functions.php:959
 msgctxt "owb"
 msgid "Error while saving the withdrawal request."
 msgstr ""
 
-#: includes/eu-owb-core-functions.php:964
+#: includes/eu-owb-core-functions.php:969
 #, php-format
 msgctxt "owb"
 msgid "A new %1$s has been submitted to this order"
 msgstr ""
 
-#: includes/eu-owb-core-functions.php:964 src/Admin/Admin.php:668
+#: includes/eu-owb-core-functions.php:969 src/Admin/Admin.php:668
 msgctxt "owb"
 msgid "Partial withdrawal request"
 msgstr ""
 
-#: includes/eu-owb-core-functions.php:964 src/Admin/Admin.php:668
+#: includes/eu-owb-core-functions.php:969 src/Admin/Admin.php:668
 msgctxt "owb"
 msgid "Full withdrawal request"
 msgstr ""
 
-#: includes/eu-owb-core-functions.php:1016
+#: includes/eu-owb-core-functions.php:1021
 msgctxt "owb"
 msgid "A withdrawal request has been confirmed."
 msgstr ""
 
-#: includes/eu-owb-core-functions.php:1072
+#: includes/eu-owb-core-functions.php:1077
 msgctxt "owb"
 msgid "A withdrawal request has been deleted."
 msgstr ""
 
-#: includes/eu-owb-core-functions.php:1075
+#: includes/eu-owb-core-functions.php:1080
 msgctxt "owb"
 msgid "A withdrawal request has been deleted by the customer."
 msgstr ""
 
-#: includes/eu-owb-core-functions.php:1121
+#: includes/eu-owb-core-functions.php:1126
 #, php-format
 msgctxt "owb"
 msgid "A withdrawal request has been rejected: %1$s"
@@ -345,7 +345,7 @@ msgid "Reason"
 msgstr ""
 
 #: src/Admin/Admin.php:378 src/Admin/Admin.php:744 src/Admin/Privacy.php:168
-#: src/Package.php:472 src/Package.php:607 src/Settings.php:21
+#: src/Package.php:584 src/Package.php:719 src/Settings.php:21
 msgctxt "owb"
 msgid "Withdrawals"
 msgstr ""
@@ -684,7 +684,7 @@ msgctxt "owb"
 msgid "Search for an order"
 msgstr ""
 
-#: src/Admin/WithdrawalTable.php:818 src/Ajax.php:180
+#: src/Admin/WithdrawalTable.php:818 src/Ajax.php:182
 #: src/WithdrawalOrder.php:115
 #, php-format
 msgctxt "owb"
@@ -784,63 +784,63 @@ msgctxt "owb"
 msgid "Quantity"
 msgstr ""
 
-#: src/Ajax.php:287
+#: src/Ajax.php:283
 msgctxt "owb"
 msgid "Sorry, no permission to view that order."
 msgstr ""
 
-#: src/Ajax.php:376 src/Ajax.php:626
+#: src/Ajax.php:372 src/Ajax.php:622
 msgctxt "owb"
 msgid ""
 "Thank you. We've received your withdrawal request. You'll receive a "
 "confirmation of your request by email."
 msgstr ""
 
-#: src/Ajax.php:383
+#: src/Ajax.php:379
 msgctxt "owb"
 msgid ""
 "Please wait a little longer before submitting. We’re running a quick "
 "security check."
 msgstr ""
 
-#: src/Ajax.php:388
+#: src/Ajax.php:384
 msgctxt "owb"
 msgid "Please enter your first name."
 msgstr ""
 
-#: src/Ajax.php:392
+#: src/Ajax.php:388
 msgctxt "owb"
 msgid "Please enter your last name."
 msgstr ""
 
-#: src/Ajax.php:396
+#: src/Ajax.php:392
 msgctxt "owb"
 msgid "Please check your email address."
 msgstr ""
 
-#: src/Ajax.php:423
+#: src/Ajax.php:419
 msgctxt "owb"
 msgid "Please select one or more items to withdraw."
 msgstr ""
 
-#: src/Ajax.php:436
+#: src/Ajax.php:432
 msgctxt "owb"
 msgid ""
 "One ore more of the item(s) you've selected cannot be withdrawn. Please "
 "try again."
 msgstr ""
 
-#: src/Ajax.php:469
+#: src/Ajax.php:465
 msgctxt "owb"
 msgid "Please provide information to identify the contract."
 msgstr ""
 
-#: src/Ajax.php:473
+#: src/Ajax.php:469
 msgctxt "owb"
 msgid "Please enter additional information."
 msgstr ""
 
-#: src/Ajax.php:499 src/Ajax.php:515 src/Ajax.php:553
+#: src/Ajax.php:495 src/Ajax.php:511 src/Ajax.php:549
 #, php-format
 msgctxt "owb"
 msgid ""
@@ -849,7 +849,7 @@ msgid ""
 "href=\"%s\">contact support</a> for help."
 msgstr ""
 
-#: src/Ajax.php:558
+#: src/Ajax.php:554
 #, php-format
 msgctxt "owb"
 msgid ""
@@ -857,13 +857,13 @@ msgid ""
 "a> for help."
 msgstr ""
 
-#: src/Ajax.php:583
+#: src/Ajax.php:579
 msgctxt "owb"
 msgid ""
 "You've already submitted an identical withdrawal request for this order."
 msgstr ""
 
-#: src/Ajax.php:608
+#: src/Ajax.php:604
 #, php-format
 msgctxt "owb"
 msgid ""
@@ -872,7 +872,7 @@ msgid ""
 msgstr ""
 
 #: src/DataStores/WithdrawalOrder.php:142
-#: src/DataStores/WithdrawalOrderCPT.php:95 src/WithdrawalOrder.php:983
+#: src/DataStores/WithdrawalOrderCPT.php:95 src/WithdrawalOrder.php:999
 #, php-format
 msgctxt "owb"
 msgid "Withdrawal status changed from %1$s to %2$s."
@@ -902,47 +902,47 @@ msgctxt "owb-page-title"
 msgid "Withdraw from contract"
 msgstr ""
 
-#: src/Package.php:369
+#: src/Package.php:481
 msgctxt "owb-email-preview"
 msgid "John"
 msgstr ""
 
-#: src/Package.php:370
+#: src/Package.php:482
 msgctxt "owb-email-preview"
 msgid "Doe"
 msgstr ""
 
-#: src/Package.php:373
+#: src/Package.php:485
 msgctxt "owb-email-preview"
 msgid "An example rejection reason."
 msgstr ""
 
-#: src/Package.php:401 src/Package.php:826
+#: src/Package.php:513 src/Package.php:938
 msgctxt "owb"
 msgid "Requested"
 msgstr ""
 
-#: src/Package.php:402 src/Package.php:838
+#: src/Package.php:514 src/Package.php:950
 msgctxt "owb"
 msgid "Confirmed"
 msgstr ""
 
-#: src/Package.php:403 src/Package.php:850
+#: src/Package.php:515 src/Package.php:962
 msgctxt "owb"
 msgid "Rejected"
 msgstr ""
 
-#: src/Package.php:606
+#: src/Package.php:718
 msgctxt "owb"
 msgid "Settings"
 msgstr ""
 
-#: src/Package.php:802 src/Package.php:864
+#: src/Package.php:914 src/Package.php:976
 msgctxt "owb"
 msgid "Pending withdrawal"
 msgstr ""
 
-#: src/Package.php:807
+#: src/Package.php:919
 #, php-format
 msgctxt "owb"
 msgid "Pending withdrawal (%s)"
@@ -950,12 +950,12 @@ msgid_plural "Pending withdrawals (%s)"
 msgstr[0] ""
 msgstr[1] ""
 
-#: src/Package.php:814 src/Package.php:865
+#: src/Package.php:926 src/Package.php:977
 msgctxt "owb"
 msgid "Withdrawn"
 msgstr ""
 
-#: src/Package.php:819
+#: src/Package.php:931
 #, php-format
 msgctxt "owb"
 msgid "Withdrawn (%s)"
@@ -963,7 +963,7 @@ msgid_plural "Withdrawn (%s)"
 msgstr[0] ""
 msgstr[1] ""
 
-#: src/Package.php:831
+#: src/Package.php:943
 #, php-format
 msgctxt "owb"
 msgid "Requested (%s)"
@@ -971,7 +971,7 @@ msgid_plural "Requested (%s)"
 msgstr[0] ""
 msgstr[1] ""
 
-#: src/Package.php:843
+#: src/Package.php:955
 #, php-format
 msgctxt "owb"
 msgid "Confirmed (%s)"
@@ -979,7 +979,7 @@ msgid_plural "Confirmed (%s)"
 msgstr[0] ""
 msgstr[1] ""
 
-#: src/Package.php:855
+#: src/Package.php:967
 #, php-format
 msgctxt "owb"
 msgid "Rejected (%s)"
@@ -1147,19 +1147,19 @@ msgctxt "owb"
 msgid "Downloadable Product"
 msgstr ""
 
-#: src/WithdrawalItem.php:153
+#: src/WithdrawalItem.php:181
 #, php-format
 msgctxt "owb"
 msgid "Deleted item %1$s."
 msgstr ""
 
-#: src/WithdrawalItem.php:168
+#: src/WithdrawalItem.php:196
 #, php-format
 msgctxt "owb"
 msgid "Updated item from %1$s to %2$s."
 msgstr ""
 
-#: src/WithdrawalItem.php:170
+#: src/WithdrawalItem.php:198
 #, php-format
 msgctxt "owb"
 msgid "Added item %s."
@@ -1201,14 +1201,14 @@ msgctxt "owb"
 msgid "WooCommerce"
 msgstr ""
 
-#: src/WithdrawalOrder.php:954
+#: src/WithdrawalOrder.php:970
 #, php-format
 msgctxt "owb"
 msgid "Parent order changed from %1$s to %2$s."
 msgstr ""
 
 #. translators: %s: new order status
-#: src/WithdrawalOrder.php:986
+#: src/WithdrawalOrder.php:1002
 #, php-format
 msgctxt "owb"
 msgid "Withdrawal status set to %s."
@@ -1418,7 +1418,7 @@ msgstr ""
 #: templates/forms/order-withdrawal-request.php:203
 #, php-format
 msgctxt "owb"
-msgid "Order %1$s"
+msgid "Order #%1$s"
 msgstr ""
 
 #: templates/forms/order-withdrawal-request.php:212

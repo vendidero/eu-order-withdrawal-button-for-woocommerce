@@ -193,14 +193,14 @@ $show_submit             = true;
 				);
 
 				foreach ( $orders as $t_order ) {
-					$orders_select[ absint( $t_order->get_id() ) ] = sprintf( _x( 'Order %1$s', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ), $t_order->get_order_number() );
+					$orders_select[ absint( $t_order->get_id() ) ] = sprintf( _x( 'Order #%1$s', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ), $t_order->get_order_number() );
 				}
 
 				/**
 				 * Force existence of the requested order.
 				 */
 				if ( $order && ! array_key_exists( $order->get_id(), $orders_select ) ) {
-					$orders_select[ absint( $order->get_id() ) ] = sprintf( _x( 'Order %1$s', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ), $order->get_order_number() );
+					$orders_select[ absint( $order->get_id() ) ] = sprintf( _x( 'Order #%1$s', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ), $order->get_order_number() );
 				}
 				?>
 				<?php

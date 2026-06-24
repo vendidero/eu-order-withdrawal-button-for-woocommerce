@@ -357,7 +357,6 @@ function eu_owb_get_order_item_quantity_left_to_withdraw( $item, $order = null, 
 		$refunded_qty *= -1;
 	}
 
-	$total_qty      = $total_qty - $refunded_qty;
 	$withdrawal_ids = array();
 
 	foreach ( $withdrawals as $withdrawal ) {
@@ -376,10 +375,16 @@ function eu_owb_get_order_item_quantity_left_to_withdraw( $item, $order = null, 
 			foreach ( $withdrawal->get_items() as $withdrawal_item ) {
 				if ( $withdrawal_item->get_parent_id() === $item->get_id() ) {
 					$total_qty -= $withdrawal_item->get_quantity();
+
+					if ( $withdrawal_item->get_refunded_quantity() > 0 ) {
+						$refunded_qty = max( 0, $refunded_qty - $withdrawal_item->get_refunded_quantity() );
+					}
 				}
 			}
 		}
 	}
+
+	$total_qty -= $refunded_qty;
 
 	if ( $total_qty <= 0 ) {
 		$total_qty = 0;

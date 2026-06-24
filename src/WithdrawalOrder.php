@@ -925,6 +925,22 @@ class WithdrawalOrder extends \WC_Abstract_Order implements \ArrayAccess {
 		return parent::get_items( $types );
 	}
 
+	public function get_refundable_items() {
+		$items = array();
+
+		foreach ( $this->get_items() as $item ) {
+			if ( $item->get_parent_id() > 0 && $item->get_quantity_left_to_refund() > 0 ) {
+				$items[ $item->get_parent_id() ] = array(
+					'quantity' => $item->get_quantity_left_to_refund(),
+					'item_id'  => $item->get_id(),
+					'item'     => $item,
+				);
+			}
+		}
+
+		return $items;
+	}
+
 	protected function get_items_key( $item ) {
 		$key = '';
 
