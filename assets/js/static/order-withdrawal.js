@@ -265,7 +265,13 @@ window.eu_owb.order_withdrawal = window.eu_owb.order_withdrawal || {};
                 try {
                     var response = JSON.parse( xhr.responseText );
                 } catch( $e ) {
-                    response = {};
+                    response = {
+                        'data': [
+                            {
+                                'message': self.params.i18n_default_error,
+                            }
+                        ]
+                    };
                 }
 
                 $.each( response.data, function( i, error ) {

@@ -659,14 +659,6 @@ class WithdrawalOrder extends \WC_Abstract_Order implements \ArrayAccess {
 		$this->update_items( $items );
 	}
 
-	public function calculate_taxes( $args = array() ) {}
-
-	public function calculate_shipping() {}
-
-	public function calculate_totals( $and_taxes = true ) {}
-
-	public function recalculate_coupons() {}
-
 	/**
 	 * Return the order statuses without wc- internal prefix.
 	 *
@@ -1037,6 +1029,88 @@ class WithdrawalOrder extends \WC_Abstract_Order implements \ArrayAccess {
 			)
 		);
 	}
+
+	public function get_shipping_methods() {
+		return array();
+	}
+
+	public function get_shipping_method() {
+		return '';
+	}
+
+	public function get_taxes() {
+		return array();
+	}
+
+	public function get_fees() {
+		return array();
+	}
+
+	public function get_coupons() {
+		return array();
+	}
+
+	public function apply_coupon( $raw_coupon ) {
+		return false;
+	}
+
+	public function remove_coupon( $code ) {
+		return false;
+	}
+
+	public function add_product( $product, $qty = 1, $args = array() ) {
+		return 0;
+	}
+
+	public function hold_applied_coupons( $billing_email ) {}
+
+	public function add_payment_token( $token ) {
+		return false;
+	}
+
+	public function get_payment_tokens() {
+		return array();
+	}
+
+	public function get_items_tax_classes() {
+		return array();
+	}
+
+	public function calculate_taxes( $args = array() ) {}
+
+	public function calculate_shipping() {}
+
+	public function calculate_totals( $and_taxes = true ) {}
+
+	public function get_taxable_location( $args = array() ) {
+		return array();
+	}
+
+	public function get_subtotal_to_display( $compound = false, $tax_display = '' ) {
+		return wc_price( 0.0 );
+	}
+
+	public function get_shipping_to_display( $tax_display = '' ) {
+		return wc_price( 0.0 );
+	}
+
+	public function get_discount_to_display( $tax_display = '' ) {
+		return wc_price( 0.0 );
+	}
+
+	public function get_order_item_totals( $tax_display = '' ) {
+		return array();
+	}
+
+	public function needs_shipping() {
+		return false;
+	}
+
+	public function has_free_item() {
+		return false;
+	}
+
+	public function recalculate_coupons() {}
 
 	#[\ReturnTypeWillChange]
 	public function offsetExists( $offset ) {

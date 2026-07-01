@@ -664,7 +664,8 @@ class Package {
 			'eu-owb-woocommerce' => array(
 				'name' => 'eu_owb_woocommerce_order_withdrawal_params',
 				'data' => array(
-					'wc_ajax_url' => \WC_AJAX::get_endpoint( '%%endpoint%%' ),
+					'wc_ajax_url'        => \WC_AJAX::get_endpoint( '%%endpoint%%' ),
+					'i18n_default_error' => sprintf( _x( 'Sorry, we\'ve detected a technical issue while submitting your withdrawal. Please try again - if the issue persists, please <a href="%s">contact support</a> for help.', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ), esc_url( eu_owb_get_contact_support_url() ) ),
 				),
 			),
 		);

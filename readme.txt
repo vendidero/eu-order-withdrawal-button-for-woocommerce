@@ -85,7 +85,6 @@ Bug reports may be filed via our [GitHub repository](https://github.com/vendider
 * Improvement: Link withdrawal items with refunds to prevent reducing withdrawable quantity twice
 * Fix: Edge-case where edit withdrawal guest links where missing the current order
 
-
 = 2.3.0 =
 * New: WPML compatibility
 * New: Privacy additions (export, erase, policy suggestions)

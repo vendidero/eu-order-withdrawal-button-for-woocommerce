@@ -347,7 +347,7 @@ $show_submit             = true;
 		<?php endif; ?>
 	</div>
 
-	<?php do_action( 'eu_owb_woocommerce_return_request_form_before_submit', $order ); ?>
+	<?php do_action( 'eu_owb_woocommerce_return_request_form_before_submit', $order, $show_submit ); ?>
 
 	<?php if ( $show_submit ) : ?>
 		<<?php echo esc_html( \Vendidero\OrderWithdrawalButton\Package::force_div_form_field() ? 'div' : 'p' ); ?> class="form-row form-row-submit" id="order-withdrawal-request-submit">
