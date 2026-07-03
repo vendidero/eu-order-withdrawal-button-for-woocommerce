@@ -162,6 +162,15 @@ class Settings {
 			),
 
 			array(
+				'title'    => _x( 'My account page', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ),
+				'desc'     => _x( 'On the my account page, add a link to create a new withdrawal request for the order in case available.', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ),
+				'id'       => 'eu_owb_woocommerce_myaccount_withdrawal_link',
+				'type'     => Package::is_integration() ? 'gzd_toggle' : 'checkbox',
+				'default'  => 'no',
+				'autoload' => false,
+			),
+
+			array(
 				'type' => 'sectionend',
 				'id'   => 'owb_options',
 			),

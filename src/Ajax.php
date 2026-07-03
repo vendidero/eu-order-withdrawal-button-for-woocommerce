@@ -348,6 +348,7 @@ class Ajax {
 		$email_repeat     = ! empty( $_POST['email_repeat'] ) ? wp_unslash( $_POST['email_repeat'] ) : ''; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
 		$first_name       = ! empty( $_POST['first_name'] ) ? wc_clean( wp_unslash( $_POST['first_name'] ) ) : '';
 		$last_name        = ! empty( $_POST['last_name'] ) ? wc_clean( wp_unslash( $_POST['last_name'] ) ) : '';
+		$is_guest_request = ! is_user_logged_in() && empty( $order_key );
 
 		if ( -1 !== Package::get_form_field_maxlength( 'first_name' ) ) {
 			$first_name = Package::substr( $first_name, 0, Package::get_form_field_maxlength( 'first_name' ) );
@@ -364,12 +365,13 @@ class Ajax {
 		}
 
 		$is_direct_post = ! isset( $_SERVER['REQUEST_METHOD'] ) || 'POST' !== $_SERVER['REQUEST_METHOD'];
+		$is_spam        = apply_filters( 'eu_owb_woocommerce_withdrawal_request_is_spam', ( ! empty( $email_repeat ) || $is_direct_post ), $is_guest_request );
 
 		/**
 		 * Show a success message as spam protection in case honeypot field or non-direct post was submitted.
 		 */
-		if ( ! empty( $email_repeat ) || $is_direct_post ) {
-			self::send_json_error( _x( 'Thank you. We\'ve received your withdrawal request. You\'ll receive a confirmation of your request by email.', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ) );
+		if ( $is_spam ) {
+			wp_send_json_success( _x( 'Thank you. We\'ve received your withdrawal request. You\'ll receive a confirmation of your request by email.', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ) );
 		}
 
 		$duration = apply_filters( 'eu_owb_woocommerce_form_submit_spam_min_duration_in_secs', 2 );
@@ -392,7 +394,7 @@ class Ajax {
 			$error->add( 'missing_field_email', _x( 'Please check your email address.', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ), array( 'field' => 'email' ) );
 		}
 
-		if ( is_user_logged_in() || ! empty( $order_key ) ) {
+		if ( ! $is_guest_request ) {
 			$order_id          = ! empty( $_POST['order_id'] ) ? absint( wp_unslash( $_POST['order_id'] ) ) : false;
 			$original_order_id = ! empty( $_POST['original_order_id'] ) ? absint( wp_unslash( $_POST['original_order_id'] ) ) : false;
 			$select_items      = isset( $_POST['manually_select_items'] ) ? true : false;

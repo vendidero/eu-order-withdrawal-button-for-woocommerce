@@ -4,8 +4,8 @@ Tags: woocommerce, withdrawal, cancellation, EU, compliance
 Requires at least: 5.4
 Tested up to: 7.0
 WC requires at least: 3.9
-WC tested up to: 10.8
-Stable tag: 2.3.1
+WC tested up to: 10.9
+Stable tag: 2.3.2
 Requires PHP: 7.4
 License: GPLv3
 License URI: http://www.gnu.org/licenses/gpl-3.0.html
@@ -80,6 +80,10 @@ Bug reports may be filed via our [GitHub repository](https://github.com/vendider
 3. Manage withdrawals
 
 == Changelog ==
+= 2.3.2 =
+* Improvement: Override additional abstract order method to prevent compatibility issues
+* Improvement: Add a generic error message in case no valid XHR response is received
+
 = 2.3.1 =
 * New: Withdrawal preview modal
 * Improvement: Link withdrawal items with refunds to prevent reducing withdrawable quantity twice

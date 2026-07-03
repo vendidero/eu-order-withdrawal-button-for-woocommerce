@@ -58,10 +58,11 @@ function eu_owb_get_withdrawable_order_statuses( $prefixed = true ) {
 
 /**
  * @param WC_Order|integer $order
+ * @param bool $include_requested Whether to include open requests or not
  *
  * @return boolean
  */
-function eu_owb_order_is_withdrawable( $order ) {
+function eu_owb_order_is_withdrawable( $order, $include_requested = false ) {
 	if ( ! is_a( $order, 'WC_Order' ) ) {
 		$order = wc_get_order( $order );
 	}
@@ -71,12 +72,17 @@ function eu_owb_order_is_withdrawable( $order ) {
 	}
 
 	$is_withdrawable = true;
+	$item_args       = array();
+
+	if ( $include_requested ) {
+		$item_args['include_requested'] = true;
+	}
 
 	if ( ! $order->has_status( eu_owb_get_withdrawable_order_statuses( false ) ) ) {
 		$is_withdrawable = false;
 	}
 
-	$items = eu_owb_get_withdrawable_order_items( $order );
+	$items = eu_owb_get_withdrawable_order_items( $order, $item_args );
 
 	if ( empty( $items ) ) {
 		$is_withdrawable = false;
@@ -152,7 +158,7 @@ function eu_owb_order_supports_partial_withdrawal( $order, $include_non_withdraw
 	$supports         = false;
 
 	if ( \Vendidero\OrderWithdrawalButton\Package::enable_partial_withdrawals() ) {
-		if ( count( $cancelable_items ) > 1 || array_values( $cancelable_items )[0]['quantity'] > 1 ) {
+		if ( ! empty( $cancelable_items ) && ( count( $cancelable_items ) > 1 || array_values( $cancelable_items )[0]['quantity'] > 1 ) ) {
 			$supports = true;
 		}
 	}

@@ -16,7 +16,7 @@ class Package {
 	 *
 	 * @var string
 	 */
-	const VERSION = '2.3.1';
+	const VERSION = '2.3.2';
 
 	protected static $localized_scripts = array();
 
@@ -88,6 +88,80 @@ class Package {
 
 		add_action( 'woocommerce_order_refunded', array( __CLASS__, 'maybe_link_refund' ), 10, 2 );
 		add_filter( 'woocommerce_pre_delete_order_refund', array( __CLASS__, 'maybe_remove_refund' ), 5, 3 );
+
+		add_action( 'woocommerce_order_details_before_order_table', array( __CLASS__, 'register_withdrawal_item_labels' ) );
+		add_filter( 'woocommerce_my_account_my_orders_actions', array( __CLASS__, 'register_withdrawal_link' ), 10, 2 );
+	}
+
+	/**
+	 * @param array $actions
+	 * @param \WC_Order $order
+	 *
+	 * @return array
+	 */
+	public static function register_withdrawal_link( $actions, $order ) {
+		if ( 'yes' === self::get_setting( 'myaccount_withdrawal_link', 'no' ) ) {
+			if ( eu_owb_order_is_withdrawable( $order, true ) ) {
+				$actions['withdrawal_link'] = array(
+					'url'  => eu_owb_get_edit_withdrawal_url( $order ),
+					'name' => _x( 'Withdraw', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ),
+				);
+			}
+		}
+
+		return $actions;
+	}
+
+	/**
+	 * @param \WC_Order $order
+	 *
+	 * @return void
+	 */
+	public static function register_withdrawal_item_labels( $order ) {
+		if ( ! apply_filters( 'eu_owb_woocommerce_add_order_item_withdrawal_labels', true ) ) {
+			return;
+		}
+
+		$item_map = array();
+
+		foreach ( eu_owb_get_order_withdrawals( $order ) as $withdrawal ) {
+			foreach ( $withdrawal->get_items() as $item ) {
+				if ( ! isset( $item_map[ $item->get_parent_id() ] ) ) {
+					$item_map[ $item->get_parent_id() ] = array(
+						'requested' => 0,
+						'rejected'  => 0,
+						'confirmed' => 0,
+					);
+				}
+
+				$status = self::maybe_remove_withdrawal_order_status_prefix( $withdrawal->get_status() );
+
+				if ( array_key_exists( $status, $item_map[ $item->get_parent_id() ] ) ) {
+					$item_map[ $item->get_parent_id() ][ $status ] += $item->get_quantity();
+				}
+			}
+		}
+
+		add_filter(
+			'woocommerce_order_item_quantity_html',
+			function ( $qty_html, $item ) use ( $item_map ) {
+				if ( array_key_exists( $item->get_id(), $item_map ) ) {
+					if ( $item_map[ $item->get_id() ]['confirmed'] > 0 ) {
+						$withdrawal_label = $item_map[ $item->get_id() ]['confirmed'] >= $item->get_quantity() ? esc_html_x( 'Withdrawn', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ) : sprintf( _x( 'Withdrawn %1$sx', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ), $item_map[ $item->get_id() ]['confirmed'] );
+						$qty_html        .= ' <span class="withdrawal-quantity">' . wp_kses_post( $withdrawal_label ) . '</span>';
+					}
+
+					if ( $item_map[ $item->get_id() ]['requested'] > 0 ) {
+						$withdrawal_label = $item_map[ $item->get_id() ]['requested'] >= $item->get_quantity() ? esc_html_x( 'Withdrawal requested', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ) : sprintf( _x( 'Withdrawal requested %1$sx', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ), $item_map[ $item->get_id() ]['requested'] );
+						$qty_html        .= ' <span class="withdrawal-quantity withdrawal-requested">' . wp_kses_post( $withdrawal_label ) . '</span>';
+					}
+				}
+
+				return $qty_html;
+			},
+			10,
+			2
+		);
 	}
 
 	/**
@@ -901,10 +975,15 @@ class Package {
 	public static function register_scripts() {
 		self::register_script( 'eu-owb-woocommerce', 'static/order-withdrawal.js', array( 'jquery', 'woocommerce' ) );
 		wp_register_style( 'eu-owb-woocommerce-form', self::get_assets_url( 'static/form-styles.css' ), array(), self::get_version() );
+		wp_register_style( 'eu-owb-woocommerce-orders', self::get_assets_url( 'static/orders-styles.css' ), array(), self::get_version() );
 
 		if ( self::page_has_withdrawal_form() ) {
 			wp_enqueue_style( 'eu-owb-woocommerce-form' );
 			wp_enqueue_script( 'eu-owb-woocommerce' );
+		}
+
+		if ( function_exists( 'is_wc_endpoint_url' ) && is_wc_endpoint_url( 'view-order' ) ) {
+			wp_enqueue_style( 'eu-owb-woocommerce-orders' );
 		}
 	}
 
