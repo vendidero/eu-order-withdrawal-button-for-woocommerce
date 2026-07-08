@@ -21,7 +21,7 @@ EU Order Withdrawal Button for WooCommerce adds compliance with the [EU directiv
 * *Send confirmation emails* - Automatically confirm receipt of the withdrawal by email including all required information.
 * *Partial withdrawals* - Optionally allow customers to submit partial withdrawal requests.
 * *GDPR ready* - Comes with privacy policy proposal, support for personal data export and erasure.
-* *WPML compatibility* - Comes with built-in compatibility for multilingual shops using WPML
+* *WPML compatibility* - Comes with built-in compatibility for multilingual shops using WPML.
 
 = Initial setup and withdrawal button placement =
 
@@ -81,8 +81,11 @@ Bug reports may be filed via our [GitHub repository](https://github.com/vendider
 
 == Changelog ==
 = 2.3.2 =
+* New: Introduce setting to place a withdrawal link (in case available) within customer account order actions
 * Improvement: Override additional abstract order method to prevent compatibility issues
 * Improvement: Add a generic error message in case no valid XHR response is received
+* Improvement: Show withdrawn/requested labels for order items within view order endpoint
+* Improvement: Introduce eu_order_woocommerce_withdrawal_email_show_verification_code filter which allows to hide the verification code from emails
 
 = 2.3.1 =
 * New: Withdrawal preview modal
