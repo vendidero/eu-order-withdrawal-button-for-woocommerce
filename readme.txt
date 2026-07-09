@@ -66,12 +66,13 @@ You may furthermore use the shortcode [eu_owb_order_withdrawal_button] to place 
 Make sure that you've published your withdrawal page (which by default is created as a draft during installation). The embedded button does only show on shop-related pages.
 
 = Need help? =
-
 You may ask your questions within our free [WordPress support forum](https://wordpress.org/support/plugin/eu-order-withdrawal-button-for-woocommerce).
 
 = Want to file a bug or improve the plugin? =
-
 Bug reports may be filed via our [GitHub repository](https://github.com/vendidero/eu-order-withdrawal-button-for-woocommerce).
+
+= Where do I report security bugs found in this plugin? =
+Please report security bugs found in the source code of the EU Order Withdrawal Button for WooCommerce plugin through the [Patchstack Vulnerability Disclosure Program](https://patchstack.com/database/vdp/155b9a37-427c-4050-aaeb-0bd9ca1f74ab). The Patchstack team will assist you with verification, CVE assignment, and notify the developers of this plugin.
 
 == Screenshots ==
 
