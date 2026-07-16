@@ -11,7 +11,7 @@
  * the readme will list any important changes.
  *
  * @package Vendidero/OrderWithdrawalButton/Templates
- * @version 2.1.0
+ * @version 2.3.3
  */
 defined( 'ABSPATH' ) || exit;
 
@@ -128,7 +128,7 @@ foreach ( $items as $item_id => $item_data ) :
 			} else {
 
 				// Show title/image etc.
-				if ( $show_imag && $image ) {
+				if ( $show_image && $image ) {
 					/**
 					 * Email Order Item Thumbnail hook.
 					 *
