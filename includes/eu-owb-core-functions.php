@@ -166,13 +166,45 @@ function eu_owb_order_supports_partial_withdrawal( $order, $include_non_withdraw
 	return apply_filters( 'eu_owb_woocommerce_order_supports_partial_withdrawal', $supports, $order );
 }
 
-function eu_owb_get_edit_withdrawal_url( $order ) {
+/**
+ * @param WC_Order|\Vendidero\OrderWithdrawalButton\WithdrawalOrder $order
+ *
+ * @return string
+ */
+function eu_owb_get_edit_withdrawal_url( $withdrawal, $force_order_select = true ) {
 	$url = eu_owb_get_withdrawal_page_permalink();
+
+	if ( is_a( $withdrawal, 'WC_Order' ) ) {
+		$withdrawal = eu_owb_get_last_order_withdrawal( $withdrawal );
+
+		if ( ! $withdrawal ) {
+			return '';
+		}
+	}
 
 	if ( ! empty( $url ) ) {
 		$url = add_query_arg(
 			array(
-				'order_id'              => $order->get_id(),
+				'order_id'              => $withdrawal->get_id(),
+				'order_key'             => $withdrawal->get_order_key(),
+				'manually_select_items' => 'yes',
+				'force_order_select'    => wc_bool_to_string( $force_order_select ),
+			),
+			$url
+		);
+	}
+
+	return apply_filters( 'eu_owb_woocommerce_edit_withdrawal_url', $url, $withdrawal );
+}
+
+function eu_owb_get_new_withdrawal_url( $order ) {
+	$url      = eu_owb_get_withdrawal_page_permalink();
+	$order_id = $order->get_id();
+
+	if ( ! empty( $url ) ) {
+		$url = add_query_arg(
+			array(
+				'order_id'              => $order_id,
 				'order_key'             => $order->get_order_key(),
 				'manually_select_items' => 'yes',
 			),
@@ -180,7 +212,7 @@ function eu_owb_get_edit_withdrawal_url( $order ) {
 		);
 	}
 
-	return apply_filters( 'eu_owb_woocommerce_edit_withdrawal_url', $url, $order );
+	return apply_filters( 'eu_owb_woocommerce_new_withdrawal_url', $url, $order );
 }
 
 function eu_owb_get_withdrawal_page_permalink() {
@@ -290,6 +322,14 @@ function eu_owb_get_withdrawable_order_items( $order, $args = array() ) {
 
 	if ( ! $order ) {
 		return null;
+	}
+
+	if ( is_a( $order, '\Vendidero\OrderWithdrawalButton\WithdrawalOrder' ) ) {
+		$order = $order->get_parent();
+
+		if ( ! $order ) {
+			return null;
+		}
 	}
 
 	$items_to_withdraw = array();
@@ -490,10 +530,21 @@ function eu_owb_order_withdrawal_request_has_multiple_orders( $request ) {
 /**
  * @param \Vendidero\OrderWithdrawalButton\WithdrawalOrder $request
  *
+ * @return bool
+ */
+function eu_owb_order_withdrawal_request_needs_order_select( $request ) {
+	$has_orders = ! $request->has_parent() && $request->get_meta( '_email_has_orders' ) ? wc_string_to_bool( $request->get_meta( '_email_has_orders' ) ) : false;
+
+	return $has_orders;
+}
+
+/**
+ * @param \Vendidero\OrderWithdrawalButton\WithdrawalOrder $request
+ *
  * @return int
  */
 function eu_owb_order_withdrawal_request_get_original_order_id( $request ) {
-	$order_id = $request->get_meta( '_original_request_order_id' ) ? absint( $request->get_meta( '_original_request_order_id' ) ) : 0;
+	$order_id = $request->get_meta( '_original_request_order_id' ) ? $request->get_meta( '_original_request_order_id' ) : '';
 
 	return $order_id;
 }
@@ -911,8 +962,14 @@ function eu_owb_create_order_withdrawal_request( $email, $order = false, $items 
 	$withdrawal         = new \Vendidero\OrderWithdrawalButton\WithdrawalOrder();
 	$original_status    = '';
 
-	if ( $order ) {
-		if ( $existing_withdrawal = eu_owb_get_withdrawal_request( $order ) ) {
+	if ( $order || ! empty( $meta['original_request_id'] ) ) {
+		if ( $order ) {
+			$existing_withdrawal = eu_owb_get_withdrawal_request( $order );
+		} else {
+			$existing_withdrawal = eu_owb_get_withdrawal_request( $meta['original_request_id'] );
+		}
+
+		if ( $existing_withdrawal ) {
 			$withdrawal      = $existing_withdrawal;
 			$original_status = $withdrawal->get_original_status();
 
@@ -1210,6 +1267,32 @@ function eu_owb_get_withdrawable_orders_for_user( $user_id = 0 ) {
 	return eu_owb_get_withdrawable_orders( $orders );
 }
 
+function eu_owb_get_orders_by_email( $email_address, $customer_id = 0, $as_id = false ) {
+	$min_date_created = apply_filters( 'eu_owb_woocommerce_guest_orders_min_date_created', strtotime( '-12 months' ) );
+	$limit            = apply_filters( 'eu_owb_woocommerce_guest_orders_limit', 5 );
+
+	$orders = eu_owb_find_orders(
+		array(
+			'email'        => $email_address,
+			'customer_id'  => $customer_id,
+			'return'       => $as_id ? 'ids' : 'objects',
+			'date_created' => '>' . $min_date_created,
+			'limit'        => $limit,
+			'status'       => eu_owb_get_withdrawable_order_statuses(),
+		)
+	);
+
+	return apply_filters( 'eu_owb_woocommerce_get_orders_by_email', $orders, $email_address, $customer_id, $as_id );
+}
+
+/**
+ * Returns available orders to withdraw for guests.
+ *
+ * @param $order
+ * @param $as_id
+ *
+ * @return WC_Order[]
+ */
 function eu_owb_get_orders_for_guest( $order, $as_id = false ) {
 	if ( ! $order ) {
 		return array();
@@ -1223,24 +1306,46 @@ function eu_owb_get_orders_for_guest( $order, $as_id = false ) {
 		return array();
 	}
 
-	$email            = $order->get_billing_email();
-	$customer_id      = $order->get_customer_id();
-	$min_date_created = apply_filters( 'eu_owb_woocommerce_guest_orders_min_date_created', strtotime( '-12 months' ) );
-
-	if ( $request = eu_owb_get_withdrawal_request( $order ) ) {
-		$email = $request->get_email();
+	if ( ! is_a( $order, '\Vendidero\OrderWithdrawalButton\WithdrawalOrder' ) ) {
+		return array(
+			$as_id ? $order->get_id() : $order,
+		);
 	}
 
-	$orders = eu_owb_find_orders(
-		array(
-			'email'        => $email,
-			'customer_id'  => $customer_id,
-			'return'       => $as_id ? 'ids' : 'objects',
-			'date_created' => '>' . $min_date_created,
-			'limit'        => -1,
-			'status'       => eu_owb_get_withdrawable_order_statuses(),
-		)
-	);
+	$customer_id     = $order->get_customer_id();
+	$email           = $order->get_email();
+	$parent_order_id = $order->get_parent_id();
+	$orders          = eu_owb_get_orders_by_email( $email, $customer_id, $as_id );
+
+	/**
+	 * Make sure to always include the main/original order of the withdrawal
+	 * in case the email address matches.
+	 */
+	if ( $main_order = $order->get_parent() ) {
+		if ( eu_owb_custom_email_matches_order_email( $main_order, $email ) ) {
+			$includes_main_order = false;
+
+			foreach ( $orders as $queried_order ) {
+				if ( $as_id && $parent_order_id === (int) $queried_order ) {
+					$includes_main_order = true;
+					break;
+				} elseif ( $parent_order_id === $queried_order->get_id() ) {
+					$includes_main_order = true;
+					break;
+				}
+			}
+
+			if ( ! $includes_main_order ) {
+				if ( $as_id ) {
+					$orders[] = $main_order->get_id();
+				} else {
+					$orders[] = $main_order;
+				}
+
+				rsort( $orders );
+			}
+		}
+	}
 
 	return apply_filters( 'eu_owb_woocommerce_get_orders_for_guest', $orders, $order, $as_id );
 }

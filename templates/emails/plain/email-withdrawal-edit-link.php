@@ -11,23 +11,28 @@
  * the readme will list any important changes.
  *
  * @package Vendidero/OrderWithdrawalButton/Templates
- * @version 2.0.0
+ * @version 2.4.0
  */
 defined( 'ABSPATH' ) || exit;
 
-$has_multiple = eu_owb_order_withdrawal_request_has_multiple_orders( $withdrawal );
+$has_multiple       = eu_owb_order_withdrawal_request_has_multiple_orders( $withdrawal );
+$needs_order_select = eu_owb_order_withdrawal_request_needs_order_select( $withdrawal );
 ?>
 <?php if ( $has_multiple ) : ?>
 	<?php echo esc_html_x( 'More than one matching order found', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ) . "\n\n"; ?>
+<?php elseif ( $needs_order_select ) : ?>
+	<?php echo esc_html_x( 'We could not find an order based on your criteria', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ); ?>
 <?php else : ?>
 	<?php echo esc_html_x( 'Want to withdraw certain items only?', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ) . "\n\n"; ?>
 <?php endif; ?>
 
 <?php if ( $has_multiple ) : ?>
 	<?php echo esc_html_x( 'We found more than one order matching your criteria—please use the link below to edit your withdrawal or select a different order.', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ) . "\n\n"; ?>
+<?php elseif ( $needs_order_select ) : ?>
+	<?php echo esc_html_x( 'We could not find an order based on your criteria—please use the link below to select one of the orders matching your email address.', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ) . "\n\n"; ?>
 <?php endif; ?>
 
-<?php if ( $has_multiple ) : ?>
+<?php if ( $has_multiple || $needs_order_select ) : ?>
 	<?php echo sprintf( esc_html_x( 'Edit withdrawal request: %s', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ), esc_url( $edit_withdrawal_link ) ) . "\n\n"; ?>
 <?php else : ?>
 	<?php echo sprintf( esc_html_x( 'Choose items to withdraw now: %s', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ), esc_url( $edit_withdrawal_link ) ) . "\n\n"; ?>

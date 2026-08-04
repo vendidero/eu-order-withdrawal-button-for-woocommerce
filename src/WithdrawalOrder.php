@@ -652,6 +652,7 @@ class WithdrawalOrder extends \WC_Abstract_Order implements \ArrayAccess {
 		}
 
 		$this->delete_meta_data( '_original_request_order_id' );
+		$this->delete_meta_data( '_original_request_id' );
 		$this->delete_meta_data( '_has_multiple_matching_orders' );
 		$this->set_is_update( false );
 		$this->set_is_partial( false );

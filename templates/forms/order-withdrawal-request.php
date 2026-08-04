@@ -11,7 +11,7 @@
  * the readme will list any important changes.
  *
  * @package Vendidero/OrderWithdrawalButton/Templates
- * @version 2.3.1
+ * @version 2.4.0
  */
 if ( ! defined( 'ABSPATH' ) ) {
 	exit; // Exit if accessed directly.
@@ -37,7 +37,7 @@ $show_submit             = true;
 							'class'             => array( 'form-row-full', 'form-row-order-number' ),
 							'autocomplete'      => 'off',
 							'id'                => 'order-withdrawal-request-order-number',
-							'default'           => '',
+							'default'           => $withdrawal ? $withdrawal->get_contract_identification() : '',
 							'required'          => \Vendidero\OrderWithdrawalButton\Package::get_form_field_required( 'order_number' ),
 							'custom_attributes' => array(
 								'maxlength' => \Vendidero\OrderWithdrawalButton\Package::get_form_field_maxlength( 'order_number' ),
@@ -57,7 +57,7 @@ $show_submit             = true;
 							'class'        => array( 'form-row-full', 'form-row-email', 'validate-email' ),
 							'autocomplete' => 'email',
 							'id'           => 'order-withdrawal-request-email',
-							'default'      => '',
+							'default'      => $withdrawal ? $withdrawal->get_email() : '',
 							'required'     => true,
 						)
 					)
@@ -88,7 +88,7 @@ $show_submit             = true;
 						'class'             => array( 'form-row-first', 'form-row-first-name' ),
 						'autocomplete'      => 'off',
 						'id'                => 'order-withdrawal-request-first-name',
-						'default'           => '',
+						'default'           => $withdrawal ? $withdrawal->get_first_name() : '',
 						'required'          => \Vendidero\OrderWithdrawalButton\Package::get_form_field_required( 'first_name' ),
 						'custom_attributes' => array(
 							'maxlength' => \Vendidero\OrderWithdrawalButton\Package::get_form_field_maxlength( 'first_name' ),
@@ -109,7 +109,7 @@ $show_submit             = true;
 						'autocomplete'      => 'off',
 						'id'                => 'order-withdrawal-request-last-name',
 						'required'          => \Vendidero\OrderWithdrawalButton\Package::get_form_field_required( 'last_name' ),
-						'default'           => '',
+						'default'           => $withdrawal ? $withdrawal->get_last_name() : '',
 						'custom_attributes' => array(
 							'maxlength' => \Vendidero\OrderWithdrawalButton\Package::get_form_field_maxlength( 'last_name' ),
 						),
@@ -131,7 +131,7 @@ $show_submit             = true;
 							'class'             => array( 'form-row-full', 'form-row-additional-information' ),
 							'autocomplete'      => 'off',
 							'id'                => 'order-withdrawal-request-additional-information',
-							'default'           => '',
+							'default'           => $withdrawal ? $withdrawal->get_additional_information() : '',
 							'required'          => \Vendidero\OrderWithdrawalButton\Package::get_form_field_required( 'additional_information' ),
 							'type'              => 'textarea',
 							'custom_attributes' => array(
@@ -167,13 +167,13 @@ $show_submit             = true;
 				</div>
 			<?php endif; ?>
 
-			<?php do_action( 'eu_owb_woocommerce_return_request_guest_form' ); ?>
+			<?php do_action( 'eu_owb_woocommerce_return_request_guest_form', $withdrawal ); ?>
 			<?php
 		else :
 			$default_email_address = $order ? $order->get_billing_email() : ( WC()->customer ? WC()->customer->get_billing_email() : '' );
 			$default_first_name    = $order ? $order->get_billing_first_name() : ( WC()->customer ? WC()->customer->get_billing_first_name() : '' );
 			$default_last_name     = $order ? $order->get_billing_last_name() : ( WC()->customer ? WC()->customer->get_billing_last_name() : '' );
-			$orders                = ( $order || ! is_user_logged_in() ) ? eu_owb_get_orders_for_guest( $order ) : eu_owb_get_orders_for_user();
+			$orders                = $withdrawal ? eu_owb_get_orders_for_guest( $withdrawal ) : ( is_user_logged_in() ? eu_owb_get_orders_for_user() : array( $order ) );
 			$default_order_id      = 0;
 
 			if ( $order ) {
@@ -310,31 +310,25 @@ $show_submit             = true;
 
 				<div class="clear"></div>
 
-				<?php if ( $order ) : ?>
+				<?php if ( $withdrawal ) : ?>
 					<?php
-					if ( eu_owb_get_withdrawal_request( $order ) ) :
-						woocommerce_form_field(
-							'delete_original_request',
-							apply_filters(
-								'eu_owb_woocommerce_form_field_delete_original_request_args',
-								array(
-									'label'         => sprintf( _x( 'Please delete my original withdrawal request to order #%1$s.', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ), esc_html( $order->get_order_number() ) ),
-									'class'         => array( 'form-row-full', 'hidden', 'order-withdrawal-delete-original-request-checkbox' ),
-									'id'            => 'delete-original-request',
-									'default'       => $delete_original_request,
-									'type'          => 'checkbox',
-									'checked_value' => true,
-								)
+					woocommerce_form_field(
+						'delete_original_request',
+						apply_filters(
+							'eu_owb_woocommerce_form_field_delete_original_request_args',
+							array(
+								'label'         => sprintf( _x( 'Please delete my original withdrawal request to %1$s.', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ), esc_html( $withdrawal->get_contract_identification() ) ),
+								'class'         => array( 'form-row-full', 'order-withdrawal-delete-original-request-checkbox', ( $order && $order->get_id() === $withdrawal->get_parent_id() ? 'hidden' : '' ) ),
+								'id'            => 'delete-original-request',
+								'default'       => $delete_original_request,
+								'type'          => 'checkbox',
+								'checked_value' => true,
 							)
-						);
-					endif;
+						)
+					);
 					?>
-
-					<input type="hidden" name="original_order_id" id="original-order-id" value="<?php echo esc_attr( $order->get_id() ); ?>" />
-
-					<?php if ( ! empty( $order_key ) ) : ?>
-						<input type="hidden" name="order_key" value="<?php echo esc_attr( $order_key ); ?>" />
-					<?php endif; ?>
+					<div class="clear"></div>
+					<input type="hidden" name="original_order_id" id="original-order-id" value="<?php echo esc_attr( $withdrawal->get_parent_id() ); ?>" />
 				<?php endif; ?>
 				<?php
 			else :
@@ -343,13 +337,21 @@ $show_submit             = true;
 				<p class="woocommerce-info notice"><?php echo wp_kses_post( sprintf( _x( 'Sorry, there are currently no orders available to withdraw. If you have questions regarding one of your orders, please <a href="%s">contact support</a> for help.', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ), esc_url( eu_owb_get_contact_support_url() ) ) ); ?></p>
 			<?php endif; ?>
 
-			<?php do_action( 'eu_owb_woocommerce_return_request_customer_form', $order ); ?>
+			<?php do_action( 'eu_owb_woocommerce_return_request_customer_form', $order, $withdrawal ); ?>
 		<?php endif; ?>
 	</div>
 
 	<?php do_action( 'eu_owb_woocommerce_return_request_form_before_submit', $order, $show_submit ); ?>
 
 	<?php if ( $show_submit ) : ?>
+		<?php if ( $withdrawal ) : ?>
+			<input type="hidden" name="withdrawal_id" id="withdrawal-id" value="<?php echo esc_attr( $withdrawal->get_id() ); ?>" />
+		<?php endif; ?>
+
+		<?php if ( ! empty( $order_key ) ) : ?>
+			<input type="hidden" name="order_key" value="<?php echo esc_attr( $order_key ); ?>" />
+		<?php endif; ?>
+
 		<<?php echo esc_html( \Vendidero\OrderWithdrawalButton\Package::force_div_form_field() ? 'div' : 'p' ); ?> class="form-row form-row-submit" id="order-withdrawal-request-submit">
 			<?php wp_nonce_field( 'eu_owb_woocommerce_order_withdrawal_request' ); ?>
 			<button type="submit" class="woocommerce-button button woocommerce-form-return_request__submit<?php echo esc_attr( eu_owb_wp_theme_get_element_class_name( 'button' ) ? ' ' . eu_owb_wp_theme_get_element_class_name( 'button' ) : '' ); ?>" name="order_withdrawal_request" value="<?php echo esc_attr_x( 'Confirm withdrawal', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ); ?>"><?php echo esc_attr_x( 'Confirm withdrawal', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ); ?></button>
