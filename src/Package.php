@@ -103,7 +103,7 @@ class Package {
 		if ( 'yes' === self::get_setting( 'myaccount_withdrawal_link', 'no' ) ) {
 			if ( eu_owb_order_is_withdrawable( $order, true ) ) {
 				$actions['withdrawal_link'] = array(
-					'url'  => eu_owb_get_edit_withdrawal_url( $order ),
+					'url'  => eu_owb_get_new_withdrawal_url( $order ),
 					'name' => _x( 'Withdraw', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ),
 				);
 			}
@@ -846,6 +846,10 @@ class Package {
 		return $is_enabled;
 	}
 
+	public static function email_button_template_exists() {
+		return version_compare( WC()->version, '11.0', '>=' );
+	}
+
 	public static function register_emails( $emails ) {
 		$emails['EU_OWB_Email_Customer_Withdrawal_Request_Received']  = include self::get_path() . '/includes/emails/class-eu-owb-email-customer-withdrawal-request-received.php';
 		$emails['EU_OWB_Email_Customer_Withdrawal_Request_Confirmed'] = include self::get_path() . '/includes/emails/class-eu-owb-email-customer-withdrawal-request-confirmed.php';
@@ -871,6 +875,22 @@ class Package {
 	}
 
 	/**
+	 * Do only rely on (the non-spoofable) REMOTE_ADDR instead of using WC_Location::get_ip_address()
+	 * which prefers using HTTP_X_REAL_IP/HTTP_X_FORWARDED_FOR which can be easily spoofed.
+	 *
+	 * @return string
+	 */
+	public static function get_client_ip() {
+		if ( isset( $_SERVER['REMOTE_ADDR'] ) ) {
+			// Make sure we always only send through the first IP in the list which should always be the client IP.
+			$value = trim( current( preg_split( '/,/', sanitize_text_field( wp_unslash( $_SERVER['REMOTE_ADDR'] ) ) ) ) );
+			return (string) rest_is_ip_address( $value );
+		}
+
+		return '';
+	}
+
+	/**
 	 * @param \WC_Order|WithdrawalOrder $order
 	 * @param $sent_to_admin
 	 * @param $plain_text
@@ -880,14 +900,14 @@ class Package {
 	 * @return void
 	 */
 	public static function withdrawal_email_edit_link( $order, $sent_to_admin, $plain_text, $email, $withdrawal ) {
-		if ( is_a( $email, 'EU_OWB_Email_Customer_Withdrawal_Request_Received' ) && $withdrawal->has_parent() ) {
-			$order                = $withdrawal->get_parent();
-			$edit_withdrawal_link = eu_owb_get_edit_withdrawal_url( $order );
+		if ( is_a( $email, 'EU_OWB_Email_Customer_Withdrawal_Request_Received' ) ) {
+			$order                      = $withdrawal->get_parent();
+			$edit_withdrawal_link       = eu_owb_get_edit_withdrawal_url( $withdrawal );
+			$has_multiple_orders        = eu_owb_order_withdrawal_request_has_multiple_orders( $withdrawal );
+			$needs_order_select         = eu_owb_order_withdrawal_request_needs_order_select( $withdrawal );
+			$embed_edit_withdrawal_link = apply_filters( 'eu_owb_woocommerce_email_embed_partial_withdrawal_link', ( ( ( ! $withdrawal->is_partial() && eu_owb_order_supports_partial_withdrawal( $order ) ) || $has_multiple_orders || $needs_order_select ) && ! empty( $edit_withdrawal_link ) && $withdrawal->is_guest() ), $withdrawal, $order );
 
-			$has_multiple_orders        = wc_string_to_bool( $withdrawal->get_meta( '_has_multiple_matching_orders' ) );
-			$embed_edit_withdrawal_link = apply_filters( 'eu_owb_woocommerce_email_embed_partial_withdrawal_link', ( ( ( ! $withdrawal->is_partial() && eu_owb_order_supports_partial_withdrawal( $order ) ) || $has_multiple_orders ) && ! empty( $edit_withdrawal_link ) && $withdrawal->is_guest() ), $withdrawal, $order );
-
-			if ( $embed_edit_withdrawal_link && $withdrawal->has_verified_email() ) {
+			if ( ( $embed_edit_withdrawal_link && $withdrawal->has_verified_email() ) || ( $embed_edit_withdrawal_link && $needs_order_select ) ) {
 				if ( $plain_text ) {
 					wc_get_template(
 						'emails/plain/email-withdrawal-edit-link.php',
@@ -1104,21 +1124,48 @@ class Package {
 	}
 
 	public static function order_withdrawal_request_form( $args = array() ) {
-		$order_key             = isset( $_GET['order_key'] ) ? wc_clean( wp_unslash( $_GET['order_key'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		$order_key             = isset( $_GET['order_key'] ) && is_string( $_GET['order_key'] ) ? sanitize_text_field( wp_unslash( $_GET['order_key'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 		$order_id              = isset( $_GET['order_id'] ) ? absint( wp_unslash( $_GET['order_id'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 		$manually_select_items = isset( $_GET['manually_select_items'] ) ? wc_string_to_bool( wc_clean( wp_unslash( $_GET['manually_select_items'] ) ) ) : false; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		$force_order_select    = isset( $_GET['force_order_select'] ) ? wc_string_to_bool( wc_clean( wp_unslash( $_GET['force_order_select'] ) ) ) : false; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 		$order                 = null;
+		$withdrawal            = null;
 
 		if ( ! empty( $order_id ) && ( $the_order = wc_get_order( $order_id ) ) ) {
-			if ( $order_id === $the_order->get_id() && ! empty( $the_order->get_order_key() ) && hash_equals( $the_order->get_order_key(), $order_key ) ) {
+			if ( self::current_request_can_view_order_or_withdrawal( $the_order ) ) {
 				$order = $the_order;
-			} elseif ( is_user_logged_in() && current_user_can( 'view_order', $the_order->get_id() ) ) {
-				$order = $the_order;
+
+				/**
+				 * Edit withdrawal request
+				 */
+				if ( is_a( $order, '\Vendidero\OrderWithdrawalButton\WithdrawalOrder' ) ) {
+					$withdrawal = $order;
+					$order      = $withdrawal->get_parent();
+
+					/**
+					 * The original withdrawal request may not (yet) have an order linked to the withdrawal.
+					 * In case we find orders matching the request's email address, choose one to show the select option.
+					 */
+					if ( ! $order && $force_order_select ) {
+						$guest_orders = eu_owb_get_orders_for_guest( $withdrawal );
+
+						if ( ! empty( $guest_orders ) ) {
+							$order = array_values( $guest_orders )[0];
+						}
+					}
+
+					if ( ! $withdrawal->has_status( 'requested' ) ) {
+						$withdrawal = null;
+						$order      = null;
+						$order_key  = '';
+					}
+				}
 			}
 		}
 
 		$defaults = array(
 			'order'                 => $order,
+			'withdrawal'            => $withdrawal,
 			'order_key'             => $order_key,
 			'manually_select_items' => $manually_select_items,
 		);
@@ -1135,6 +1182,58 @@ class Package {
 		$html .= wc_get_template_html( 'forms/order-withdrawal-request.php', $args );
 
 		return $html;
+	}
+
+	/**
+	 * Decides whether the current request can view an order or withdrawal request.
+	 *
+	 * 1. The user is logged in and can view the order
+	 * 2. The current order key matches the order requested
+	 * 3. A withdrawal request has been passed and the order key matches the withdrawal key - this means the email address has been confirmed via double opt-in
+	 * 3.1. The order id matches the current withdrawal's parent id
+	 * 3.2. The withdrawal has a verified email and the order matches one of the orders linked to that email address
+	 *
+	 * @param \WC_Order|WithdrawalOrder $order
+	 *
+	 * @return boolean
+	 */
+	public static function current_request_can_view_order_or_withdrawal( $order ) {
+		$order_key        = ! empty( $_REQUEST['order_key'] ) && is_string( $_REQUEST['order_key'] ) ? sanitize_text_field( wp_unslash( $_REQUEST['order_key'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
+		$withdrawal_id    = ! empty( $_REQUEST['withdrawal_id'] ) ? absint( wp_unslash( $_REQUEST['withdrawal_id'] ) ) : false; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		$is_valid_request = false;
+
+		if ( ! $order ) {
+			return false;
+		}
+
+		if ( is_user_logged_in() && current_user_can( 'view_order', $order->get_id() ) ) {
+			$is_valid_request = true;
+		} elseif ( empty( $withdrawal_id ) && ! empty( $order_key ) ) {
+			/**
+			 * Check if the request has a valid order key for the requested order.
+			 */
+			if ( ! empty( $order->get_order_key() ) && hash_equals( $order->get_order_key(), $order_key ) ) {
+				$is_valid_request = true;
+			}
+		} elseif ( $withdrawal_id && ! empty( $order_key ) ) {
+			/**
+			 * In case a withdrawal has been requested, check whether the withdrawal key is valid.
+			 * The withdrawal key may only be obtained by email - the customer has verified its email in case the key is valid.
+			 *
+			 * Allow the user to submit/view withdrawals for other orders with the same email address too.
+			 */
+			if ( $original_withdrawal = eu_owb_get_withdrawal_request( $withdrawal_id ) ) {
+				if ( ! empty( $original_withdrawal->get_order_key() ) && hash_equals( $original_withdrawal->get_order_key(), $order_key ) && $original_withdrawal->get_id() === $withdrawal_id ) {
+					if ( is_a( $order, '\Vendidero\OrderWithdrawalButton\WithdrawalOrder' ) && $order->get_id() === $original_withdrawal->get_id() ) {
+						$is_valid_request = true; // User is allowed to edit the withdrawal request
+					} elseif ( is_a( $order, 'WC_Order' ) && eu_owb_order_is_withdrawable( $order ) && eu_owb_custom_email_matches_order_email( $order, $original_withdrawal->get_email() ) ) {
+						$is_valid_request = true; // User is allowed to view/submit withdrawal requests for orders matching its (confirmed via DOI) email address.
+					}
+				}
+			}
+		}
+
+		return $is_valid_request;
 	}
 
 	public static function is_integration() {

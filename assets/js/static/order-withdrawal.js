@@ -18,7 +18,6 @@ window.eu_owb.order_withdrawal = window.eu_owb.order_withdrawal || {};
             $( document ).on( 'change', '.order-withdrawal-request #order-withdrawal-request-order', self.onChangeOrder );
             $( document ).on( 'change', '.order-withdrawal-request #manually-select-items', self.onSelectItems );
             $( document ).on( 'change', '.order-withdrawal-request #select-all-items', self.selectAllItems );
-            $( document ).on( 'change', '.order-withdrawal-request #order-withdrawal-request-order-number, .order-withdrawal-request #order-withdrawal-request-email', self.onChangeInputs );
 
             // Inline validation
             $( document ).on( 'input validate change focusout', '.order-withdrawal-request .input-text, .order-withdrawal-request select', self.validateField );
@@ -93,41 +92,6 @@ window.eu_owb.order_withdrawal = window.eu_owb.order_withdrawal || {};
                         )
                         .addClass( 'woocommerce-validated' ); // eslint-disable-line max-len
                 }
-            }
-        },
-
-        onChangeInputs: function() {
-            var self = eu_owb.order_withdrawal,
-                $this = $( this ),
-                $form = $( this ).parents( 'form' ),
-                order = $form.find( '#order-withdrawal-request-order-number' ).val(),
-                email = $form.find( '#order-withdrawal-request-email' ).val(),
-                $partial = $form.find( '.order-supports-partial-withdrawal' ),
-                data = $form.serialize();
-
-            if ( $partial.length <= 0 ) {
-                return;
-            }
-
-            if ( order && self.isEmail( email ) ) {
-                $.ajax( {
-                    type: 'POST',
-                    url: self.params.wc_ajax_url.toString().replace('%%endpoint%%', 'eu_owb_woocommerce_order_withdrawal_request_supports_partial'),
-                    data: data,
-                    dataType: 'json',
-                }).done( function ( response ) {
-                    $form = $this.parents( 'form' );
-
-                    if ( ! $form.hasClass( 'loading' ) && true === response.data['supports_partial_withdrawal'] ) {
-                        $partial.removeClass( 'hidden' );
-                    } else {
-                        $partial.addClass( 'hidden' );
-                    }
-                }).fail( function ( xhr ) {
-                    $partial.addClass( 'hidden' );
-                });
-            } else {
-                $partial.addClass( 'hidden' );
             }
         },
 
