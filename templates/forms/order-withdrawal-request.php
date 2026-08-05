@@ -144,35 +144,12 @@ $show_submit             = true;
 				<div class="clear"></div>
 			<?php endif; ?>
 
-			<?php if ( \Vendidero\OrderWithdrawalButton\Package::enable_partial_withdrawals() ) : ?>
-				<div class="order-supports-partial-withdrawal hidden">
-					<?php
-					woocommerce_form_field(
-						'manually_select_items',
-						apply_filters(
-							'eu_owb_woocommerce_form_field_manually_select_items_args',
-							array(
-								'label'         => _x( 'I want to select the items to cancel manually.', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ),
-								'class'         => array( 'form-row-full', 'form-row-manually-select-items' ),
-								'id'            => 'manually-select-items',
-								'default'       => $manually_select_items,
-								'type'          => 'checkbox',
-								'checked_value' => true,
-							)
-						)
-					);
-					?>
-
-					<span class="notice eu-owb-woocommerce-select-certain-items-desc"><?php echo esc_html_x( 'You will receive an email confirming receipt of your withdrawal request. In the email, you will find a link that allows you to select the items you wish to return.', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ); ?></span>
-				</div>
-			<?php endif; ?>
-
 			<?php do_action( 'eu_owb_woocommerce_return_request_guest_form', $withdrawal ); ?>
 			<?php
 		else :
-			$default_email_address = $order ? $order->get_billing_email() : ( WC()->customer ? WC()->customer->get_billing_email() : '' );
-			$default_first_name    = $order ? $order->get_billing_first_name() : ( WC()->customer ? WC()->customer->get_billing_first_name() : '' );
-			$default_last_name     = $order ? $order->get_billing_last_name() : ( WC()->customer ? WC()->customer->get_billing_last_name() : '' );
+			$default_email_address = $withdrawal ? $withdrawal->get_email() : ( $order ? $order->get_billing_email() : ( WC()->customer ? WC()->customer->get_billing_email() : '' ) );
+			$default_first_name    = $withdrawal ? $withdrawal->get_first_name() : ( $order ? $order->get_billing_first_name() : ( WC()->customer ? WC()->customer->get_billing_first_name() : '' ) );
+			$default_last_name     = $withdrawal ? $withdrawal->get_last_name() : ( $order ? $order->get_billing_last_name() : ( WC()->customer ? WC()->customer->get_billing_last_name() : '' ) );
 			$orders                = $withdrawal ? eu_owb_get_orders_for_guest( $withdrawal ) : ( is_user_logged_in() ? eu_owb_get_orders_for_user() : array( $order ) );
 			$default_order_id      = 0;
 

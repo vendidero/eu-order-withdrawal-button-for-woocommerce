@@ -875,6 +875,22 @@ class Package {
 	}
 
 	/**
+	 * Do only rely on (the non-spoofable) REMOTE_ADDR instead of using WC_Location::get_ip_address()
+	 * which prefers using HTTP_X_REAL_IP/HTTP_X_FORWARDED_FOR which can be easily spoofed.
+	 *
+	 * @return string
+	 */
+	public static function get_client_ip() {
+		if ( isset( $_SERVER['REMOTE_ADDR'] ) ) {
+			// Make sure we always only send through the first IP in the list which should always be the client IP.
+			$value = trim( current( preg_split( '/,/', sanitize_text_field( wp_unslash( $_SERVER['REMOTE_ADDR'] ) ) ) ) );
+			return (string) rest_is_ip_address( $value );
+		}
+
+		return '';
+	}
+
+	/**
 	 * @param \WC_Order|WithdrawalOrder $order
 	 * @param $sent_to_admin
 	 * @param $plain_text
@@ -1108,7 +1124,7 @@ class Package {
 	}
 
 	public static function order_withdrawal_request_form( $args = array() ) {
-		$order_key             = isset( $_GET['order_key'] ) ? wc_clean( wp_unslash( $_GET['order_key'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		$order_key             = isset( $_GET['order_key'] ) && is_string( $_GET['order_key'] ) ? sanitize_text_field( wp_unslash( $_GET['order_key'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 		$order_id              = isset( $_GET['order_id'] ) ? absint( wp_unslash( $_GET['order_id'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 		$manually_select_items = isset( $_GET['manually_select_items'] ) ? wc_string_to_bool( wc_clean( wp_unslash( $_GET['manually_select_items'] ) ) ) : false; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 		$force_order_select    = isset( $_GET['force_order_select'] ) ? wc_string_to_bool( wc_clean( wp_unslash( $_GET['force_order_select'] ) ) ) : false; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
@@ -1182,7 +1198,7 @@ class Package {
 	 * @return boolean
 	 */
 	public static function current_request_can_view_order_or_withdrawal( $order ) {
-		$order_key        = ! empty( $_REQUEST['order_key'] ) ? wp_unslash( $_REQUEST['order_key'] ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
+		$order_key        = ! empty( $_REQUEST['order_key'] ) && is_string( $_REQUEST['order_key'] ) ? sanitize_text_field( wp_unslash( $_REQUEST['order_key'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
 		$withdrawal_id    = ! empty( $_REQUEST['withdrawal_id'] ) ? absint( wp_unslash( $_REQUEST['withdrawal_id'] ) ) : false; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 		$is_valid_request = false;
 
@@ -1208,7 +1224,7 @@ class Package {
 			 */
 			if ( $original_withdrawal = eu_owb_get_withdrawal_request( $withdrawal_id ) ) {
 				if ( ! empty( $original_withdrawal->get_order_key() ) && hash_equals( $original_withdrawal->get_order_key(), $order_key ) && $original_withdrawal->get_id() === $withdrawal_id ) {
-					if ( is_a( $order, '\Vendidero\OrderWithdrawalButton\WithdrawalOrder' ) ) {
+					if ( is_a( $order, '\Vendidero\OrderWithdrawalButton\WithdrawalOrder' ) && $order->get_id() === $original_withdrawal->get_id() ) {
 						$is_valid_request = true; // User is allowed to edit the withdrawal request
 					} elseif ( is_a( $order, 'WC_Order' ) && eu_owb_order_is_withdrawable( $order ) && eu_owb_custom_email_matches_order_email( $order, $original_withdrawal->get_email() ) ) {
 						$is_valid_request = true; // User is allowed to view/submit withdrawal requests for orders matching its (confirmed via DOI) email address.

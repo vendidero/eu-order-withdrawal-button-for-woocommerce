@@ -237,6 +237,19 @@ class WithdrawalOrder extends OrdersTableDataStore {
 			$withdrawal->set_date_received( time() );
 		}
 
+		/**
+		 * Updating a withdrawal's emails needs a new DOI to edit the withdrawal request.
+		 */
+		if ( in_array( 'email', $withdrawal->get_changes(), true ) || in_array( 'billing_email', $withdrawal->get_changes(), true ) ) {
+			$withdrawal->set_order_key( wc_generate_order_key() );
+
+			if ( $parent = $withdrawal->get_parent() ) {
+				$withdrawal->set_has_verified_email( eu_owb_custom_email_matches_order_email( $parent, $withdrawal->get_email() ) );
+			} else {
+				$withdrawal->set_has_verified_email( false );
+			}
+		}
+
 		$this->persist_updates( $withdrawal, false );
 		$withdrawal->apply_changes();
 

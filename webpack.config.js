@@ -55,7 +55,7 @@ const getBlockEntries = ( relativePath ) => {
                     relativePath
                 );
                 if ( filePaths.length > 0 ) {
-                    return [ blockCode, filePaths ];
+                    return [ blockCode, filePaths.map( ( path ) => { return './' + path } ) ];
                 }
                 return null;
             } )
@@ -64,12 +64,12 @@ const getBlockEntries = ( relativePath ) => {
 };
 
 const staticCss = glob.sync('./assets/css/*.scss').reduce(function(obj, el){
-    obj[ path.parse(el).name + '-styles' ] = el;
+    obj[ path.parse(el).name + '-styles' ] = './' + el;
     return obj
 },{});
 
 const staticJs = glob.sync('./assets/js/static/*.js').reduce(function(obj, el){
-    obj[ path.parse(el).name ] = el;
+    obj[ path.parse(el).name ] = './' + el;
     return obj
 },{});
 
@@ -123,94 +123,6 @@ const requestToHandle = ( request ) => {
     if ( wcHandleMap[ request ] ) {
         return wcHandleMap[ request ];
     }
-};
-
-const getBaseConfig = ( entry ) => {
-    return {
-        ...defaultConfig,
-        entry: getEntryConfig( entry, [] ),
-        output: {
-            filename: ( chunkData ) => {
-                return `${ paramCase( chunkData.chunk.name ) }.js`;
-            },
-            path: path.resolve( __dirname, 'build/' ),
-            library: [ 'owbWC', '[name]' ],
-            libraryTarget: 'window',
-            // This fixes an issue with multiple webpack projects using chunking
-            // overwriting each other's chunk loader function.
-            // See https://webpack.js.org/configuration/output/#outputjsonpfunction
-            chunkLoadingGlobal: 'webpackOwbWCBlocksJsonp',
-        },
-        module: {
-            ...defaultConfig.module,
-            rules: [
-                ...defaultRules,
-                {
-                    test: /\.(sc|sa)ss$/,
-                    exclude: /node_modules/,
-                    use: [
-                        MiniCssExtractPlugin.loader,
-                        { loader: 'css-loader', options: { importLoaders: 1 } },
-                        {
-                            loader: 'sass-loader',
-                            options: {
-                                sassOptions: {
-                                    includePaths: [ 'assets/css/abstracts' ],
-                                },
-                                additionalData: ( content, loaderContext ) => {
-                                    const { resourcePath, rootContext } =
-                                        loaderContext;
-                                    const relativePath = path.relative(
-                                        rootContext,
-                                        resourcePath
-                                    );
-
-                                    if (
-                                        relativePath.startsWith(
-                                            'assets/css/abstracts/'
-                                        ) ||
-                                        relativePath.startsWith(
-                                            'assets\\css\\abstracts\\'
-                                        )
-                                    ) {
-                                        return content;
-                                    }
-
-                                    return (
-                                        '@use "sass:math";' +
-                                        '@use "sass:string";' +
-                                        '@use "sass:color";' +
-                                        '@use "sass:map";' +
-                                        '@import "_colors"; ' +
-                                        '@import "_variables"; ' +
-                                        '@import "_breakpoints"; ' +
-                                        '@import "_mixins"; ' +
-                                        content
-                                    );
-                                },
-                            },
-                        },
-                    ],
-                },
-            ],
-        },
-        resolve: {
-            alias: getAlias()
-        },
-        plugins: [
-            ...defaultConfig.plugins.filter(
-                ( plugin ) =>
-                    plugin.constructor.name !== 'DependencyExtractionWebpackPlugin'
-            ),
-            new WooCommerceDependencyExtractionWebpackPlugin( {
-                requestToExternal,
-                requestToHandle,
-            } ),
-            new MiniCssExtractPlugin( {
-                filename: `[name].css`,
-            } ),
-        ],
-    };
 };
 
 const StaticConfig = {

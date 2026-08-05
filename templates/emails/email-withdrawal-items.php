@@ -11,7 +11,7 @@
  * the readme will list any important changes.
  *
  * @package Vendidero/OrderWithdrawalButton/Templates
- * @version 2.3.3
+ * @version 2.4.0
  */
 defined( 'ABSPATH' ) || exit;
 
@@ -42,6 +42,9 @@ foreach ( $items as $item_id => $item_data ) :
 						<?php
 						// Show title/image etc.
 						if ( $show_image && $image ) {
+							$image_dimensions = wc_get_image_size( $image_size );
+							$image_width      = is_array( $image_dimensions ) && isset( $image_dimensions['width'] ) ? absint( $image_dimensions['width'] ) : 48;
+							$thumbnail_width  = $image_width + 24;
 							/**
 							 * Email Order Item Thumbnail hook.
 							 *
@@ -49,7 +52,7 @@ foreach ( $items as $item_id => $item_data ) :
 							 * @param WC_Order_Item_Product $item  The item being displayed.
 							 * @since 2.1.0
 							 */
-							echo '<td>' . wp_kses_post( apply_filters( 'woocommerce_order_item_thumbnail', $image, $org_item ) ) . '</td>';
+							echo '<td class="email-order-item-thumbnail" style="width: ' . esc_attr( $thumbnail_width ) . 'px;">' . wp_kses_post( apply_filters( 'woocommerce_order_item_thumbnail', $image, $org_item ) ) . '</td>';
 						}
 						?>
 						<td>
@@ -136,7 +139,7 @@ foreach ( $items as $item_id => $item_data ) :
 					 * @param WC_Order_Item_Product $item  The item being displayed.
 					 * @since 2.1.0
 					 */
-					echo wp_kses_post( apply_filters( 'woocommerce_order_item_thumbnail', $image, $org_item ) ) . '</td>';
+					echo wp_kses_post( apply_filters( 'woocommerce_order_item_thumbnail', $image, $org_item ) );
 				}
 
 				/**
