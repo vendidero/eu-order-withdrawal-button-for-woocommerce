@@ -240,7 +240,7 @@ class WithdrawalOrder extends OrdersTableDataStore {
 		/**
 		 * Updating a withdrawal's emails needs a new DOI to edit the withdrawal request.
 		 */
-		if ( in_array( 'email', $withdrawal->get_changes(), true ) || in_array( 'billing_email', $withdrawal->get_changes(), true ) ) {
+		if ( array_key_exists( 'email', $withdrawal->get_changes() ) || array_key_exists( 'billing_email', $withdrawal->get_changes() ) ) {
 			$withdrawal->set_order_key( wc_generate_order_key() );
 
 			if ( $parent = $withdrawal->get_parent() ) {

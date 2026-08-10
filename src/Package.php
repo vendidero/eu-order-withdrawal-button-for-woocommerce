@@ -16,7 +16,7 @@ class Package {
 	 *
 	 * @var string
 	 */
-	const VERSION = '2.3.2';
+	const VERSION = '2.4.0';
 
 	protected static $localized_scripts = array();
 
@@ -1152,6 +1152,8 @@ class Package {
 						if ( ! empty( $guest_orders ) ) {
 							$order = array_values( $guest_orders )[0];
 						}
+					} elseif ( $order && ! eu_owb_custom_email_matches_order_email( $order, $withdrawal->get_email() ) ) {
+						$order = null;
 					}
 
 					if ( ! $withdrawal->has_status( 'requested' ) ) {
@@ -1212,7 +1214,7 @@ class Package {
 			/**
 			 * Check if the request has a valid order key for the requested order.
 			 */
-			if ( ! empty( $order->get_order_key() ) && hash_equals( $order->get_order_key(), $order_key ) ) {
+			if ( is_callable( array( $order, 'get_order_key' ) ) && ! empty( $order->get_order_key() ) && hash_equals( $order->get_order_key(), $order_key ) ) {
 				$is_valid_request = true;
 			}
 		} elseif ( $withdrawal_id && ! empty( $order_key ) ) {

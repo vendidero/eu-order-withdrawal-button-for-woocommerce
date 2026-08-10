@@ -294,6 +294,7 @@ class Ajax {
 		$is_guest_request            = ! is_user_logged_in() && empty( $order_id );
 		$original_withdrawal_request = false;
 		$is_valid_edit_request       = false;
+		$select_items                = false;
 		$additional_information      = '';
 
 		if ( -1 !== Package::get_form_field_maxlength( 'first_name' ) ) {
@@ -408,7 +409,6 @@ class Ajax {
 		} else {
 			$order_number           = ! empty( $_POST['order_number'] ) ? wc_clean( wp_unslash( $_POST['order_number'] ) ) : '';
 			$additional_information = eu_owb_enable_additional_information_field() && ! empty( $_POST['additional_information'] ) ? wc_sanitize_textarea( wp_unslash( $_POST['additional_information'] ) ) : '';
-			$select_items           = isset( $_POST['manually_select_items'] ) ? true : false;
 
 			if ( -1 !== Package::get_form_field_maxlength( 'order_number' ) ) {
 				$order_number = Package::substr( $order_number, 0, Package::get_form_field_maxlength( 'order_number' ) );
@@ -485,8 +485,6 @@ class Ajax {
 			}
 
 			$is_valid_request = true;
-
-			$meta['requested_partial'] = wc_bool_to_string( true === $select_items );
 
 			do_action( 'eu_owb_woocommerce_process_order_withdrawal_guest_request', $order, $error, $select_items );
 		}

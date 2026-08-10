@@ -151,19 +151,8 @@ $show_submit             = true;
 			$default_first_name    = $withdrawal ? $withdrawal->get_first_name() : ( $order ? $order->get_billing_first_name() : ( WC()->customer ? WC()->customer->get_billing_first_name() : '' ) );
 			$default_last_name     = $withdrawal ? $withdrawal->get_last_name() : ( $order ? $order->get_billing_last_name() : ( WC()->customer ? WC()->customer->get_billing_last_name() : '' ) );
 			$orders                = $withdrawal ? eu_owb_get_orders_for_guest( $withdrawal ) : ( is_user_logged_in() ? eu_owb_get_orders_for_user() : array( $order ) );
-			$default_order_id      = 0;
+			$default_order_id      = $order ? $order->get_id() : 0;
 
-			if ( $order ) {
-				$default_order_id = $order->get_id();
-
-				if ( $request = eu_owb_get_withdrawal_request( $order ) ) {
-					$default_email_address = $request->get_email();
-					$default_first_name    = $request->get_first_name();
-					$default_last_name     = $request->get_last_name();
-				}
-			}
-			?>
-			<?php
 			if ( ! empty( $orders ) ) :
 				$orders_select = array(
 					'' => _x( 'Please select an order', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ),

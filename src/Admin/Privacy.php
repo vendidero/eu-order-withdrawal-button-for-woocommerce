@@ -118,16 +118,16 @@ class Privacy {
 		);
 		$withdrawals = self::query( $email_address, $page );
 		$props       = array(
-			'order_number'           => _x( 'Order number', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ),
-			'first_name'             => _x( 'First name', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ),
-			'last_name'              => _x( 'Last name', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ),
-			'email'                  => _x( 'Email', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ),
-			'date_received'          => _x( 'Date received', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ),
-			'additional_information' => _x( 'Additional information', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ),
-			'customer_ip_address'    => _x( 'IP Address', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ),
-			'customer_user_agent'    => _x( 'User Agent', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ),
-			'items'                  => _x( 'Items', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ),
-			'status'                 => _x( 'Status', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ),
+			'contract_identification' => _x( 'Contract Identification', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ),
+			'first_name'              => _x( 'First name', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ),
+			'last_name'               => _x( 'Last name', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ),
+			'email'                   => _x( 'Email', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ),
+			'date_received'           => _x( 'Date received', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ),
+			'additional_information'  => _x( 'Additional information', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ),
+			'customer_ip_address'     => _x( 'IP Address', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ),
+			'customer_user_agent'     => _x( 'User Agent', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ),
+			'items'                   => _x( 'Items', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ),
+			'status'                  => _x( 'Status', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ),
 		);
 
 		if ( 0 < count( $withdrawals ) ) {
@@ -136,6 +136,10 @@ class Privacy {
 
 				foreach ( $props as $prop => $name ) {
 					$value = null;
+
+					if ( ! $withdrawal->has_verified_email() && 'items' === $prop ) {
+						continue;
+					}
 
 					switch ( $prop ) {
 						case 'items':

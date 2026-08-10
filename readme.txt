@@ -4,8 +4,8 @@ Tags: woocommerce, withdrawal, cancellation, EU, compliance
 Requires at least: 5.4
 Tested up to: 7.0
 WC requires at least: 3.9
-WC tested up to: 10.9
-Stable tag: 2.3.2
+WC tested up to: 11.0
+Stable tag: 2.4.0
 Requires PHP: 7.4
 License: GPLv3
 License URI: http://www.gnu.org/licenses/gpl-3.0.html
@@ -81,6 +81,12 @@ Please report security bugs found in the source code of the EU Order Withdrawal 
 3. Manage withdrawals
 
 == Changelog ==
+= 2.4.0 =
+* Improvement: Edit withdrawal flow
+* Improvement: Bulk spam protection
+* Security: Remove the partial withdrawal availability check to prevent information leakage (e.g. to check whether a specific email + order exists)
+* Fix: Fix a template typo show_imag vs. show_image
+
 = 2.3.2 =
 * New: Introduce setting to place a withdrawal link (in case available) within customer account order actions
 * Improvement: Override additional abstract order method to prevent compatibility issues

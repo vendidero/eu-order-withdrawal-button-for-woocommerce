@@ -920,7 +920,7 @@ function eu_owb_get_withdrawal_request( $order ) {
 		if ( ! empty( $withdrawals ) ) {
 			return $withdrawals[ count( $withdrawals ) - 1 ];
 		}
-	} elseif ( is_a( $order, '\Vendidero\OrderWithdrawalButton\WithdrawalOrder' ) ) {
+	} elseif ( is_a( $order, '\Vendidero\OrderWithdrawalButton\WithdrawalOrder' ) && $order->has_status( 'requested' ) ) {
 		return $order;
 	}
 
@@ -1658,18 +1658,33 @@ function eu_owb_find_orders( $args ) {
 			$user_query_args['date_created'] = $args['date_created'];
 		}
 
-		$orders = array_unique( array_merge( $orders, wc_get_orders( apply_filters( 'eu_owb_woocommerce_find_order_customer_query_args', $user_query_args ) ) ) );
+		$user_query_orders = wc_get_orders( apply_filters( 'eu_owb_woocommerce_find_order_customer_query_args', $user_query_args ) );
+		$orders            = array_merge( $orders, $user_query_orders );
+		$orders_map        = array();
+
+		/**
+		 * Build a map of the orders to allow sort + id retrieval.
+		 */
+		foreach ( $orders as $order ) {
+			if ( is_numeric( $order ) ) {
+				$orders_map[ $order ] = $order;
+			} else {
+				$orders_map[ $order->get_id() ] = $order;
+			}
+		}
 
 		if ( ! empty( $args['order_id'] ) ) {
-			if ( in_array( $order_id_parsed, $orders ) ) { // phpcs:ignore WordPress.PHP.StrictInArray.MissingTrueStrict
-				$orders = array_intersect( $orders, array( $order_id_parsed ) );
+			if ( array_key_exists( $order_id_parsed, $orders_map ) ) { // phpcs:ignore WordPress.PHP.StrictInArray.MissingTrueStrict
+				$orders_map = array_intersect_key( $orders_map, array( $order_id_parsed => '' ) );
 			} else {
-				$orders = array();
+				$orders_map = array();
 			}
 		}
 
 		// Sort DESC by ID
-		rsort( $orders );
+		rsort( $orders_map );
+
+		$orders = array_values( $orders_map );
 	}
 
 	/**
