@@ -1373,6 +1373,21 @@ function eu_owb_get_orders_for_user( $user_id = 0, $as_id = false ) {
 }
 
 /**
+ * @param $order_id_str
+ *
+ * @return string
+ */
+function eu_owb_parse_custom_order_number( $order_id_str ) {
+	$order_number = preg_replace( '/\s+/', '', sanitize_text_field( $order_id_str ) ); // Remove whitespace
+
+	if ( '#' === substr( $order_number, 0, 1 ) ) {
+		$order_number = substr( $order_number, 1 ); // Remove starting hashtag
+	}
+
+	return apply_filters( 'eu_owb_woocommerce_parse_customer_order_number', $order_number, $order_id_str );
+}
+
+/**
  * Parses a string and finds the longest, contiguous number which is assumed to be the order id.
  *
  * @param $order_id_str
@@ -1500,7 +1515,7 @@ function eu_owb_find_orders_by_custom_order_number( $args ) {
 
 	$args['email']       = sanitize_email( $args['email'] );
 	$args['customer_id'] = absint( $args['customer_id'] );
-	$args['order_id']    = sanitize_text_field( $args['order_id'] );
+	$args['order_id']    = eu_owb_parse_custom_order_number( $args['order_id'] );
 	$meta_field_name     = apply_filters( 'eu_owb_woocommerce_customer_order_number_meta_key', '_order_number' );
 
 	$custom_query_cpt_cb = function ( $query, $query_vars ) use ( $meta_field_name ) {
@@ -1598,8 +1613,9 @@ function eu_owb_find_orders( $args ) {
 		}
 	}
 
-	$orders          = array();
-	$order_id_parsed = eu_owb_get_order_id_from_string( $args['order_id'] );
+	$orders              = array();
+	$order_id_parsed     = eu_owb_get_order_id_from_string( $args['order_id'] );
+	$order_number_parsed = eu_owb_parse_custom_order_number( $args['order_id'] );
 
 	/**
 	 * Need to find all possible orders here (no matter which status) to prevent
@@ -1616,7 +1632,7 @@ function eu_owb_find_orders( $args ) {
 		$main_query_args['date_created'] = $args['date_created'];
 	}
 
-	if ( empty( $order_id_parsed ) && empty( $args['email'] ) && empty( $args['customer_id'] ) ) {
+	if ( empty( $order_id_parsed ) && empty( $order_number_parsed ) && empty( $args['email'] ) && empty( $args['customer_id'] ) ) {
 		return $orders;
 	}
 
@@ -1631,16 +1647,16 @@ function eu_owb_find_orders( $args ) {
 		$main_query_args['customer_id'] = $args['customer_id'];
 	}
 
-	/**
-	 * First, find orders by order id (if available) and/or billing email (if available).
-	 */
-	if ( ! empty( $order_id_parsed ) || ! empty( $args['email'] ) ) {
-		$orders = wc_get_orders( apply_filters( 'eu_owb_woocommerce_find_order_query_args', $main_query_args ) );
+	// Try to find the order by a custom order number field in case the parsed order id does not match the arg
+	if ( ! empty( $order_number_parsed ) && $order_number_parsed !== $order_id_parsed ) {
+		$orders = eu_owb_find_orders_by_custom_order_number( $args );
 	}
 
-	// Now lets try to find the order by a custom order number field
-	if ( empty( $orders ) && ! empty( $order_id_parsed ) ) {
-		$orders = eu_owb_find_orders_by_custom_order_number( $args );
+	/**
+	 * Find orders by order id (if available) and/or billing email (if available).
+	 */
+	if ( empty( $orders ) && ( ! empty( $order_id_parsed ) || ! empty( $args['email'] ) ) ) {
+		$orders = wc_get_orders( apply_filters( 'eu_owb_woocommerce_find_order_query_args', $main_query_args ) );
 	}
 
 	/**
