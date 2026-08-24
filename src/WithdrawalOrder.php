@@ -923,8 +923,11 @@ class WithdrawalOrder extends \WC_Abstract_Order implements \ArrayAccess {
 
 		foreach ( $this->get_items() as $item ) {
 			if ( $item->get_parent_id() > 0 && $item->get_quantity_left_to_refund() > 0 ) {
+				$qty = $item->get_quantity_left_to_refund();
+
 				$items[ $item->get_parent_id() ] = array(
-					'quantity' => $item->get_quantity_left_to_refund(),
+					'quantity' => $qty,
+					'qty'      => $qty, // wc_restock_refunded_items support
 					'item_id'  => $item->get_id(),
 					'item'     => $item,
 				);

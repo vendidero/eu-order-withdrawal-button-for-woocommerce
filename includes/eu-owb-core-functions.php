@@ -1084,6 +1084,8 @@ function eu_owb_order_confirm_withdrawal_request( $request_or_order ) {
 	$order_note     = _x( 'A withdrawal request has been confirmed.', 'owb', 'eu-order-withdrawal-button-for-woocommerce' );
 
 	if ( $order ) {
+		eu_owb_maybe_restock_withdrawal_order_items( $request );
+
 		if ( empty( $default_status ) || $order->has_status( $default_status ) ) {
 			$order->add_order_note( $order_note );
 			$order->save();
@@ -1103,6 +1105,24 @@ function eu_owb_order_confirm_withdrawal_request( $request_or_order ) {
 	WC()->mailer()->emails['EU_OWB_Email_Customer_Withdrawal_Request_Confirmed']->trigger( $request->get_id(), $request );
 
 	return true;
+}
+
+/**
+ * @param \Vendidero\OrderWithdrawalButton\WithdrawalOrder $request
+ *
+ * @return bool
+ */
+function eu_owb_maybe_restock_withdrawal_order_items( $request ) {
+	if ( $order = $request->get_parent() ) {
+		$increase_stock = ! $order->get_date_paid() || in_array( $request->get_original_status(), array( 'wc-pending', 'wc-on-hold' ), true );
+
+		if ( apply_filters( 'eu_owb_woocommerce_order_withdrawal_confirmed_restock_items', $increase_stock, $order, $request ) ) {
+			wc_restock_refunded_items( $order, $request->get_refundable_items() );
+			return true;
+		}
+	}
+
+	return false;
 }
 
 function eu_owb_prevent_order_status_change_notifications( $order ) {
