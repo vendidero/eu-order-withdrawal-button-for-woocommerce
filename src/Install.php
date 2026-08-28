@@ -36,6 +36,8 @@ class Install {
 				 * after updating from earlier versions.
 				 */
 				update_option( 'eu_owb_woocommerce_mandatory_fields', array( 'order_number' ) );
+			} elseif ( version_compare( $current_version, '2.4.2', '<' ) ) {
+				update_option( 'eu_owb_woocommerce_guest_order_validation', 'none' );
 			}
 		}
 

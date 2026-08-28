@@ -484,6 +484,31 @@ class Ajax {
 				}
 			}
 
+			$validation = eu_owb_get_guest_order_validation_option();
+
+			if ( 'none' !== $validation ) {
+				switch ( $validation ) {
+					case 'order_existence':
+						if ( empty( $order ) ) {
+							$error->add( 'not_found', sprintf( _x( 'Sorry, we were unable to find an order based on the information you provided. Please try again - if the issue persists, please <a href="%s">contact support</a> for help.', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ), esc_url( eu_owb_get_contact_support_url() ) ), array( 'field' => 'order_number' ) );
+							self::send_json_error( $error, 404 );
+						}
+						break;
+					case 'order_email_match':
+						if ( empty( $order ) || ! eu_owb_custom_email_matches_order_email( $order, $email ) ) {
+							$error->add( 'not_found', sprintf( _x( 'Sorry, we were unable to find an order based on the information you provided. Please try again - if the issue persists, please <a href="%s">contact support</a> for help.', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ), esc_url( eu_owb_get_contact_support_url() ) ), array( 'field' => 'order_number' ) );
+							self::send_json_error( $error, 404 );
+						}
+						break;
+					case 'order_or_email':
+						if ( empty( $order ) && empty( $meta['email_has_orders'] ) ) {
+							$error->add( 'not_found', sprintf( _x( 'Sorry, we were unable to find an order based on the information you provided. Please try again - if the issue persists, please <a href="%s">contact support</a> for help.', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ), esc_url( eu_owb_get_contact_support_url() ) ), array( 'field' => 'order_number' ) );
+							self::send_json_error( $error, 404 );
+						}
+						break;
+				}
+			}
+
 			$is_valid_request = true;
 
 			do_action( 'eu_owb_woocommerce_process_order_withdrawal_guest_request', $order, $error, $select_items );

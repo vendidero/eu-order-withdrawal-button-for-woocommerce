@@ -5,7 +5,7 @@ Requires at least: 5.4
 Tested up to: 7.1
 WC requires at least: 3.9
 WC tested up to: 11.1
-Stable tag: 2.4.1
+Stable tag: 2.4.2
 Requires PHP: 7.4
 License: GPLv3
 License URI: http://www.gnu.org/licenses/gpl-3.0.html
@@ -20,6 +20,8 @@ EU Order Withdrawal Button for WooCommerce adds compliance with the [EU directiv
 * *Manage withdrawals* - Easily manage withdrawals from your WooCommerce order page by either confirming or rejecting requests.
 * *Send confirmation emails* - Automatically confirm receipt of the withdrawal by email including all required information.
 * *Partial withdrawals* - Optionally allow customers to submit partial withdrawal requests.
+* *Guest order validation* - Select the level of validation for guest withdrawal requests, e.g. none, order existence, order email match etc.
+* *Additional Spam protection* - Prevent spam via a built-in honeypot field and IP limits.
 * *GDPR ready* - Comes with privacy policy proposal, support for personal data export and erasure.
 * *WPML compatibility* - Comes with built-in compatibility for multilingual shops using WPML.
 
@@ -81,6 +83,9 @@ Please report security bugs found in the source code of the EU Order Withdrawal 
 3. Manage withdrawals
 
 == Changelog ==
+= 2.4.2 =
+* Improvement: Introduce guest order validation setting (set to none after update)
+
 = 2.4.1 =
 * Improvement: Prefer searching for custom order number first to prevent finding wrong ids
 * Improvement: Restock order items on withdrawal confirmation in case no payment has been made yet

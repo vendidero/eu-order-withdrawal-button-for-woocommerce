@@ -16,7 +16,7 @@ class Package {
 	 *
 	 * @var string
 	 */
-	const VERSION = '2.4.1';
+	const VERSION = '2.4.2';
 
 	protected static $localized_scripts = array();
 
@@ -613,6 +613,16 @@ class Package {
 			add_action( 'eu_owb_woocommerce_before_trash_withdrawal', array( $cache, 'update_on_order_trashed' ), 10, 2 );
 		} catch ( \Exception $e ) { // phpcs:ignore Generic.CodeAnalysis.EmptyStatement.DetectedCatch
 		}
+	}
+
+	public static function get_base_country() {
+		if ( WC()->countries ) {
+			$base_country = WC()->countries->get_base_country();
+		} else {
+			$base_country = wc_get_base_location()['country'];
+		}
+
+		return $base_country;
 	}
 
 	public static function register_data_stores( $stores ) {

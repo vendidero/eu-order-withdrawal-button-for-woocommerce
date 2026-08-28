@@ -4,6 +4,7 @@
  *
  * @version 1.0.0
  */
+
 defined( 'ABSPATH' ) || exit;
 
 /**
@@ -1815,4 +1816,14 @@ function eu_owb_wptexturize_withdrawal_additional_information( $content ) {
 	} else {
 		return wptexturize( $content );
 	}
+}
+
+function eu_owb_get_guest_order_validation_option() {
+	$setting = \Vendidero\OrderWithdrawalButton\Package::get_setting( 'guest_order_validation' );
+
+	if ( ! in_array( $setting, array( 'none', 'order_existence', 'order_email_match', 'order_or_email' ), true ) ) {
+		$setting = 'none';
+	}
+
+	return $setting;
 }

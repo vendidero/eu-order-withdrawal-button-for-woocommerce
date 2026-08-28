@@ -79,6 +79,21 @@ class Settings {
 			),
 
 			array(
+				'title'    => _x( 'Guest validation', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ),
+				'desc'     => _x( 'Choose how to validate guest withdrawal requests. Spam protection via a built-in honeypot field and IP limits apply.', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ) . ( 'DE' === Package::get_base_country() ? '<div class="eu-owb-settings-additional-desc">' . _x( 'Please note: As to current legal interpretation a validation lock would mean that a consumer who makes a typo might no longer be able to submit their withdrawal within the prescribed time limit—which directly contradicts the protective purpose of Section 356a of the German Civil Code (BGB). Please seek legal advise before using.', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ) . '</div>' : '' ),
+				'id'       => 'eu_owb_woocommerce_guest_order_validation',
+				'default'  => 'DE' === Package::get_base_country() ? 'none' : 'order_or_email',
+				'autoload' => false,
+				'type'     => 'select',
+				'options'  => array(
+					'order_existence'   => _x( 'Enforce that the order number entered exists.', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ),
+					'order_email_match' => _x( 'Order must exist and email must match the one from the original order.', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ),
+					'order_or_email'    => _x( 'Either order number or email address must exist.', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ),
+					'none'              => _x( 'Do not validate', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ),
+				),
+			),
+
+			array(
 				'title'    => _x( 'Partial withdrawals', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ),
 				'desc'     => _x( 'Allow customers and verified guests to select which order items to withdraw.', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ),
 				'id'       => 'eu_owb_woocommerce_enable_partial_withdrawals',
