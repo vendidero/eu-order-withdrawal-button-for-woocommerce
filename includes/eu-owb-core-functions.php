@@ -1668,8 +1668,11 @@ function eu_owb_find_orders( $args ) {
 		$main_query_args['customer_id'] = $args['customer_id'];
 	}
 
-	// Try to find the order by a custom order number field in case the parsed order id does not match the arg
-	if ( ! empty( $order_number_parsed ) && $order_number_parsed !== $order_id_parsed ) {
+	/**
+	 * Try to find the order by a custom order number field first - the parsed order number can be numeric too so
+	 * there is no way to determine (based on the order number) whether an additional query is needed.
+	 */
+	if ( ! empty( $order_number_parsed ) ) {
 		$orders = eu_owb_find_orders_by_custom_order_number( $args );
 	}
 
