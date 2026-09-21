@@ -431,7 +431,6 @@ class Ajax {
 			}
 
 			$meta['contract_identification'] = $order_number;
-			$meta['order_number']            = $order_number;
 
 			if ( ! empty( $additional_information ) ) {
 				$meta['additional_information'] = $additional_information;
