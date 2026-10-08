@@ -16,7 +16,7 @@ class Package {
 	 *
 	 * @var string
 	 */
-	const VERSION = '2.4.3';
+	const VERSION = '2.4.4';
 
 	protected static $localized_scripts = array();
 
@@ -91,6 +91,8 @@ class Package {
 
 		add_action( 'woocommerce_order_details_before_order_table', array( __CLASS__, 'register_withdrawal_item_labels' ) );
 		add_filter( 'woocommerce_my_account_my_orders_actions', array( __CLASS__, 'register_withdrawal_link' ), 10, 2 );
+
+		add_filter( 'wc_order_types', array( __CLASS__, 'disable_withdrawal_hpos_sync' ), 10, 2 );
 	}
 
 	/**
@@ -225,6 +227,22 @@ class Package {
 		}
 
 		return $result;
+	}
+
+	/**
+	 * Prevent syncing shop_order_withdraw with legacy wp_posts table as this is currently not supported.
+	 *
+	 * @param $order_types
+	 * @param $for
+	 *
+	 * @return array|mixed
+	 */
+	public static function disable_withdrawal_hpos_sync( $order_types, $for ) {
+		if ( 'cot-migration' === $for && self::is_hpos_enabled() ) {
+			$order_types = array_diff( $order_types, array( 'shop_order_withdraw' ) );
+		}
+
+		return $order_types;
 	}
 
 	public static function maybe_link_refund( $order_id, $refund_id ) {
