@@ -14,7 +14,7 @@ class Privacy {
 		add_filter( 'wp_privacy_personal_data_erasers', array( __CLASS__, 'register_eraser' ) );
 	}
 
-	public static function register_exporter() {
+	public static function register_exporter( $exporters = array() ) {
 		$exporters['eu-owb-woocommerce'] = array(
 			'exporter_friendly_name' => _x( 'EU Order Withdrawal Button for WooCommerce', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ),
 			'callback'               => array( __CLASS__, 'export' ),
@@ -23,13 +23,13 @@ class Privacy {
 		return $exporters;
 	}
 
-	public static function register_eraser() {
-		$exporters['eu-owb-woocommerce'] = array(
+	public static function register_eraser( $erasers = array() ) {
+		$erasers['eu-owb-woocommerce'] = array(
 			'eraser_friendly_name' => _x( 'EU Order Withdrawal Button for WooCommerce', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ),
 			'callback'             => array( __CLASS__, 'erase' ),
 		);
 
-		return $exporters;
+		return $erasers;
 	}
 
 	public static function erase( $email_address, $page = 1 ) {

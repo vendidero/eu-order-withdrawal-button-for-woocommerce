@@ -7,7 +7,7 @@
  * Author URI: https://vendidero.com
  * Text Domain: eu-order-withdrawal-button-for-woocommerce
  * Domain Path: /i18n/languages/
- * Version: 2.4.4
+ * Version: 2.4.5
  * Requires at least: 5.4
  * Requires PHP: 7.4
  * License: GPLv3
