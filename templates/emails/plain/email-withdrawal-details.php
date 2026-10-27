@@ -11,7 +11,7 @@
  * the readme will list any important changes.
  *
  * @package Vendidero/OrderWithdrawalButton/Templates
- * @version 2.4.0
+ * @version 2.4.6
  */
 
 defined( 'ABSPATH' ) || exit;
@@ -51,6 +51,8 @@ endif;
 
 <?php if ( $show_deleted_original && ( $original_order_id = eu_owb_order_withdrawal_request_get_original_order_id( $withdrawal ) ) ) : ?>
 	<?php echo wp_kses_post( sprintf( _x( 'As you requested, we have deleted your original withdrawal request to %1$s.', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ), esc_html( $original_order_id ) ) ) . "\n"; ?>
+<?php elseif ( $show_deleted_original && $withdrawal->is_update() ) : ?>
+	<?php echo esc_html_x( 'As you requested, we have edited your original withdrawal request.', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ) . "\n"; ?>
 <?php endif; ?>
 
 <?php echo "\n==========\n"; ?>

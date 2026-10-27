@@ -21,7 +21,11 @@ echo "=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=\n";
 echo esc_html( wp_strip_all_tags( $email_heading ) );
 echo "\n=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=\n\n";
 
-echo esc_html_x( 'You’ve received a new withdrawal request:', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ) . "\n\n";
+if ( $withdrawal->is_update() ) {
+	echo esc_html_x( 'A withdrawal request has been updated:', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ) . "\n\n";
+} else {
+	echo esc_html_x( 'You’ve received a new withdrawal request:', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ) . "\n\n";
+}
 
 do_action( 'eu_owb_woocommerce_withdrawal_request_details', $order, $sent_to_admin, $plain_text, $email, $withdrawal );
 

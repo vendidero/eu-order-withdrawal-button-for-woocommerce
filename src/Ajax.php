@@ -584,7 +584,13 @@ class Ajax {
 		if ( $is_valid_edit_request && $original_withdrawal_request ) {
 			$meta['original_request_id'] = $original_withdrawal_request->get_id();
 
-			if ( isset( $_POST['delete_original_request'] ) ) {
+			/**
+			 * In case the original request belongs to the same order (e.g. customer chose items to withdraw)
+			 * update the existing request instead of deleting it.
+			 */
+			$is_same_order = $order && $original_withdrawal_request->get_parent_id() === $order->get_id();
+
+			if ( isset( $_POST['delete_original_request'] ) && ! $is_same_order ) {
 				$meta['original_request_order_id'] = $original_withdrawal_request->get_contract_identification();
 				eu_owb_order_delete_withdrawal_request( $original_withdrawal_request, true );
 			}

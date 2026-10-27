@@ -30,6 +30,13 @@ if ( ! class_exists( 'EU_OWB_Email_New_Withdrawal_Request', false ) ) :
 		public $withdrawal;
 
 		/**
+		 * Is this an update to a withdrawal request?
+		 *
+		 * @var bool
+		 */
+		public $is_update = false;
+
+		/**
 		 * Constructor.
 		 */
 		public function __construct() {
@@ -60,10 +67,50 @@ if ( ! class_exists( 'EU_OWB_Email_New_Withdrawal_Request', false ) ) :
 		/**
 		 * Get email subject.
 		 *
+		 * @param bool $update Whether it is an update to an existing withdrawal request.
 		 * @return string
 		 */
-		public function get_default_subject() {
-			return _x( '[{site_title}]: New withdrawal request to {order_number}', 'owb', 'eu-order-withdrawal-button-for-woocommerce' );
+		public function get_default_subject( $update = false ) {
+			if ( $update ) {
+				return _x( '[{site_title}]: Updated withdrawal request to {order_number}', 'owb', 'eu-order-withdrawal-button-for-woocommerce' );
+			} else {
+				return _x( '[{site_title}]: New withdrawal request to {order_number}', 'owb', 'eu-order-withdrawal-button-for-woocommerce' );
+			}
+		}
+
+		/**
+		 * Get email heading.
+		 *
+		 * @param bool $update Whether it is an update to an existing withdrawal request.
+		 * @return string
+		 */
+		public function get_default_heading( $update = false ) {
+			if ( $update ) {
+				return _x( 'Updated withdrawal request: {order_number}', 'owb', 'eu-order-withdrawal-button-for-woocommerce' );
+			} else {
+				return _x( 'New withdrawal request: {order_number}', 'owb', 'eu-order-withdrawal-button-for-woocommerce' );
+			}
+		}
+
+		/**
+		 * Get email subject.
+		 *
+		 * @return string
+		 */
+		public function get_subject() {
+			if ( $this->is_update ) {
+				$subject = $this->get_option( 'subject_update', $this->get_default_subject( true ) );
+			} else {
+				$subject = $this->get_option( 'subject', $this->get_default_subject() );
+			}
+
+			/**
+			 * Filter to adjust the email subject.
+			 *
+			 * @param string                              $subject The subject.
+			 * @param EU_OWB_Email_New_Withdrawal_Request $email The email instance.
+			 */
+			return apply_filters( 'woocommerce_email_subject_new_withdrawal_request', $this->format_string( $subject ), $this->object, $this );
 		}
 
 		/**
@@ -71,8 +118,20 @@ if ( ! class_exists( 'EU_OWB_Email_New_Withdrawal_Request', false ) ) :
 		 *
 		 * @return string
 		 */
-		public function get_default_heading() {
-			return _x( 'New withdrawal request: {order_number}', 'owb', 'eu-order-withdrawal-button-for-woocommerce' );
+		public function get_heading() {
+			if ( $this->is_update ) {
+				$heading = $this->get_option( 'heading_update', $this->get_default_heading( true ) );
+			} else {
+				$heading = $this->get_option( 'heading', $this->get_default_heading() );
+			}
+
+			/**
+			 * Filter to adjust the email heading.
+			 *
+			 * @param string                              $heading The heading.
+			 * @param EU_OWB_Email_New_Withdrawal_Request $email The email instance.
+			 */
+			return apply_filters( 'woocommerce_email_heading_new_withdrawal_request', $this->format_string( $heading ), $this->object, $this );
 		}
 
 		/**
@@ -91,6 +150,7 @@ if ( ! class_exists( 'EU_OWB_Email_New_Withdrawal_Request', false ) ) :
 				$this->withdrawal       = $withdrawal;
 				$this->object           = $withdrawal;
 				$this->withdrawal_email = $this->withdrawal->get_email();
+				$this->is_update        = $this->withdrawal->is_update();
 
 				$this->setup_email_locale();
 
@@ -148,6 +208,7 @@ if ( ! class_exists( 'EU_OWB_Email_New_Withdrawal_Request', false ) ) :
 					'order'              => $this->object,
 					'withdrawal_email'   => $this->withdrawal_email,
 					'withdrawal'         => $this->withdrawal,
+					'is_update'          => $this->is_update,
 					'email_heading'      => $this->get_heading(),
 					'additional_content' => $this->get_additional_content(),
 					'sent_to_admin'      => true,
@@ -169,6 +230,7 @@ if ( ! class_exists( 'EU_OWB_Email_New_Withdrawal_Request', false ) ) :
 					'order'              => $this->object,
 					'withdrawal_email'   => $this->withdrawal_email,
 					'withdrawal'         => $this->withdrawal,
+					'is_update'          => $this->is_update,
 					'email_heading'      => $this->get_heading(),
 					'additional_content' => $this->get_additional_content(),
 					'sent_to_admin'      => true,
@@ -193,8 +255,36 @@ if ( ! class_exists( 'EU_OWB_Email_New_Withdrawal_Request', false ) ) :
 		public function init_form_fields() {
 			parent::init_form_fields();
 
+			/* translators: %s: list of placeholders */
+			$placeholder_text = sprintf( _x( 'Available placeholders: %s', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ), '<code>' . esc_html( implode( '</code>, <code>', array_keys( $this->placeholders ) ) ) . '</code>' );
+			$form_fields      = array();
+
+			foreach ( $this->form_fields as $key => $field ) {
+				$form_fields[ $key ] = $field;
+
+				if ( 'subject' === $key ) {
+					$form_fields['subject_update'] = array(
+						'title'       => _x( 'Updated withdrawal subject', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ),
+						'type'        => 'text',
+						'desc_tip'    => true,
+						'description' => $placeholder_text,
+						'placeholder' => $this->get_default_subject( true ),
+						'default'     => '',
+					);
+				} elseif ( 'heading' === $key ) {
+					$form_fields['heading_update'] = array(
+						'title'       => _x( 'Updated withdrawal email heading', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ),
+						'type'        => 'text',
+						'desc_tip'    => true,
+						'description' => $placeholder_text,
+						'placeholder' => $this->get_default_heading( true ),
+						'default'     => '',
+					);
+				}
+			}
+
 			$this->form_fields = array_merge(
-				$this->form_fields,
+				$form_fields,
 				array(
 					'recipient' => array(
 						'title'       => _x( 'Recipient(s)', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ),
