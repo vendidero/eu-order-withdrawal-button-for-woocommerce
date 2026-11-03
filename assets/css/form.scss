@@ -22,7 +22,7 @@ form.order-withdrawal-request {
     }
   }
 
-  .form-row-email-repeat {
+  .form-row-email-repeat, #order-withdrawal-request-email-repeat_field {
     position: absolute !important;
     overflow: hidden !important;
     display: inline !important;
