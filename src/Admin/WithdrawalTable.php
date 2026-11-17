@@ -1067,7 +1067,7 @@ class WithdrawalTable extends \WP_List_Table {
 			$note_html .= '<ul class="order_notes withdrawal-notes">';
 
 			foreach ( $notes as $note ) {
-				$content = wp_kses_post( $note->content );
+				$content = eu_owb_kses_withdrawal_note( $note->content );
 				$content = eu_owb_wptexturize_withdrawal_additional_information( $content );
 
 				$note_html .= '<li class="note system-note" rel="' . absint( $note->id ) . '"><div class="note_content">' . wpautop( $content ) . '</div><p class="meta"> <abbr class="exact-date" title="' . esc_attr( $note->date_created->date( 'Y-m-d H:i:s' ) ) . '">' . esc_html( sprintf( _x( '%1$s at %2$s', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ), $note->date_created->date_i18n( wc_date_format() ), $note->date_created->date_i18n( wc_time_format() ) ) ) . '</abbr></p></li>';

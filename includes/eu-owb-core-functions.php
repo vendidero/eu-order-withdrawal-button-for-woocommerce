@@ -975,7 +975,7 @@ function eu_owb_create_order_withdrawal_request( $email, $order = false, $items 
 			$original_status = $withdrawal->get_original_status();
 
 			if ( $withdrawal->get_id() > 0 ) {
-				$withdrawal->add_order_note( sprintf( _x( 'Customer requested an update to the original withdrawal: %1$s', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ), wp_kses_post( '<pre><code>' . (string) $withdrawal ) . '</code></pre>' ) );
+				$withdrawal->add_order_note( sprintf( _x( 'Customer requested an update to the original withdrawal: %1$s', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ), '<pre><code>' . esc_html( (string) $withdrawal ) . '</code></pre>' ) );
 			}
 		}
 	}
@@ -1811,6 +1811,39 @@ function eu_owb_get_email_withdrawal_items( $withdrawal, $args = array() ) {
 
 function eu_owb_enable_additional_information_field() {
 	return 'yes' === \Vendidero\OrderWithdrawalButton\Package::get_setting( 'enable_additional_information' );
+}
+
+/**
+ * Sanitize a withdrawal note for output within the admin preview modal.
+ * Only allows basic formatting tags without attributes (except safe link attributes) to prevent
+ * injected markup (e.g. data-* attributes or custom classes) from being interpreted by admin scripts.
+ *
+ * @param string $content
+ *
+ * @return string
+ */
+function eu_owb_kses_withdrawal_note( $content ) {
+	$allowed_html = array(
+		'a'      => array(
+			'href'   => true,
+			'title'  => true,
+			'target' => true,
+			'rel'    => true,
+		),
+		'br'     => array(),
+		'p'      => array(),
+		'pre'    => array(),
+		'code'   => array(),
+		'strong' => array(),
+		'b'      => array(),
+		'em'     => array(),
+		'i'      => array(),
+		'ul'     => array(),
+		'ol'     => array(),
+		'li'     => array(),
+	);
+
+	return wp_kses( $content, apply_filters( 'eu_owb_woocommerce_withdrawal_note_allowed_html', $allowed_html ) );
 }
 
 function eu_owb_wptexturize_withdrawal_additional_information( $content ) {

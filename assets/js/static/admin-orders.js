@@ -12,7 +12,7 @@ window.eu_owb.admin_orders = window.eu_owb.admin_orders || {};
             var self  = eu_owb.admin_orders;
             self.params = eu_owb_woocommerce_admin_orders_params;
 
-            $( document ).on( 'click', '.order-preview-trigger:not(.disabled)', self.onPreview );
+            $( document ).on( 'click', '.wp-list-table .order-preview-trigger:not(.disabled)', self.onPreview );
         },
 
         onPreview: function () {
@@ -20,7 +20,7 @@ window.eu_owb.admin_orders = window.eu_owb.admin_orders || {};
                 self  = eu_owb.admin_orders,
                 $order_id      = $previewButton.data( 'orderId' );
 
-            if ( $previewButton.data( 'order-data' ) ) {
+            if ( $previewButton.data( 'eu-owb-preview-loaded' ) && $previewButton.data( 'orderData' ) ) {
                 $( this ).WCBackboneModal({
                     template: 'wc-modal-view-order',
                     variable : $previewButton.data( 'orderData' )
@@ -41,6 +41,7 @@ window.eu_owb.admin_orders = window.eu_owb.admin_orders || {};
 
                         if ( response.success ) {
                             $previewButton.data( 'orderData', response.data );
+                            $previewButton.data( 'eu-owb-preview-loaded', true );
 
                             $( this ).WCBackboneModal({
                                 template: 'wc-modal-view-order',

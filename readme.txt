@@ -5,7 +5,7 @@ Requires at least: 5.4
 Tested up to: 7.2
 WC requires at least: 3.9
 WC tested up to: 11.3
-Stable tag: 2.4.6
+Stable tag: 2.4.7
 Requires PHP: 7.4
 License: GPLv3
 License URI: http://www.gnu.org/licenses/gpl-3.0.html
@@ -83,6 +83,10 @@ Please report security bugs found in the source code of the EU Order Withdrawal 
 3. Manage withdrawals
 
 == Changelog ==
+= 2.4.7 =
+* Improvement: Modernize build process
+* Security: Cross-Site scripting via User-Agent Header in withdrawal preview modal (thanks to Mohamed Amgad Khater for disclosing)
+
 = 2.4.6 =
 * Improvement: Make sure that withdrawal edit flow does not delete the original withdrawal request in case the (linked) order stays the same
 * Improvement: Indicate that a withdrawal request has been edited when sending notifications
