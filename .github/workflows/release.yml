@@ -122,6 +122,15 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
           git checkout -b "build/${VERSION}"
+
+          # Composer skips tags whose composer.json version (dev-main on main) does not match the tag.
+          bin/bump-version.sh -s -c -v "${VERSION}"
+          COMPOSER_VERSION=$(php -r 'echo json_decode(file_get_contents("composer.json"), true)["version"] ?? "";')
+          if [ -n "$COMPOSER_VERSION" ] && [ "$COMPOSER_VERSION" != "$VERSION" ]; then
+            echo "::error::Version in composer.json is \"${COMPOSER_VERSION}\" but \"${VERSION}\" was requested."
+            exit 1
+          fi
+
           git add --force build/. vendor/.
           git add --force i18n/languages/.
           git add .
