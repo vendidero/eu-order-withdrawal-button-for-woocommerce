@@ -91,9 +91,6 @@ window.eu_owb.admin_order = window.eu_owb.admin_order || {};
                                 allowClear:  $( this ).data( 'allow_clear' ) ? true : false,
                                 placeholder: $( this ).data( 'placeholder' ),
                                 minimumInputLength: $( this ).data( 'minimum_input_length' ) ? $( this ).data( 'minimum_input_length' ) : '1',
-                                escapeMarkup: function( m ) {
-                                    return m;
-                                },
                                 ajax: {
                                     url:         self.params.ajax_url,
                                     dataType:    'json',

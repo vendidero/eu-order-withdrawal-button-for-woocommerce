@@ -413,7 +413,7 @@ class Admin {
 											<p class="withdrawal-items"><?php echo implode( ', ', $item_list ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></p>
 
 											<?php if ( $withdrawal->has_status( 'rejected' ) && ! empty( $withdrawal->get_rejection_reason() ) ) : ?>
-												<?php echo wp_kses_post( wpautop( make_clickable( $withdrawal->get_rejection_reason() ) ) ); ?>
+												<?php echo wp_kses_post( wpautop( make_clickable( esc_html( $withdrawal->get_rejection_reason() ) ) ) ); ?>
 											<?php endif; ?>
 										</div>
 

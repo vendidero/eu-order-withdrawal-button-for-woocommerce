@@ -84,8 +84,13 @@ Please report security bugs found in the source code of the EU Order Withdrawal 
 
 == Changelog ==
 = 2.4.8 =
-* Security: Stored Cross-Site Scripting via (inherited) billing name in admin withdrawal list table, order and email views (thanks to Mariusz for disclosing)
-* Security: Never read withdrawal preview modal data from DOM attributes
+* Security: Rescanned codebase for wp_kses usage to prevent html-tag rebuilding
+* Security: Cross-Site Scripting via (inherited) billing name in admin withdrawal list table (thanks to Mariusz for disclosing)
+* Security: Strip markup from customer-controlled email placeholders (e.g. {order_number}, {contract_identification})
+* Security: Escape withdrawal rejection reason in admin, order notes and emails
+* Fix: Restrict props editable via the admin withdrawal save AJAX action
+* Fix: Do not include additional information in customer emails for unverified withdrawal requests
+* Fix: Per-email rate limit ignored the eu_owb_woocommerce_max_requests_per_email filter
 
 = 2.4.7 =
 * Improvement: Modernize build process

@@ -11,7 +11,7 @@
  * the readme will list any important changes.
  *
  * @package Vendidero/OrderWithdrawalButton/Templates
- * @version 2.4.6
+ * @version 2.4.8
  */
 
 defined( 'ABSPATH' ) || exit;
@@ -48,7 +48,7 @@ do_action( 'eu_owb_woocommerce_withdrawal_before_order_table', $order, $sent_to_
 	<?php endif; ?>
 </ul>
 
-<?php if ( $withdrawal->get_additional_information() ) : ?>
+<?php if ( empty( $hide_additional_information ) && $withdrawal->get_additional_information() ) : ?>
 	<?php if ( $display_section_divider ) : ?>
 		<hr style="border: 0; border-top: 1px solid #1E1E1E; border-top-color: rgba(30, 30, 30, 0.2); margin: 20px 0;">
 	<?php endif; ?>

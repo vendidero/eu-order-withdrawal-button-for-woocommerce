@@ -41,7 +41,7 @@ if ( apply_filters( 'eu_order_woocommerce_withdrawal_email_show_verification_cod
 endif;
 ?>
 
-<?php if ( $withdrawal->get_additional_information() ) : ?>
+<?php if ( empty( $hide_additional_information ) && $withdrawal->get_additional_information() ) : ?>
 	<?php if ( $email_improvements_enabled ) : ?>
 		<?php echo "\n" . esc_html_x( 'Additional Information', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ) . "\n" . wp_kses( eu_owb_wptexturize_withdrawal_additional_information( $withdrawal->get_additional_information() ), array() ) . "\n"; ?>
 	<?php else : ?>

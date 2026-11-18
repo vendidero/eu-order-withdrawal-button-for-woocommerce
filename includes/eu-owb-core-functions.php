@@ -1207,7 +1207,7 @@ function eu_owb_order_reject_withdrawal_request( $request_or_order, $reason = ''
 
 	if ( $order ) {
 		$default_status = apply_filters( 'eu_owb_woocommerce_withdrawal_request_rejected_status', $last_known_status, $order );
-		$order_note     = sprintf( _x( 'A withdrawal request has been rejected: %1$s', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ), $reason );
+		$order_note     = sprintf( _x( 'A withdrawal request has been rejected: %1$s', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ), esc_html( $reason ) );
 
 		if ( empty( $default_status ) || $order->has_status( $default_status ) ) {
 			$order->add_order_note( $order_note );
@@ -1225,6 +1225,20 @@ function eu_owb_order_reject_withdrawal_request( $request_or_order, $reason = ''
 	WC()->mailer()->emails['EU_OWB_Email_Customer_Withdrawal_Request_Rejected']->trigger( $request->get_id(), $request );
 
 	return true;
+}
+
+/**
+ * Sanitize a (potentially customer-controlled) value before using it as an email placeholder.
+ * Placeholders are replaced via WC_Email::format_string() and may end up in
+ * additional content which is output via wp_kses_post(). Strip angle brackets to make sure
+ * no markup (e.g. "< a href=...>") can be injected while keeping the subject plain text.
+ *
+ * @param mixed $value
+ *
+ * @return string
+ */
+function eu_owb_sanitize_email_placeholder( $value ) {
+	return str_replace( array( '<', '>' ), '', wp_strip_all_tags( (string) $value ) );
 }
 
 /**

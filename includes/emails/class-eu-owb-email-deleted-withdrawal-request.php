@@ -96,11 +96,11 @@ if ( ! class_exists( 'EU_OWB_Email_Deleted_Withdrawal_Request', false ) ) :
 
 				$this->setup_email_locale();
 
-				$this->placeholders['{order_number}']            = $this->withdrawal->get_order_number();
-				$this->placeholders['{contract_identification}'] = $this->withdrawal->get_contract_identification();
+				$this->placeholders['{order_number}']            = eu_owb_sanitize_email_placeholder( $this->withdrawal->get_order_number() );
+				$this->placeholders['{contract_identification}'] = eu_owb_sanitize_email_placeholder( $this->withdrawal->get_contract_identification() );
 				$this->placeholders['{order_date}']              = wc_format_datetime( $this->withdrawal->get_date_created() );
 				$this->placeholders['{withdrawal_date}']         = wc_format_datetime( $this->withdrawal->get_date_received() );
-				$this->placeholders['{withdrawal_email}']        = $this->withdrawal_email;
+				$this->placeholders['{withdrawal_email}']        = eu_owb_sanitize_email_placeholder( $this->withdrawal_email );
 			}
 
 			if ( $this->is_enabled() && $this->get_recipient() ) {

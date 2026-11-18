@@ -979,26 +979,28 @@ class Package {
 			wc_get_template(
 				'emails/plain/email-withdrawal-details.php',
 				array(
-					'order'                 => $order,
-					'sent_to_admin'         => $sent_to_admin,
-					'plain_text'            => $plain_text,
-					'email'                 => $email,
-					'withdrawal'            => $withdrawal,
-					'show_deleted_original' => is_a( $email, 'EU_OWB_Email_Customer_Withdrawal_Request_Received' ) ? true : false,
-					'hide_items'            => is_a( $email, 'EU_OWB_Email_Customer_Withdrawal_Request_Confirmed' ) ? false : ( ! $withdrawal->has_verified_email() && ! $sent_to_admin ),
+					'order'                       => $order,
+					'sent_to_admin'               => $sent_to_admin,
+					'plain_text'                  => $plain_text,
+					'email'                       => $email,
+					'withdrawal'                  => $withdrawal,
+					'show_deleted_original'       => is_a( $email, 'EU_OWB_Email_Customer_Withdrawal_Request_Received' ) ? true : false,
+					'hide_items'                  => is_a( $email, 'EU_OWB_Email_Customer_Withdrawal_Request_Confirmed' ) ? false : ( ! $withdrawal->has_verified_email() && ! $sent_to_admin ),
+					'hide_additional_information' => ! $withdrawal->has_verified_email() && ! $sent_to_admin,
 				)
 			);
 		} else {
 			wc_get_template(
 				'emails/email-withdrawal-details.php',
 				array(
-					'order'                 => $order,
-					'sent_to_admin'         => $sent_to_admin,
-					'plain_text'            => $plain_text,
-					'email'                 => $email,
-					'withdrawal'            => $withdrawal,
-					'show_deleted_original' => is_a( $email, 'EU_OWB_Email_Customer_Withdrawal_Request_Received' ) ? true : false,
-					'hide_items'            => is_a( $email, 'EU_OWB_Email_Customer_Withdrawal_Request_Confirmed' ) ? false : ( ! $withdrawal->has_verified_email() && ! $sent_to_admin ),
+					'order'                       => $order,
+					'sent_to_admin'               => $sent_to_admin,
+					'plain_text'                  => $plain_text,
+					'email'                       => $email,
+					'withdrawal'                  => $withdrawal,
+					'show_deleted_original'       => is_a( $email, 'EU_OWB_Email_Customer_Withdrawal_Request_Received' ) ? true : false,
+					'hide_items'                  => is_a( $email, 'EU_OWB_Email_Customer_Withdrawal_Request_Confirmed' ) ? false : ( ! $withdrawal->has_verified_email() && ! $sent_to_admin ),
+					'hide_additional_information' => ! $withdrawal->has_verified_email() && ! $sent_to_admin,
 				)
 			);
 		}

@@ -115,9 +115,24 @@ class Ajax {
 				);
 
 				eu_owb_order_reject_withdrawal_request( $order, $props['rejection_reason'] );
-			} elseif ( ! empty( $props ) ) {
-				$order->set_props( $props );
-				$order->save();
+			} else {
+				/**
+				 * Only allow updating props explicitly exposed via the admin UI.
+				 */
+				$props = array_intersect_key( $props, array_flip( (array) apply_filters( 'eu_owb_woocommerce_admin_editable_withdrawal_props', array( 'parent_id' ) ) ) );
+
+				if ( isset( $props['parent_id'] ) ) {
+					$props['parent_id'] = absint( $props['parent_id'] );
+
+					if ( ! empty( $props['parent_id'] ) && ! wc_get_order( $props['parent_id'] ) instanceof \WC_Order ) {
+						wp_die( -1 );
+					}
+				}
+
+				if ( ! empty( $props ) ) {
+					$order->set_props( $props );
+					$order->save();
+				}
 			}
 
 			wp_send_json_success(
@@ -178,7 +193,7 @@ class Ajax {
 
 				$found_orders[ $order->get_id() ] = sprintf(
 					esc_html_x( 'Order #%s', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ),
-					$order->get_order_number()
+					esc_html( $order->get_order_number() )
 				);
 			}
 		}
@@ -658,7 +673,7 @@ class Ajax {
 
 				$current_tries = absint( $current_tries ) + 1;
 
-				if ( $current_tries > $max_tries_per_day ) {
+				if ( $current_tries > $max_tries_per_email_per_day ) {
 					$error->add( 'unverified-request-error', sprintf( _x( 'You\'ve submitted too many different unverified withdrawal requests. <a href="%s">Contact support</a> for help.', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ), esc_url( eu_owb_get_contact_support_url() ) ) );
 				} else {
 					set_transient( $transient_key, $current_tries, apply_filters( 'eu_owb_woocommerce_max_requests_per_email_interval', DAY_IN_SECONDS ) );
