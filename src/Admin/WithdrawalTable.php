@@ -799,7 +799,7 @@ class WithdrawalTable extends \WP_List_Table {
 			echo '<a href="#" class="order-preview order-preview-trigger" data-order-id="' . absint( $order->get_id() ) . '" title="' . esc_attr( _x( 'Preview', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ) ) . '">' . esc_html( _x( 'Preview', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ) ) . '</a>';
 		}
 
-		$buyer = $order->get_formatted_full_name( $order->get_email() ) . Admin::get_withdrawal_email_verified_html( $order );
+		$buyer = esc_html( $order->get_formatted_full_name( $order->get_email() ) ) . Admin::get_withdrawal_email_verified_html( $order );
 
 		echo $order->has_status( 'requested' ) ? '<a class="order-preview order-search eu-owb-order-toggle-order-search" href="#"></a>' : '';
 
@@ -887,6 +887,8 @@ class WithdrawalTable extends \WP_List_Table {
 
 			if ( 'email' === $field ) {
 				$value = '<a href="' . esc_url( 'mailto:' . $value ) . '">' . esc_html( $value ) . '</a>';
+			} else {
+				$value = esc_html( $value );
 			}
 
 			$address[ $field ] = $value;

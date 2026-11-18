@@ -16,7 +16,7 @@ class Package {
 	 *
 	 * @var string
 	 */
-	const VERSION = '2.4.7';
+	const VERSION = '2.4.8';
 
 	protected static $localized_scripts = array();
 
