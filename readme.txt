@@ -83,6 +83,11 @@ Please report security bugs found in the source code of the EU Order Withdrawal 
 3. Manage withdrawals
 
 == Changelog ==
+= 2.4.9 =
+* Security: Do not attach guest withdrawal requests to an order (and do not add order notes) in case the email submitted does not match the order email. The suspected order is shown in the admin email and preselected for manual assignment instead.
+* Improvement: Prefer the order matching the submitted email in case multiple orders match the contract identification
+* Fix: Fall back to the country-specific default instead of "none" for unknown guest validation option values
+
 = 2.4.8 =
 * Security: Rescanned codebase for wp_kses usage to prevent html-tag rebuilding
 * Security: Cross-Site Scripting via (inherited) billing name in admin withdrawal list table (thanks to Mariusz for disclosing)

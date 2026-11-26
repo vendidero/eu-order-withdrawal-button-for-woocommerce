@@ -471,6 +471,16 @@ class Ajax {
 					}
 
 					$order_id = $orders_withdrawable[0];
+
+					/**
+					 * Prefer the matching order whose email matches the email submitted.
+					 */
+					foreach ( $orders_withdrawable as $withdrawable_order_id ) {
+						if ( eu_owb_custom_email_matches_order_email( $withdrawable_order_id, $email ) ) {
+							$order_id = $withdrawable_order_id;
+							break;
+						}
+					}
 				} else {
 					$order_id = $orders[0];
 				}
@@ -520,6 +530,18 @@ class Ajax {
 							self::send_json_error( $error, 404 );
 						}
 						break;
+				}
+			}
+
+			/**
+			 * Do not attach guest requests to an order unless the submitter proved to be
+			 * related to that order (matching email or access to the order). The request is stored
+			 * separately instead, referencing the suspected order, and needs to be assigned manually.
+			 */
+			if ( $order && ! eu_owb_custom_email_matches_order_email( $order, $email ) && ! Package::current_request_can_view_order_or_withdrawal( $order ) ) {
+				if ( ! apply_filters( 'eu_owb_woocommerce_attach_unverified_guest_request_to_order', false, $order, $email ) ) {
+					$meta['suspected_order_id'] = $order->get_id();
+					$order                      = false;
 				}
 			}
 

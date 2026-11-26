@@ -540,6 +540,25 @@ function eu_owb_order_withdrawal_request_needs_order_select( $request ) {
 }
 
 /**
+ * Returns the order a guest request (likely) refers to but has not been attached to,
+ * e.g. because the email submitted does not match the order email.
+ *
+ * @param \Vendidero\OrderWithdrawalButton\WithdrawalOrder $request
+ *
+ * @return WC_Order|false
+ */
+function eu_owb_order_withdrawal_request_get_suspected_order( $request ) {
+	if ( $request->has_parent() ) {
+		return false;
+	}
+
+	$order_id = absint( $request->get_meta( '_suspected_order_id' ) );
+	$order    = $order_id ? wc_get_order( $order_id ) : false;
+
+	return $order instanceof WC_Order ? $order : false;
+}
+
+/**
  * @param \Vendidero\OrderWithdrawalButton\WithdrawalOrder $request
  *
  * @return int
@@ -1869,10 +1888,11 @@ function eu_owb_wptexturize_withdrawal_additional_information( $content ) {
 }
 
 function eu_owb_get_guest_order_validation_option() {
-	$setting = \Vendidero\OrderWithdrawalButton\Package::get_setting( 'guest_order_validation' );
+	$default = 'DE' === \Vendidero\OrderWithdrawalButton\Package::get_base_country() ? 'none' : 'order_or_email';
+	$setting = \Vendidero\OrderWithdrawalButton\Package::get_setting( 'guest_order_validation', $default );
 
 	if ( ! in_array( $setting, array( 'none', 'order_existence', 'order_email_match', 'order_or_email' ), true ) ) {
-		$setting = 'none';
+		$setting = $default;
 	}
 
 	return $setting;

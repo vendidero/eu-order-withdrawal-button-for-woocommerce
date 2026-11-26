@@ -820,6 +820,8 @@ class WithdrawalTable extends \WP_List_Table {
 						);
 						?>
 						<option value="<?php echo esc_attr( $order->get_parent_id() ); ?>" selected="selected"><?php echo htmlspecialchars( wp_kses_post( $order_string ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></option>
+					<?php elseif ( $suspected_order = eu_owb_order_withdrawal_request_get_suspected_order( $order ) ) : ?>
+						<option value="<?php echo esc_attr( $suspected_order->get_id() ); ?>" selected="selected"><?php echo esc_html( sprintf( _x( 'Order #%s', 'owb', 'eu-order-withdrawal-button-for-woocommerce' ), $suspected_order->get_order_number() ) ); ?></option>
 					<?php endif; ?>
 				</select>
 				<button class="button button-primary eu-owb-order-withdrawal-order-save" href="#" data-save="parent_id" data-id="<?php echo esc_attr( $order->get_id() ); ?>"><span class="btn-text"><span class="dashicons dashicons-saved"></span></span></button>

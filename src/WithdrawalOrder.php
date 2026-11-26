@@ -646,6 +646,7 @@ class WithdrawalOrder extends \WC_Abstract_Order implements \ArrayAccess {
 			$this->set_parent_id( $order->get_id(), false );
 			$this->set_order_number( $order->get_order_number() );
 			$this->set_has_verified_email( eu_owb_custom_email_matches_order_email( $order, $this->get_email() ) );
+			$this->delete_meta_data( '_suspected_order_id' );
 
 			/**
 			 * Never store the pending withdrawal status as original status as it would be restored on delete/reject.

@@ -1387,6 +1387,12 @@ msgctxt "owb"
 msgid "unknown"
 msgstr ""
 
+#: templates/emails/email-withdrawal-details.php:46
+#: templates/emails/plain/email-withdrawal-details.php:35
+msgctxt "owb"
+msgid "Suspected order"
+msgstr ""
+
 #: templates/emails/email-withdrawal-details.php:38
 #: templates/emails/plain/email-withdrawal-details.php:26
 msgctxt "owb"
